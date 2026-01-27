@@ -1,13 +1,25 @@
-import { Link, useLocation } from "react-router-dom";
-import { Briefcase, Phone, ChevronDown, Bell, Search } from "lucide-react";
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Briefcase, Phone, ChevronDown, Bell, Search, Menu, X, User, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Header = () => {
   const location = useLocation();
-  
-  const navLinks = [
+  const navigate = useNavigate();
+  const { user, userRole, profile, signOut } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const candidateNavLinks = [
     { label: "Home", path: "/" },
     { label: "Find Job", path: "/find-jobs" },
     { label: "Find Employers", path: "/employers" },
@@ -16,9 +28,24 @@ const Header = () => {
     { label: "Customer Supports", path: "/support" },
   ];
 
+  const employerNavLinks = [
+    { label: "Home", path: "/" },
+    { label: "Dashboard", path: "/employer-dashboard" },
+    { label: "Post a Job", path: "/employer-dashboard?tab=post-job" },
+    { label: "Find Candidates", path: "/candidates" },
+    { label: "Customer Supports", path: "/support" },
+  ];
+
+  const navLinks = userRole === "employer" ? employerNavLinks : candidateNavLinks;
+
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
-    return location.pathname.startsWith(path);
+    return location.pathname.startsWith(path.split("?")[0]);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
   };
 
   return (
@@ -41,7 +68,7 @@ const Header = () => {
             ))}
           </nav>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2">
               <Phone className="h-4 w-4" />
               <span>+1-202-555-0178</span>
             </div>
@@ -55,7 +82,7 @@ const Header = () => {
 
       {/* Main header */}
       <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between gap-8">
+        <div className="flex items-center justify-between gap-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <div className="bg-primary p-2 rounded-lg">
@@ -64,9 +91,9 @@ const Header = () => {
             <span className="text-xl font-bold text-foreground">Jobpilot</span>
           </Link>
 
-          {/* Search bar */}
+          {/* Search bar - Desktop */}
           <div className="hidden lg:flex items-center gap-2 flex-1 max-w-xl">
-            <div className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg">
+            <div className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg bg-background">
               <span className="text-sm text-muted-foreground">🇮🇳 India</span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </div>
@@ -81,21 +108,108 @@ const Header = () => {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                3
-              </span>
+          <div className="flex items-center gap-3">
+            {user ? (
+              <>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    3
+                  </span>
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center gap-2 px-2">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        {profile?.avatar_url ? (
+                          <img src={profile.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
+                        ) : (
+                          <User className="h-4 w-4 text-primary" />
+                        )}
+                      </div>
+                      <span className="hidden md:block text-sm font-medium">
+                        {profile?.full_name || "User"}
+                      </span>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-background border border-border">
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      {user.email}
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to={userRole === "employer" ? "/employer-dashboard" : "/dashboard"}>
+                        <User className="mr-2 h-4 w-4" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/settings">
+                        <Settings className="mr-2 h-4 w-4" />
+                        Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {userRole === "employer" && (
+                  <Link to="/employer-dashboard?tab=post-job" className="hidden sm:block">
+                    <Button className="btn-primary">Post A Job</Button>
+                  </Link>
+                )}
+              </>
+            ) : (
+              <>
+                <Link to="/signin">
+                  <Button variant="outline">Sign In</Button>
+                </Link>
+                <Link to="/signup" className="hidden sm:block">
+                  <Button className="btn-primary">Post A Jobs</Button>
+                </Link>
+              </>
+            )}
+
+            {/* Mobile menu button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
-            <Link to="/signin">
-              <Button variant="outline">Sign In</Button>
-            </Link>
-            <Link to="/signup">
-              <Button className="btn-primary">Post A Jobs</Button>
-            </Link>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden mt-4 pb-4 border-t border-border pt-4">
+            <nav className="flex flex-col gap-2">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    "px-4 py-2 rounded-lg transition-colors",
+                    isActive(link.path)
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );

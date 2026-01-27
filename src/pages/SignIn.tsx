@@ -1,22 +1,46 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Briefcase } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { signIn, userRole } = useAuth();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // For demo, just navigate to dashboard
-    navigate("/dashboard");
+    setLoading(true);
+
+    const { error } = await signIn(email, password);
+    
+    if (error) {
+      toast({
+        title: "Sign in failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully signed in.",
+      });
+      // Navigate based on role after a small delay to let role fetch complete
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 100);
+    }
+    
+    setLoading(false);
   };
 
   return (
@@ -83,8 +107,8 @@ const SignIn = () => {
               </Link>
             </div>
 
-            <Button type="submit" className="w-full h-12 btn-primary">
-              Sign In <ArrowRight className="ml-2 h-4 w-4" />
+            <Button type="submit" className="w-full h-12 btn-primary" disabled={loading}>
+              {loading ? "Signing In..." : "Sign In"} <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </form>
 
