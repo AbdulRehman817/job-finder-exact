@@ -1,287 +1,365 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  Briefcase, 
-  Bookmark, 
-  Bell, 
-  Settings, 
-  LogOut,
-  ArrowRight,
-  Eye,
+import { Link, Navigate, useSearchParams } from "react-router-dom";
+import {
+  Briefcase,
+  FileText,
+  Heart,
+  Bell,
+  Settings,
+  User,
   MapPin,
-  DollarSign,
-  CheckCircle2
+  Clock,
+  ChevronRight,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Layout from "@/components/layout/Layout";
+import { useAuth } from "@/contexts/AuthContext";
+import { useMyApplications } from "@/hooks/useApplications";
+import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 
 const CandidateDashboard = () => {
-  const location = useLocation();
-  const [activeTab, setActiveTab] = useState("overview");
+  const { user, profile, loading, userRole } = useAuth();
+  const { data: applications = [] } = useMyApplications();
+  const { data: savedJobs = [] } = useSavedJobs();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get("tab") || "overview";
 
-  const sidebarLinks = [
-    { id: "overview", label: "Overview", icon: LayoutDashboard },
-    { id: "applied", label: "Applied Jobs", icon: Briefcase },
-    { id: "favorites", label: "Favorite Jobs", icon: Bookmark },
-    { id: "alerts", label: "Job Alert", icon: Bell, badge: "09" },
-    { id: "settings", label: "Settings", icon: Settings },
-  ];
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  if (userRole === "employer") {
+    return <Navigate to="/employer-dashboard" replace />;
+  }
 
   const stats = [
-    { value: 589, label: "Applied jobs", icon: Briefcase, color: "bg-primary/10 text-primary" },
-    { value: 238, label: "Favorite jobs", icon: Bookmark, color: "bg-warning/10 text-warning" },
-    { value: 574, label: "Job Alerts", icon: Bell, color: "bg-success/10 text-success" },
+    { label: "Applied Jobs", value: applications.length, icon: FileText, color: "bg-primary/10 text-primary" },
+    { label: "Favorite Jobs", value: savedJobs.length, icon: Heart, color: "bg-red-100 text-red-600" },
+    { label: "Job Alerts", value: 4, icon: Bell, color: "bg-yellow-100 text-yellow-600" },
   ];
 
-  const recentlyApplied = [
-    { 
-      id: "1", 
-      title: "Networking Engineer", 
-      company: "Upwork",
-      companyLogo: "🟢",
-      type: "Remote",
-      location: "Washington",
-      salary: "$50k-80k/month",
-      dateApplied: "Feb 2, 2019 19:28",
-      status: "Active"
-    },
-    { 
-      id: "2", 
-      title: "Product Designer", 
-      company: "Dribbble",
-      companyLogo: "🏀",
-      type: "Full Time",
-      location: "Dhaka",
-      salary: "$50k-80k/month",
-      dateApplied: "Dec 7, 2019 23:26",
-      status: "Active"
-    },
-    { 
-      id: "3", 
-      title: "Junior Graphic Designer", 
-      company: "Apple",
-      companyLogo: "🍎",
-      type: "Temporary",
-      location: "Brazil",
-      salary: "$50k-80k/month",
-      dateApplied: "Feb 2, 2019 19:28",
-      status: "Active"
-    },
-    { 
-      id: "4", 
-      title: "Visual Designer", 
-      company: "Microsoft",
-      companyLogo: "🪟",
-      type: "Contract Base",
-      location: "Wisconsin",
-      salary: "$50k-80k/month",
-      dateApplied: "Dec 7, 2019 23:26",
-      status: "Active"
-    },
-  ];
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-700";
+      case "reviewed":
+        return "bg-blue-100 text-blue-700";
+      case "shortlisted":
+        return "bg-green-100 text-green-700";
+      case "rejected":
+        return "bg-red-100 text-red-700";
+      case "hired":
+        return "bg-emerald-100 text-emerald-700";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-secondary">
-      {/* Header */}
-      <header className="bg-background border-b border-border sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="bg-primary p-2 rounded-lg">
-                <Briefcase className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground">Jobpilot</span>
+    <Layout>
+      <div className="bg-secondary py-6">
+        <div className="container mx-auto px-4">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Candidate Dashboard</h1>
+          <div className="text-sm text-muted-foreground">
+            <Link to="/" className="hover:text-primary">
+              Home
             </Link>
-            
-            <nav className="hidden md:flex items-center gap-6">
-              <Link to="/" className="nav-link">Home</Link>
-              <Link to="/find-jobs" className="nav-link">Find Job</Link>
-              <Link to="/employers" className="nav-link">Find Employers</Link>
-              <Link to="/dashboard" className="nav-link-active">Dashboard</Link>
-              <Link to="/job-alerts" className="nav-link">Job Alerts</Link>
-            </nav>
-
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  3
-                </span>
-              </Button>
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                <img 
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop" 
-                  alt="User" 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
+            <span className="mx-2">/</span>
+            <span className="text-foreground">Dashboard</span>
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
-          <aside className="w-64 shrink-0">
-            <div className="bg-card border border-border rounded-lg p-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-4 px-4">
-                Candidate Dashboard
-              </p>
-              <nav className="space-y-1">
-                {sidebarLinks.map((link) => (
-                  <button
-                    key={link.id}
-                    onClick={() => setActiveTab(link.id)}
-                    className={cn(
-                      "sidebar-link w-full",
-                      activeTab === link.id && "sidebar-link-active"
-                    )}
-                  >
-                    <link.icon className="h-5 w-5" />
-                    <span className="flex-1 text-left">{link.label}</span>
-                    {link.badge && (
-                      <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
-                        {link.badge}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </nav>
-
-              <div className="border-t border-border mt-4 pt-4">
-                <Link to="/" className="sidebar-link text-destructive hover:bg-destructive/10">
-                  <LogOut className="h-5 w-5" />
-                  <span>Log-out</span>
-                </Link>
+          <div className="lg:col-span-1">
+            <div className="bg-card border border-border rounded-lg p-6 mb-6">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  {profile?.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt=""
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-12 w-12 text-primary" />
+                  )}
+                </div>
+                <h3 className="font-semibold text-foreground">{profile?.full_name || "User"}</h3>
+                <p className="text-sm text-muted-foreground">{profile?.title || "Job Seeker"}</p>
+                {profile?.location && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                    <MapPin className="h-3 w-3" />
+                    {profile.location}
+                  </p>
+                )}
               </div>
             </div>
-          </aside>
+
+            <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <div className="p-3 bg-primary/5 border-b border-border">
+                <span className="text-sm font-medium text-foreground">Quick Links</span>
+              </div>
+              <nav className="p-2">
+                {[
+                  { icon: User, label: "My Profile", href: "/profile" },
+                  { icon: FileText, label: "Applied Jobs", href: "/dashboard?tab=applications" },
+                  { icon: Heart, label: "Saved Jobs", href: "/dashboard?tab=saved" },
+                  { icon: Bell, label: "Job Alerts", href: "/job-alerts" },
+                  { icon: Settings, label: "Settings", href: "/settings" },
+                ].map((item) => (
+                  <Link
+                    key={item.label}
+                    to={item.href}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span className="text-sm">{item.label}</span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </div>
 
           {/* Main Content */}
-          <main className="flex-1">
-            {/* Welcome Banner */}
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-foreground">Hello, Esther Howard</h1>
-              <p className="text-muted-foreground">Here is your daily activities and job alerts</p>
-            </div>
-
+          <div className="lg:col-span-3">
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 mb-8">
-              {stats.map((stat, index) => (
-                <div key={index} className="bg-card border border-border rounded-lg p-6 flex items-center gap-4">
-                  <div className={cn("w-16 h-16 rounded-lg flex items-center justify-center", stat.color)}>
-                    <stat.icon className="h-8 w-8" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              {stats.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="bg-card border border-border rounded-lg p-6 flex items-center gap-4"
+                >
+                  <div className={cn("p-3 rounded-lg", stat.color)}>
+                    <stat.icon className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-3xl font-bold text-foreground">{stat.value}</p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                    <div className="text-sm text-muted-foreground">{stat.label}</div>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Profile Completion Alert */}
-            <div className="bg-warning/10 border border-warning/30 rounded-lg p-6 flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-warning/20 flex items-center justify-center">
-                  <img 
-                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop" 
-                    alt="User" 
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                </div>
-                <div>
-                  <p className="font-semibold text-warning">Your profile editing is not completed.</p>
-                  <p className="text-sm text-muted-foreground">Complete your profile editing & build your custom Resume</p>
-                </div>
-              </div>
-              <Link to="/dashboard/settings">
-                <Button variant="outline" className="border-warning text-warning hover:bg-warning hover:text-warning-foreground">
-                  Edit Profile <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
+            <Tabs defaultValue={defaultTab} className="w-full">
+              <TabsList className="w-full justify-start border-b border-border rounded-none bg-transparent p-0 mb-6">
+                <TabsTrigger
+                  value="overview"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                >
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger
+                  value="applications"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                >
+                  Applied Jobs
+                </TabsTrigger>
+                <TabsTrigger
+                  value="saved"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                >
+                  Saved Jobs
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Recently Applied */}
-            <div className="bg-card border border-border rounded-lg">
-              <div className="p-6 border-b border-border flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-foreground">Recently Applied</h2>
-                <button className="text-primary text-sm hover:underline flex items-center gap-1">
-                  View all <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-secondary">
-                    <tr>
-                      <th className="text-left text-xs text-muted-foreground uppercase tracking-wider px-6 py-3">Job</th>
-                      <th className="text-left text-xs text-muted-foreground uppercase tracking-wider px-6 py-3">Date Applied</th>
-                      <th className="text-left text-xs text-muted-foreground uppercase tracking-wider px-6 py-3">Status</th>
-                      <th className="text-left text-xs text-muted-foreground uppercase tracking-wider px-6 py-3">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {recentlyApplied.map((job) => (
-                      <tr key={job.id} className="hover:bg-secondary/50">
-                        <td className="px-6 py-4">
+              <TabsContent value="overview" className="mt-0">
+                <div className="bg-card border border-border rounded-lg">
+                  <div className="p-4 border-b border-border flex items-center justify-between">
+                    <h3 className="font-semibold text-foreground">Recent Applications</h3>
+                    <Link to="/dashboard?tab=applications" className="text-sm text-primary hover:underline">
+                      View All
+                    </Link>
+                  </div>
+                  {applications.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h4 className="font-medium text-foreground mb-2">No applications yet</h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Start applying for jobs to see your applications here
+                      </p>
+                      <Link to="/find-jobs">
+                        <Button className="btn-primary">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Find Jobs
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border">
+                      {applications.slice(0, 5).map((application) => (
+                        <div
+                          key={application.id}
+                          className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                        >
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center text-2xl">
-                              {job.companyLogo}
+                            <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-2xl">
+                              {application.jobs?.companies?.logo_url || "🏢"}
                             </div>
                             <div>
-                              <h3 className="font-medium text-foreground">{job.title}</h3>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <span className={cn(
-                                  "text-xs px-2 py-0.5 rounded",
-                                  job.type === "Remote" ? "badge-remote" :
-                                  job.type === "Full Time" ? "badge-fulltime" :
-                                  job.type === "Temporary" ? "badge-parttime" :
-                                  "badge-contract"
-                                )}>
-                                  {job.type}
+                              <Link
+                                to={`/job/${application.job_id}`}
+                                className="font-medium text-foreground hover:text-primary"
+                              >
+                                {application.jobs?.title || "Job Title"}
+                              </Link>
+                              <div className="text-sm text-muted-foreground flex items-center gap-3">
+                                <span>{application.jobs?.companies?.name || "Company"}</span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {formatDistanceToNow(new Date(application.applied_at), { addSuffix: true })}
                                 </span>
-                                <MapPin className="h-3 w-3" />
-                                <span>{job.location}</span>
-                                <DollarSign className="h-3 w-3" />
-                                <span>{job.salary}</span>
                               </div>
                             </div>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">{job.dateApplied}</td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1 text-success text-sm">
-                            <CheckCircle2 className="h-4 w-4" />
-                            {job.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Link 
-                            to={`/job/${job.id}`}
-                            className="inline-flex items-center gap-1 text-primary hover:underline text-sm"
-                          >
-                            View Details
+                          <div className="flex items-center gap-4">
+                            <span
+                              className={cn(
+                                "text-xs px-3 py-1 rounded-full capitalize",
+                                getStatusColor(application.status)
+                              )}
+                            >
+                              {application.status}
+                            </span>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="applications" className="mt-0">
+                <div className="bg-card border border-border rounded-lg">
+                  <div className="p-4 border-b border-border">
+                    <h3 className="font-semibold text-foreground">All Applied Jobs ({applications.length})</h3>
+                  </div>
+                  {applications.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h4 className="font-medium text-foreground mb-2">No applications yet</h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Start applying for jobs to track your progress here
+                      </p>
+                      <Link to="/find-jobs">
+                        <Button className="btn-primary">Browse Jobs</Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border">
+                      {applications.map((application) => (
+                        <div
+                          key={application.id}
+                          className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-2xl">
+                              {application.jobs?.companies?.logo_url || "🏢"}
+                            </div>
+                            <div>
+                              <Link
+                                to={`/job/${application.job_id}`}
+                                className="font-medium text-foreground hover:text-primary"
+                              >
+                                {application.jobs?.title || "Job Title"}
+                              </Link>
+                              <div className="text-sm text-muted-foreground flex items-center gap-3 flex-wrap">
+                                <span>{application.jobs?.companies?.name || "Company"}</span>
+                                <span>{application.jobs?.location}</span>
+                                <span className="badge-fulltime">{application.jobs?.type}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span
+                              className={cn(
+                                "text-xs px-3 py-1 rounded-full capitalize",
+                                getStatusColor(application.status)
+                              )}
+                            >
+                              {application.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="saved" className="mt-0">
+                <div className="bg-card border border-border rounded-lg">
+                  <div className="p-4 border-b border-border">
+                    <h3 className="font-semibold text-foreground">Saved Jobs ({savedJobs.length})</h3>
+                  </div>
+                  {savedJobs.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h4 className="font-medium text-foreground mb-2">No saved jobs</h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Save jobs you're interested in to review them later
+                      </p>
+                      <Link to="/find-jobs">
+                        <Button className="btn-primary">Browse Jobs</Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border">
+                      {savedJobs.map((saved) => (
+                        <div
+                          key={saved.id}
+                          className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-2xl">
+                              {saved.jobs?.companies?.logo_url || "🏢"}
+                            </div>
+                            <div>
+                              <Link
+                                to={`/job/${saved.job_id}`}
+                                className="font-medium text-foreground hover:text-primary"
+                              >
+                                {saved.jobs?.title || "Job Title"}
+                              </Link>
+                              <div className="text-sm text-muted-foreground flex items-center gap-3 flex-wrap">
+                                <span>{saved.jobs?.companies?.name || "Company"}</span>
+                                <span>{saved.jobs?.location}</span>
+                                <span className="badge-fulltime">{saved.jobs?.type}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <Link to={`/job/${saved.job_id}`}>
+                            <Button size="sm">View Job</Button>
                           </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </main>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="bg-background border-t border-border py-4">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          © 2024 Jobpilot - Job Board. All rights Reserved
-        </div>
-      </footer>
-    </div>
+    </Layout>
   );
 };
 

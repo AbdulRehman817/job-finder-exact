@@ -1,34 +1,69 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, ArrowRight, User, Building2 } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, User, Building2, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Briefcase } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [accountType, setAccountType] = useState<"candidate" | "employer">("candidate");
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
-    username: "",
     email: "",
     password: "",
     confirmPassword: "",
     agreeTerms: false,
   });
   const navigate = useNavigate();
+  const { signUp } = useAuth();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // For demo, just navigate to dashboard
-    if (accountType === "candidate") {
-      navigate("/dashboard");
-    } else {
-      navigate("/employer-dashboard");
+
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure your passwords match.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    if (!formData.agreeTerms) {
+      toast({
+        title: "Terms required",
+        description: "Please agree to the terms and conditions.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    const { error } = await signUp(formData.email, formData.password, formData.fullName, accountType);
+    
+    if (error) {
+      toast({
+        title: "Sign up failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Account created!",
+        description: "Welcome to Jobpilot! You are now signed in.",
+      });
+      navigate(accountType === "employer" ? "/employer-dashboard" : "/dashboard");
+    }
+    
+    setLoading(false);
   };
 
   return (
@@ -88,24 +123,14 @@ const SignUp = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                type="text"
-                placeholder="Full Name"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className="h-12"
-                required
-              />
-              <Input
-                type="text"
-                placeholder="Username"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                className="h-12"
-                required
-              />
-            </div>
+            <Input
+              type="text"
+              placeholder="Full Name"
+              value={formData.fullName}
+              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+              className="h-12"
+              required
+            />
 
             <Input
               type="email"
@@ -124,6 +149,7 @@ const SignUp = () => {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="h-12 pr-12"
                 required
+                minLength={6}
               />
               <button
                 type="button"
@@ -168,8 +194,8 @@ const SignUp = () => {
               </span>
             </label>
 
-            <Button type="submit" className="w-full h-12 btn-primary">
-              Create Account <ArrowRight className="ml-2 h-4 w-4" />
+            <Button type="submit" className="w-full h-12 btn-primary" disabled={loading}>
+              {loading ? "Creating Account..." : "Create Account"} <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </form>
 
@@ -213,9 +239,9 @@ const SignUp = () => {
         />
         <div className="relative z-10 h-full flex flex-col justify-end p-12 text-primary-foreground">
           <h2 className="text-4xl font-bold mb-6">
-            Over 1,75,324 candidates
-            <br />
-            waiting for good employees.
+            {accountType === "candidate" 
+              ? "Find your dream job with Jobpilot"
+              : "Hire the best talent with Jobpilot"}
           </h2>
           <div className="grid grid-cols-3 gap-8">
             <div>
@@ -227,17 +253,17 @@ const SignUp = () => {
             </div>
             <div>
               <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-2">
-                <Briefcase className="h-6 w-6" />
+                <Building2 className="h-6 w-6" />
               </div>
               <p className="text-2xl font-bold">97,354</p>
               <p className="text-sm text-primary-foreground/70">Companies</p>
             </div>
             <div>
               <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-2">
-                <Briefcase className="h-6 w-6" />
+                <User className="h-6 w-6" />
               </div>
               <p className="text-2xl font-bold">7,532</p>
-              <p className="text-sm text-primary-foreground/70">New Jobs</p>
+              <p className="text-sm text-primary-foreground/70">Candidates</p>
             </div>
           </div>
         </div>

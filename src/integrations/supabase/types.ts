@@ -14,16 +14,355 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      companies: {
+        Row: {
+          created_at: string
+          description: string | null
+          email: string | null
+          featured: boolean | null
+          founded: string | null
+          id: string
+          industry: string | null
+          linkedin_url: string | null
+          location: string | null
+          logo_url: string | null
+          name: string
+          phone: string | null
+          size: string | null
+          twitter_url: string | null
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          featured?: boolean | null
+          founded?: string | null
+          id?: string
+          industry?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          logo_url?: string | null
+          name: string
+          phone?: string | null
+          size?: string | null
+          twitter_url?: string | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          featured?: boolean | null
+          founded?: string | null
+          id?: string
+          industry?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          logo_url?: string | null
+          name?: string
+          phone?: string | null
+          size?: string | null
+          twitter_url?: string | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      job_alerts: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          job_type: string | null
+          keywords: string[] | null
+          location: string | null
+          salary_max: number | null
+          salary_min: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          job_type?: string | null
+          keywords?: string[] | null
+          location?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          job_type?: string | null
+          keywords?: string[] | null
+          location?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      job_applications: {
+        Row: {
+          applied_at: string
+          cover_letter: string | null
+          id: string
+          job_id: string
+          resume_url: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string
+          cover_letter?: string | null
+          id?: string
+          job_id: string
+          resume_url?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applied_at?: string
+          cover_letter?: string | null
+          id?: string
+          job_id?: string
+          resume_url?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          benefits: string[] | null
+          category: string | null
+          company_id: string
+          created_at: string
+          description: string
+          experience_level: string | null
+          expiry_date: string | null
+          featured: boolean | null
+          id: string
+          location: string
+          posted_date: string
+          requirements: string[] | null
+          responsibilities: string[] | null
+          salary_max: number | null
+          salary_min: number | null
+          status: string | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          benefits?: string[] | null
+          category?: string | null
+          company_id: string
+          created_at?: string
+          description: string
+          experience_level?: string | null
+          expiry_date?: string | null
+          featured?: boolean | null
+          id?: string
+          location: string
+          posted_date?: string
+          requirements?: string[] | null
+          responsibilities?: string[] | null
+          salary_max?: number | null
+          salary_min?: number | null
+          status?: string | null
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          benefits?: string[] | null
+          category?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string
+          experience_level?: string | null
+          expiry_date?: string | null
+          featured?: boolean | null
+          id?: string
+          location?: string
+          posted_date?: string
+          requirements?: string[] | null
+          responsibilities?: string[] | null
+          salary_max?: number | null
+          salary_min?: number | null
+          status?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          education: string | null
+          experience_years: number | null
+          full_name: string
+          id: string
+          linkedin_url: string | null
+          location: string | null
+          phone: string | null
+          resume_url: string | null
+          skills: string[] | null
+          title: string | null
+          twitter_url: string | null
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          education?: string | null
+          experience_years?: number | null
+          full_name: string
+          id?: string
+          linkedin_url?: string | null
+          location?: string | null
+          phone?: string | null
+          resume_url?: string | null
+          skills?: string[] | null
+          title?: string | null
+          twitter_url?: string | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          education?: string | null
+          experience_years?: number | null
+          full_name?: string
+          id?: string
+          linkedin_url?: string | null
+          location?: string | null
+          phone?: string | null
+          resume_url?: string | null
+          skills?: string[] | null
+          title?: string | null
+          twitter_url?: string | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      saved_jobs: {
+        Row: {
+          id: string
+          job_id: string
+          saved_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          job_id: string
+          saved_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          job_id?: string
+          saved_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_jobs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "candidate" | "employer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +489,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["candidate", "employer"],
+    },
   },
 } as const
