@@ -25,9 +25,9 @@ const CompanyCard = ({ company }: CompanyCardProps) => {
         <span>{company.location}</span>
       </div>
       
-      <Link to={`/employer/${company.id}`}>
+      <Link to={`/company/${company.id}`}>
         <Button variant="outline" className="w-full btn-outline-primary">
-          Open Position ({company.openPositions})
+          View Company
         </Button>
       </Link>
     </div>

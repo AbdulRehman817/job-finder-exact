@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Briefcase, Phone, ChevronDown, Bell, Search, Menu, X, User, LogOut, Settings } from "lucide-react";
+import { Briefcase, Phone, ChevronDown, Search, Menu, X, User, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import NotificationDropdown from "@/components/notifications/NotificationDropdown";
 
 const Header = () => {
   const location = useLocation();
@@ -111,12 +112,7 @@ const Header = () => {
           <div className="flex items-center gap-3">
             {user ? (
               <>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                    3
-                  </span>
-                </Button>
+                <NotificationDropdown />
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

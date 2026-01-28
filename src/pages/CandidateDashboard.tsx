@@ -11,6 +11,7 @@ import {
   Clock,
   ChevronRight,
   Plus,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +19,7 @@ import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyApplications } from "@/hooks/useApplications";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
+import { useNotifications, useMarkNotificationRead } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
@@ -25,6 +27,8 @@ const CandidateDashboard = () => {
   const { user, profile, loading, userRole } = useAuth();
   const { data: applications = [] } = useMyApplications();
   const { data: savedJobs = [] } = useSavedJobs();
+  const { data: notifications = [] } = useNotifications();
+  const markRead = useMarkNotificationRead();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") || "overview";
 
@@ -47,10 +51,12 @@ const CandidateDashboard = () => {
     return <Navigate to="/employer-dashboard" replace />;
   }
 
+  const unreadNotifications = notifications.filter((n) => !n.is_read).length;
+
   const stats = [
     { label: "Applied Jobs", value: applications.length, icon: FileText, color: "bg-primary/10 text-primary" },
     { label: "Favorite Jobs", value: savedJobs.length, icon: Heart, color: "bg-red-100 text-red-600" },
-    { label: "Job Alerts", value: 4, icon: Bell, color: "bg-yellow-100 text-yellow-600" },
+    { label: "Notifications", value: unreadNotifications, icon: Bell, color: "bg-yellow-100 text-yellow-600" },
   ];
 
   const getStatusColor = (status: string) => {
@@ -67,6 +73,21 @@ const CandidateDashboard = () => {
         return "bg-emerald-100 text-emerald-700";
       default:
         return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case "shortlisted":
+        return "🎯";
+      case "rejected":
+        return "❌";
+      case "hired":
+        return "🎉";
+      case "application_received":
+        return "📩";
+      default:
+        return "🔔";
     }
   };
 
@@ -122,16 +143,23 @@ const CandidateDashboard = () => {
                   { icon: User, label: "My Profile", href: "/profile" },
                   { icon: FileText, label: "Applied Jobs", href: "/dashboard?tab=applications" },
                   { icon: Heart, label: "Saved Jobs", href: "/dashboard?tab=saved" },
-                  { icon: Bell, label: "Job Alerts", href: "/job-alerts" },
+                  { icon: Bell, label: "Notifications", href: "/dashboard?tab=notifications", badge: unreadNotifications },
                   { icon: Settings, label: "Settings", href: "/settings" },
                 ].map((item) => (
                   <Link
                     key={item.label}
                     to={item.href}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                   >
-                    <item.icon className="h-4 w-4" />
-                    <span className="text-sm">{item.label}</span>
+                    <div className="flex items-center gap-3">
+                      <item.icon className="h-4 w-4" />
+                      <span className="text-sm">{item.label}</span>
+                    </div>
+                    {item.badge && item.badge > 0 && (
+                      <span className="bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {item.badge}
+                      </span>
+                    )}
                   </Link>
                 ))}
               </nav>
@@ -177,6 +205,17 @@ const CandidateDashboard = () => {
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
                 >
                   Saved Jobs
+                </TabsTrigger>
+                <TabsTrigger
+                  value="notifications"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent relative"
+                >
+                  Notifications
+                  {unreadNotifications > 0 && (
+                    <span className="ml-2 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadNotifications}
+                    </span>
+                  )}
                 </TabsTrigger>
               </TabsList>
 
@@ -349,6 +388,78 @@ const CandidateDashboard = () => {
                           <Link to={`/job/${saved.job_id}`}>
                             <Button size="sm">View Job</Button>
                           </Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="notifications" className="mt-0">
+                <div className="bg-card border border-border rounded-lg">
+                  <div className="p-4 border-b border-border flex items-center justify-between">
+                    <h3 className="font-semibold text-foreground">
+                      Notifications ({notifications.length})
+                    </h3>
+                    <Link to="/notifications" className="text-sm text-primary hover:underline">
+                      View All
+                    </Link>
+                  </div>
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h4 className="font-medium text-foreground mb-2">No notifications yet</h4>
+                      <p className="text-sm text-muted-foreground">
+                        You'll receive notifications when employers respond to your applications
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border">
+                      {notifications.slice(0, 10).map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={cn(
+                            "p-4 hover:bg-muted/50 transition-colors cursor-pointer",
+                            !notification.is_read && "bg-primary/5"
+                          )}
+                          onClick={() => {
+                            if (!notification.is_read) {
+                              markRead.mutate(notification.id);
+                            }
+                          }}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-xl shrink-0">
+                              {getNotificationIcon(notification.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <p className={cn("text-foreground", !notification.is_read && "font-semibold")}>
+                                    {notification.title}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {notification.message}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-2">
+                                    {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                                  </p>
+                                </div>
+                                {!notification.is_read && (
+                                  <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2" />
+                                )}
+                              </div>
+                              {notification.job_id && (
+                                <Link
+                                  to={`/job/${notification.job_id}`}
+                                  className="inline-block mt-2 text-sm text-primary hover:underline"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  View Job →
+                                </Link>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>

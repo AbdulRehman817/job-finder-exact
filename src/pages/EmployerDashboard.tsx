@@ -12,6 +12,9 @@ import {
   Edit,
   Plus,
   Building2,
+  CheckCircle,
+  XCircle,
+  UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,7 +23,8 @@ import PostJobForm from "@/components/employer/PostJobForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyJobs, useDeleteJob } from "@/hooks/useJobs";
 import { useMyCompanies } from "@/hooks/useCompanies";
-import { useJobApplications } from "@/hooks/useApplications";
+import { useJobApplications, useUpdateApplicationStatus } from "@/hooks/useApplications";
+import { useCreateNotification } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +34,8 @@ const EmployerDashboard = () => {
   const { data: jobs = [] } = useMyJobs();
   const { data: companies = [] } = useMyCompanies();
   const deleteJob = useDeleteJob();
+  const updateApplicationStatus = useUpdateApplicationStatus();
+  const createNotification = useCreateNotification();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") || "overview";
@@ -56,9 +62,10 @@ const EmployerDashboard = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
+  const totalApplicants = applications.length;
   const stats = [
     { label: "Posted Jobs", value: jobs.length, icon: Briefcase, color: "bg-primary/10 text-primary" },
-    { label: "Total Applicants", value: jobs.reduce((acc, job) => acc + (job.featured ? 0 : 0), 0), icon: Users, color: "bg-green-100 text-green-600" },
+    { label: "Total Applicants", value: totalApplicants, icon: Users, color: "bg-green-100 text-green-600" },
     { label: "Companies", value: companies.length, icon: Building2, color: "bg-purple-100 text-purple-600" },
   ];
 
@@ -80,6 +87,53 @@ const EmployerDashboard = () => {
     }
   };
 
+  const handleUpdateApplicationStatus = async (
+    applicationId: string, 
+    userId: string, 
+    status: "shortlisted" | "rejected" | "hired",
+    jobTitle: string
+  ) => {
+    try {
+      await updateApplicationStatus.mutateAsync({ id: applicationId, status });
+      
+      // Create notification for the applicant
+      const notificationMessages = {
+        shortlisted: {
+          title: "You've been shortlisted! 🎯",
+          message: `Congratulations! Your application for "${jobTitle}" has been shortlisted. The employer is interested in your profile.`,
+        },
+        rejected: {
+          title: "Application Update",
+          message: `Unfortunately, your application for "${jobTitle}" was not selected at this time. Don't give up - keep applying!`,
+        },
+        hired: {
+          title: "Congratulations! You're Hired! 🎉",
+          message: `Great news! You've been selected for the position "${jobTitle}". The employer will contact you soon with next steps.`,
+        },
+      };
+
+      await createNotification.mutateAsync({
+        user_id: userId,
+        type: status,
+        title: notificationMessages[status].title,
+        message: notificationMessages[status].message,
+        job_id: selectedJobForApps,
+        application_id: applicationId,
+      });
+
+      toast({
+        title: "Status updated",
+        description: `Applicant has been ${status}. They will receive a notification.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to update status",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -92,6 +146,25 @@ const EmployerDashboard = () => {
         return "bg-muted text-muted-foreground";
     }
   };
+
+  const getAppStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-700";
+      case "reviewed":
+        return "bg-blue-100 text-blue-700";
+      case "shortlisted":
+        return "bg-green-100 text-green-700";
+      case "rejected":
+        return "bg-red-100 text-red-700";
+      case "hired":
+        return "bg-emerald-100 text-emerald-700";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const selectedJob = jobs.find(j => j.id === selectedJobForApps);
 
   return (
     <Layout>
@@ -390,60 +463,140 @@ const EmployerDashboard = () => {
                       {applications.map((app) => (
                         <div
                           key={app.id}
-                          className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                          className="p-4 hover:bg-muted/50 transition-colors"
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                              {app.profiles?.avatar_url ? (
-                                <img
-                                  src={app.profiles.avatar_url}
-                                  alt=""
-                                  className="w-12 h-12 rounded-full object-cover"
-                                />
-                              ) : (
-                                <User className="h-6 w-6 text-muted-foreground" />
-                              )}
-                            </div>
-                            <div>
-                              <div className="font-medium text-foreground">
-                                {app.profiles?.full_name || "Applicant"}
-                              </div>
-                              <div className="text-sm text-muted-foreground flex items-center gap-3">
-                                <span>{app.profiles?.title || "Job Seeker"}</span>
-                                {app.profiles?.location && (
-                                  <span className="flex items-center gap-1">
-                                    <MapPin className="h-3 w-3" />
-                                    {app.profiles.location}
-                                  </span>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
+                                {app.profiles?.avatar_url ? (
+                                  <img
+                                    src={app.profiles.avatar_url}
+                                    alt=""
+                                    className="w-12 h-12 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <User className="h-6 w-6 text-muted-foreground" />
                                 )}
                               </div>
-                              {app.profiles?.skills && app.profiles.skills.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {app.profiles.skills.slice(0, 3).map((skill, i) => (
-                                    <span key={i} className="text-xs bg-muted px-2 py-0.5 rounded">
-                                      {skill}
-                                    </span>
-                                  ))}
+                              <div className="min-w-0">
+                                <div className="font-medium text-foreground">
+                                  {app.profiles?.full_name || "Applicant"}
                                 </div>
-                              )}
+                                <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
+                                  <span>{app.profiles?.title || "Job Seeker"}</span>
+                                  {app.profiles?.experience_years && (
+                                    <span>{app.profiles.experience_years} years exp.</span>
+                                  )}
+                                  {app.profiles?.location && (
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="h-3 w-3" />
+                                      {app.profiles.location}
+                                    </span>
+                                  )}
+                                </div>
+                                {app.profiles?.skills && app.profiles.skills.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {app.profiles.skills.slice(0, 4).map((skill, i) => (
+                                      <span key={i} className="text-xs bg-muted px-2 py-0.5 rounded">
+                                        {skill}
+                                      </span>
+                                    ))}
+                                    {app.profiles.skills.length > 4 && (
+                                      <span className="text-xs text-muted-foreground">
+                                        +{app.profiles.skills.length - 4} more
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {app.cover_letter && (
+                                  <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                                    "{app.cover_letter}"
+                                  </p>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  Applied {formatDistanceToNow(new Date(app.applied_at), { addSuffix: true })}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span
-                              className={cn(
-                                "text-xs px-3 py-1 rounded-full capitalize",
-                                app.status === "pending"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : app.status === "shortlisted"
-                                  ? "bg-green-100 text-green-700"
-                                  : app.status === "rejected"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-blue-100 text-blue-700"
-                              )}
-                            >
-                              {app.status}
-                            </span>
-                            <Button size="sm">View Profile</Button>
+                            
+                            <div className="flex flex-col items-end gap-2 shrink-0">
+                              <span
+                                className={cn(
+                                  "text-xs px-3 py-1 rounded-full capitalize",
+                                  getAppStatusColor(app.status)
+                                )}
+                              >
+                                {app.status}
+                              </span>
+                              
+                              {/* Action Buttons */}
+                              {app.status === "pending" || app.status === "reviewed" ? (
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                                    onClick={() => handleUpdateApplicationStatus(
+                                      app.id, 
+                                      app.user_id, 
+                                      "shortlisted",
+                                      selectedJob?.title || "Job"
+                                    )}
+                                    disabled={updateApplicationStatus.isPending}
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                    Shortlist
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                                    onClick={() => handleUpdateApplicationStatus(
+                                      app.id, 
+                                      app.user_id, 
+                                      "rejected",
+                                      selectedJob?.title || "Job"
+                                    )}
+                                    disabled={updateApplicationStatus.isPending}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-1" />
+                                    Reject
+                                  </Button>
+                                </div>
+                              ) : app.status === "shortlisted" ? (
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    className="bg-emerald-600 hover:bg-emerald-700"
+                                    onClick={() => handleUpdateApplicationStatus(
+                                      app.id, 
+                                      app.user_id, 
+                                      "hired",
+                                      selectedJob?.title || "Job"
+                                    )}
+                                    disabled={updateApplicationStatus.isPending}
+                                  >
+                                    <UserCheck className="h-4 w-4 mr-1" />
+                                    Hire
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                                    onClick={() => handleUpdateApplicationStatus(
+                                      app.id, 
+                                      app.user_id, 
+                                      "rejected",
+                                      selectedJob?.title || "Job"
+                                    )}
+                                    disabled={updateApplicationStatus.isPending}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-1" />
+                                    Reject
+                                  </Button>
+                                </div>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       ))}
