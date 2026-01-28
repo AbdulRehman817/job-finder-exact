@@ -116,3 +116,38 @@ export const useUpdateCompany = () => {
     },
   });
 };
+
+export const useCompany = (id: string) => {
+  return useQuery({
+    queryKey: ["company", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("companies")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as Company | null;
+    },
+    enabled: !!id,
+  });
+};
+
+export const useCompanyJobs = (companyId: string) => {
+  return useQuery({
+    queryKey: ["company-jobs", companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("status", "active")
+        .order("posted_date", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!companyId,
+  });
+};

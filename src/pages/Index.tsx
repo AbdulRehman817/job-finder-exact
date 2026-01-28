@@ -7,16 +7,50 @@ import JobCard from "@/components/jobs/JobCard";
 import CompanyCard from "@/components/companies/CompanyCard";
 import CategoryCard from "@/components/categories/CategoryCard";
 import TestimonialCard from "@/components/testimonials/TestimonialCard";
+import { useJobs } from "@/hooks/useJobs";
+import { useCompanies } from "@/hooks/useCompanies";
 import {
   popularVacancies,
   categories,
-  featuredJobs,
-  topCompanies,
+  featuredJobs as mockFeaturedJobs,
+  topCompanies as mockTopCompanies,
   testimonials,
   stats,
 } from "@/data/mockData";
 
 const Index = () => {
+  const { data: dbJobs = [], isLoading: jobsLoading } = useJobs();
+  const { data: dbCompanies = [], isLoading: companiesLoading } = useCompanies();
+
+  // Transform database jobs to match the Job interface used by JobCard
+  const transformedJobs = dbJobs.map((job) => ({
+    id: job.id,
+    title: job.title,
+    company: job.companies?.name || "Company",
+    companyLogo: job.companies?.logo_url || "",
+    location: job.location,
+    salary: job.salary_min && job.salary_max 
+      ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}`
+      : "Competitive",
+    type: job.type as "full-time" | "part-time" | "internship" | "remote" | "contract",
+    featured: job.featured || false,
+    postedDate: job.posted_date,
+  }));
+
+  // Transform database companies to match Company interface
+  const transformedCompanies = dbCompanies.slice(0, 6).map((company) => ({
+    id: company.id,
+    name: company.name,
+    logo: company.logo_url || "🏢",
+    location: company.location || "Location",
+    openPositions: 0, // Would need a count query
+    featured: company.featured || false,
+  }));
+
+  // Use database jobs if available, otherwise fall back to mock data
+  const featuredJobs = transformedJobs.length > 0 ? transformedJobs : mockFeaturedJobs;
+  const topCompanies = transformedCompanies.length > 0 ? transformedCompanies : mockTopCompanies;
+
   return (
     <Layout>
       {/* Hero Section */}
@@ -190,11 +224,18 @@ const Index = () => {
               View All <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredJobs.slice(0, 12).map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
-          </div>
+          {jobsLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+              <p className="mt-4 text-muted-foreground">Loading jobs...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredJobs.slice(0, 12).map((job) => (
+                <JobCard key={job.id} job={job} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -204,11 +245,17 @@ const Index = () => {
           <h2 className="text-3xl font-bold text-foreground text-center mb-12">
             Top companies
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {topCompanies.map((company) => (
-              <CompanyCard key={company.id} company={company} />
-            ))}
-          </div>
+          {companiesLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+              {topCompanies.map((company) => (
+                <CompanyCard key={company.id} company={company} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

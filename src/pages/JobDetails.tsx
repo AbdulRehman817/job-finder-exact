@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { 
   MapPin, 
   DollarSign, 
@@ -8,6 +8,7 @@ import {
   GraduationCap, 
   Clock,
   Bookmark,
+  BookmarkCheck,
   Share2,
   ArrowRight,
   Building2,
@@ -23,62 +24,149 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import Layout from "@/components/layout/Layout";
 import JobCard from "@/components/jobs/JobCard";
-import { featuredJobs, jobBenefits } from "@/data/mockData";
+import { useJob, useJobs } from "@/hooks/useJobs";
+import { useApplyForJob, useHasApplied } from "@/hooks/useApplications";
+import { useSaveJob, useUnsaveJob, useIsJobSaved } from "@/hooks/useSavedJobs";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { jobTypes } from "@/types";
+import { formatDistanceToNow } from "date-fns";
 
 const JobDetails = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user, userRole } = useAuth();
+  const { toast } = useToast();
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [coverLetter, setCoverLetter] = useState("");
+
+  const { data: job, isLoading } = useJob(id || "");
+  const { data: relatedJobs = [] } = useJobs();
+  const { data: hasApplied = false } = useHasApplied(id || "");
+  const { data: isSaved = false } = useIsJobSaved(id || "");
   
-  // Mock job data
-  const job = {
-    id: id || "1",
-    title: "Senior UX Designer",
-    company: "Instagram",
-    companyLogo: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/132px-Instagram_logo_2016.svg.png",
-    location: "Dhaka, Bangladesh",
-    salary: "$100,000 - $120,000",
-    type: "full-time" as const,
-    featured: true,
-    postedDate: "2024-01-15",
-    expiryDate: "June 30, 2024",
-    description: `Integer aliquet pretium consequat. Donec et tellus. Duis et est ac leo rhoncus tincidunt vitae Pellentesque quis justo sit amet arcu commodo. Vivamus sit amet ligula ullamcorper, pulvinar urna. Maecenas blandit felis id massa sodales.
+  const applyForJob = useApplyForJob();
+  const saveJob = useSaveJob();
+  const unsaveJob = useUnsaveJob();
 
-Sed lobortis diam tincidunt accumsan faucibus dapibus euismod ante ultricies. Ut non felis arcu. Suspendisse sollicitudin faucibus aliquet. Nam dapibus consectetur erat in euismod. aliquet nibh. Sed tristique dictum elementum in neque sit amet orci interdum tincidunt.`,
-    responsibilities: [
-      "Quisque semper gravida est et consectetur.",
-      "Curabitur blandit lorem velit, vitae pretium leo placerat eget.",
-      "Morbi mattis in ipsum ac tempus.",
-      "Curabitur eu vehicula libero. Vestibulum sed purus ullamcorper, lobortis lectus nec.",
-      "vulputate turpis. Quisque ante odio, iaculis a porttitor sit amet.",
-      "lobortis vel lectus. Nulla at risus ut diam commodo feugiat.",
-      "Nullam laoreet, diam placerat dapibus tincidunt.",
-      "odio metus posuere lorem, id condimentum erat velit nec neque.",
-      "dui sodales ut. Curabitur tempus augue.",
-    ],
-    education: "Graduation",
-    experience: "3+ Years",
-    jobLevel: "Senior Level",
-    website: "https://instagram.com",
+  const handleApply = async () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to apply for this job",
+        variant: "destructive",
+      });
+      navigate("/signin");
+      return;
+    }
+
+    if (userRole === "employer") {
+      toast({
+        title: "Cannot apply",
+        description: "Employers cannot apply for jobs",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await applyForJob.mutateAsync({
+        jobId: id!,
+        coverLetter: coverLetter || undefined,
+      });
+      toast({
+        title: "Application submitted!",
+        description: "Your application has been sent to the employer.",
+      });
+      setShowApplyModal(false);
+      setCoverLetter("");
+    } catch (error: any) {
+      toast({
+        title: "Application failed",
+        description: error.message || "Failed to submit application",
+        variant: "destructive",
+      });
+    }
   };
 
-  const companyInfo = {
-    name: "Instagram",
-    type: "Social networking service",
-    founded: "March 21, 2006",
-    organizationType: "Private Company",
-    size: "120-300 Employers",
+  const handleSave = async () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to save jobs",
+        variant: "destructive",
+      });
+      navigate("/signin");
+      return;
+    }
+
+    try {
+      if (isSaved) {
+        await unsaveJob.mutateAsync(id!);
+        toast({ title: "Job removed from saved" });
+      } else {
+        await saveJob.mutateAsync(id!);
+        toast({ title: "Job saved!" });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
-  const relatedJobs = featuredJobs.slice(0, 6);
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading job details...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!job) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <Briefcase className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-foreground mb-2">Job not found</h2>
+          <p className="text-muted-foreground mb-6">This job listing may have been removed or expired.</p>
+          <Link to="/find-jobs">
+            <Button className="btn-primary">Browse Jobs</Button>
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
+
+  const typeConfig = jobTypes[job.type as keyof typeof jobTypes] || jobTypes["full-time"];
+  const salaryDisplay = job.salary_min && job.salary_max
+    ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}`
+    : "Competitive";
+
+  // Transform related jobs
+  const transformedRelatedJobs = relatedJobs
+    .filter((j) => j.id !== job.id)
+    .slice(0, 6)
+    .map((j) => ({
+      id: j.id,
+      title: j.title,
+      company: j.companies?.name || "Company",
+      companyLogo: j.companies?.logo_url || "",
+      location: j.location,
+      salary: j.salary_min && j.salary_max 
+        ? `$${j.salary_min.toLocaleString()} - $${j.salary_max.toLocaleString()}`
+        : "Competitive",
+      type: j.type as "full-time" | "part-time" | "internship" | "remote" | "contract",
+      featured: j.featured || false,
+      postedDate: j.posted_date,
+    }));
 
   return (
     <Layout>
@@ -91,7 +179,7 @@ Sed lobortis diam tincidunt accumsan faucibus dapibus euismod ante ultricies. Ut
             <span className="mx-2">/</span>
             <Link to="/find-jobs" className="hover:text-primary">Find Job</Link>
             <span className="mx-2">/</span>
-            <span className="text-foreground">Job Details</span>
+            <span className="text-foreground">{job.title}</span>
           </div>
         </div>
       </div>
@@ -103,11 +191,15 @@ Sed lobortis diam tincidunt accumsan faucibus dapibus euismod ante ultricies. Ut
             {/* Job Header */}
             <div className="flex flex-col md:flex-row md:items-start gap-6 mb-8">
               <div className="w-20 h-20 bg-secondary rounded-lg flex items-center justify-center overflow-hidden shrink-0">
-                <img 
-                  src={job.companyLogo} 
-                  alt={job.company}
-                  className="w-12 h-12 object-contain"
-                />
+                {job.companies?.logo_url ? (
+                  <img 
+                    src={job.companies.logo_url} 
+                    alt={job.companies.name}
+                    className="w-12 h-12 object-contain"
+                  />
+                ) : (
+                  <Building2 className="h-10 w-10 text-muted-foreground" />
+                )}
               </div>
               <div className="flex-1">
                 <div className="flex items-start justify-between">
@@ -116,19 +208,27 @@ Sed lobortis diam tincidunt accumsan faucibus dapibus euismod ante ultricies. Ut
                       {job.title}
                     </h1>
                     <div className="flex flex-wrap items-center gap-3">
-                      <span className="badge-featured">Featured</span>
-                      <span className="badge-fulltime">Full Time</span>
+                      {job.featured && <span className="badge-featured">Featured</span>}
+                      <span className={typeConfig.className}>{typeConfig.label}</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                      <Globe className="h-4 w-4" />
-                      <a href={job.website} className="text-primary hover:underline">
-                        {job.website}
-                      </a>
-                    </div>
+                    {job.companies && (
+                      <Link 
+                        to={`/company/${job.company_id}`}
+                        className="flex items-center gap-2 mt-2 text-sm text-primary hover:underline"
+                      >
+                        <Globe className="h-4 w-4" />
+                        {job.companies.name}
+                      </Link>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon">
-                      <Bookmark className="h-4 w-4" />
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={handleSave}
+                      className={isSaved ? "text-primary border-primary" : ""}
+                    >
+                      {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
                     </Button>
                     <Button variant="outline" size="icon">
                       <Share2 className="h-4 w-4" />
@@ -137,15 +237,29 @@ Sed lobortis diam tincidunt accumsan faucibus dapibus euismod ante ultricies. Ut
                 </div>
               </div>
               <div className="text-right">
-                <Button 
-                  className="btn-primary h-12 px-8"
-                  onClick={() => setShowApplyModal(true)}
-                >
-                  Apply Now <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Job expire in: <span className="text-destructive">{job.expiryDate}</span>
-                </p>
+                {hasApplied ? (
+                  <Button disabled className="h-12 px-8">
+                    Already Applied
+                  </Button>
+                ) : userRole === "employer" ? (
+                  <Button disabled className="h-12 px-8">
+                    Employers can't apply
+                  </Button>
+                ) : (
+                  <Button 
+                    className="btn-primary h-12 px-8"
+                    onClick={() => setShowApplyModal(true)}
+                  >
+                    Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
+                {job.expiry_date && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Expires: <span className="text-destructive">
+                      {new Date(job.expiry_date).toLocaleDateString()}
+                    </span>
+                  </p>
+                )}
               </div>
             </div>
 
@@ -157,28 +271,47 @@ Sed lobortis diam tincidunt accumsan faucibus dapibus euismod ante ultricies. Ut
               </div>
             </div>
 
+            {/* Requirements */}
+            {job.requirements && job.requirements.length > 0 && (
+              <div className="bg-card border border-border rounded-lg p-6 mb-6">
+                <h2 className="text-xl font-semibold text-foreground mb-4">Requirements</h2>
+                <ul className="space-y-2">
+                  {job.requirements.map((item, index) => (
+                    <li key={index} className="flex items-start gap-2 text-muted-foreground">
+                      <span className="text-primary mt-1">•</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Responsibilities */}
-            <div className="bg-card border border-border rounded-lg p-6 mb-6">
-              <h2 className="text-xl font-semibold text-foreground mb-4">Responsibilities</h2>
-              <ul className="space-y-2">
-                {job.responsibilities.map((item, index) => (
-                  <li key={index} className="flex items-start gap-2 text-muted-foreground">
-                    <span className="text-primary mt-1">•</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {job.responsibilities && job.responsibilities.length > 0 && (
+              <div className="bg-card border border-border rounded-lg p-6 mb-6">
+                <h2 className="text-xl font-semibold text-foreground mb-4">Responsibilities</h2>
+                <ul className="space-y-2">
+                  {job.responsibilities.map((item, index) => (
+                    <li key={index} className="flex items-start gap-2 text-muted-foreground">
+                      <span className="text-primary mt-1">•</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Related Jobs */}
-            <div className="mt-12">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Related Jobs</h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                {relatedJobs.map((job) => (
-                  <JobCard key={job.id} job={job} />
-                ))}
+            {transformedRelatedJobs.length > 0 && (
+              <div className="mt-12">
+                <h2 className="text-2xl font-bold text-foreground mb-6">Related Jobs</h2>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {transformedRelatedJobs.map((relatedJob) => (
+                    <JobCard key={relatedJob.id} job={relatedJob} />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -193,7 +326,7 @@ Sed lobortis diam tincidunt accumsan faucibus dapibus euismod ante ultricies. Ut
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Salary (USD)</p>
-                    <p className="font-medium text-foreground">{job.salary}</p>
+                    <p className="font-medium text-foreground">{salaryDisplay}</p>
                     <p className="text-xs text-muted-foreground">Yearly salary</p>
                   </div>
                 </div>
@@ -211,76 +344,81 @@ Sed lobortis diam tincidunt accumsan faucibus dapibus euismod ante ultricies. Ut
                     <Calendar className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Job Expire in</p>
-                    <p className="font-medium text-foreground">{job.expiryDate}</p>
+                    <p className="text-sm text-muted-foreground">Posted</p>
+                    <p className="font-medium text-foreground">
+                      {formatDistanceToNow(new Date(job.posted_date), { addSuffix: true })}
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                    <GraduationCap className="h-5 w-5 text-primary" />
+                {job.experience_level && (
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                      <GraduationCap className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Experience</p>
+                      <p className="font-medium text-foreground">{job.experience_level}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Education</p>
-                    <p className="font-medium text-foreground">{job.education}</p>
-                  </div>
-                </div>
+                )}
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
                     <Briefcase className="h-5 w-5 text-primary" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Job Type</p>
-                    <p className="font-medium text-foreground">Full Time</p>
+                    <p className="font-medium text-foreground">{typeConfig.label}</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Job Benefits */}
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Job Benefits</h3>
-              <div className="flex flex-wrap gap-2">
-                {jobBenefits.map((benefit, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1.5 bg-success/10 text-success text-xs rounded-full"
-                  >
-                    {benefit}
-                  </span>
-                ))}
+            {job.benefits && job.benefits.length > 0 && (
+              <div className="bg-card border border-border rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Job Benefits</h3>
+                <div className="flex flex-wrap gap-2">
+                  {job.benefits.map((benefit, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1.5 bg-success/10 text-success text-xs rounded-full"
+                    >
+                      {benefit}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Company Info */}
-            <div className="bg-card border border-border rounded-lg p-6">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 bg-secondary rounded-lg flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={job.companyLogo} 
-                    alt={job.company}
-                    className="w-10 h-10 object-contain"
-                  />
+            {job.companies && (
+              <div className="bg-card border border-border rounded-lg p-6">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-16 h-16 bg-secondary rounded-lg flex items-center justify-center overflow-hidden">
+                    {job.companies.logo_url ? (
+                      <img 
+                        src={job.companies.logo_url} 
+                        alt={job.companies.name}
+                        className="w-10 h-10 object-contain"
+                      />
+                    ) : (
+                      <Building2 className="h-8 w-8 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">{job.companies.name}</h3>
+                    {job.companies.location && (
+                      <p className="text-sm text-muted-foreground">{job.companies.location}</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">{companyInfo.name}</h3>
-                  <p className="text-sm text-muted-foreground">{companyInfo.type}</p>
-                </div>
+                <Link to={`/company/${job.company_id}`}>
+                  <Button variant="outline" className="w-full">
+                    View Company Profile
+                  </Button>
+                </Link>
               </div>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Founded in:</span>
-                  <span className="text-foreground">{companyInfo.founded}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Organization type:</span>
-                  <span className="text-foreground">{companyInfo.organizationType}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Company size:</span>
-                  <span className="text-foreground">{companyInfo.size}</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -289,29 +427,34 @@ Sed lobortis diam tincidunt accumsan faucibus dapibus euismod ante ultricies. Ut
       <Dialog open={showApplyModal} onOpenChange={setShowApplyModal}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Apply Job: {job.title}</DialogTitle>
+            <DialogTitle>Apply for: {job.title}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                Choose Resume
-              </label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="resume1">Professional Resume</SelectItem>
-                  <SelectItem value="resume2">Creative Resume</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-4 p-4 bg-secondary rounded-lg">
+              <div className="w-12 h-12 bg-card rounded-lg flex items-center justify-center overflow-hidden">
+                {job.companies?.logo_url ? (
+                  <img 
+                    src={job.companies.logo_url} 
+                    alt={job.companies?.name}
+                    className="w-8 h-8 object-contain"
+                  />
+                ) : (
+                  <Building2 className="h-6 w-6 text-muted-foreground" />
+                )}
+              </div>
+              <div>
+                <p className="font-medium text-foreground">{job.title}</p>
+                <p className="text-sm text-muted-foreground">{job.companies?.name}</p>
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">
-                Cover Letter
+                Cover Letter (Optional)
               </label>
               <Textarea
-                placeholder="Write down your biography here. Let the employers know who you are..."
+                value={coverLetter}
+                onChange={(e) => setCoverLetter(e.target.value)}
+                placeholder="Write a brief cover letter explaining why you're a great fit for this role..."
                 className="min-h-[150px]"
               />
             </div>
@@ -319,8 +462,13 @@ Sed lobortis diam tincidunt accumsan faucibus dapibus euismod ante ultricies. Ut
               <Button variant="outline" onClick={() => setShowApplyModal(false)}>
                 Cancel
               </Button>
-              <Button className="btn-primary flex-1">
-                Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+              <Button 
+                className="btn-primary flex-1" 
+                onClick={handleApply}
+                disabled={applyForJob.isPending}
+              >
+                {applyForJob.isPending ? "Submitting..." : "Submit Application"}
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </div>
