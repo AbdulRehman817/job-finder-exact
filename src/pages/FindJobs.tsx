@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Search, MapPin, SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, MapPin, SlidersHorizontal, ChevronLeft, ChevronRight, Briefcase, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import Layout from "@/components/layout/Layout";
 import JobCard from "@/components/jobs/JobCard";
 import { useJobs } from "@/hooks/useJobs";
-import { featuredJobs as mockJobs, popularSearches } from "@/data/mockData";
+import { popularSearches } from "@/data/mockData";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -36,13 +36,18 @@ const FindJobs = () => {
     postedDate: job.posted_date,
   }));
 
-  // Use database jobs if available, otherwise fallback to mock
-  const allJobs = transformedJobs.length > 0 ? transformedJobs : mockJobs;
+  // Filter by selected types and location
+  let filteredJobs = transformedJobs;
   
-  // Filter by selected types
-  const filteredJobs = selectedTypes.length > 0
-    ? allJobs.filter((job) => selectedTypes.includes(job.type))
-    : allJobs;
+  if (selectedTypes.length > 0) {
+    filteredJobs = filteredJobs.filter((job) => selectedTypes.includes(job.type));
+  }
+  
+  if (locationTerm) {
+    filteredJobs = filteredJobs.filter((job) => 
+      job.location.toLowerCase().includes(locationTerm.toLowerCase())
+    );
+  }
 
   // Pagination
   const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
@@ -69,29 +74,39 @@ const FindJobs = () => {
     setCurrentPage(1);
   };
 
+  const clearFilters = () => {
+    setSelectedTypes([]);
+    setLocationTerm("");
+    setSearchTerm("");
+    setSearchParams({});
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = selectedTypes.length > 0 || locationTerm || searchTerm;
+
   return (
     <Layout>
-      {/* Breadcrumb */}
-      <div className="bg-secondary py-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent py-8">
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Find Job</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Find Your Dream Job</h1>
           <div className="text-sm text-muted-foreground">
             <Link to="/" className="hover:text-primary">Home</Link>
             <span className="mx-2">/</span>
-            <span className="text-foreground">Find Job</span>
+            <span className="text-foreground">Find Jobs</span>
           </div>
         </div>
       </div>
 
-      {/* Search Section */}
       <div className="container mx-auto px-4 py-8">
-        <div className="bg-card border border-border rounded-lg p-6 mb-8">
+        {/* Search Section */}
+        <div className="bg-card border border-border rounded-xl p-6 mb-8 shadow-sm">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Search by: Job title, Position, Keyword..."
-                className="pl-10 h-12"
+                placeholder="Job title, keyword, company..."
+                className="pl-10 h-12 text-base"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -100,8 +115,8 @@ const FindJobs = () => {
             <div className="relative flex-1">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="City, state or zip code"
-                className="pl-10 h-12"
+                placeholder="City, state or country"
+                className="pl-10 h-12 text-base"
                 value={locationTerm}
                 onChange={(e) => setLocationTerm(e.target.value)}
               />
@@ -113,26 +128,30 @@ const FindJobs = () => {
             >
               <SlidersHorizontal className="h-4 w-4 mr-2" />
               Filters
+              {selectedTypes.length > 0 && (
+                <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {selectedTypes.length}
+                </span>
+              )}
             </Button>
             <Button className="h-12 px-8 btn-primary" onClick={handleSearch}>
-              Find Job
+              Search Jobs
             </Button>
           </div>
 
           {/* Popular Searches */}
           <div className="flex flex-wrap items-center gap-2 mt-4">
-            <span className="text-sm text-muted-foreground">Popular searches:</span>
-            {popularSearches.map((search, index) => (
+            <span className="text-sm text-muted-foreground">Popular:</span>
+            {popularSearches.slice(0, 5).map((search, index) => (
               <button
                 key={index}
                 onClick={() => {
                   setSearchTerm(search);
                   setSearchParams({ q: search });
                 }}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                className="text-sm px-3 py-1 bg-secondary rounded-full text-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
               >
                 {search}
-                {index < popularSearches.length - 1 && <span className="ml-2">,</span>}
               </button>
             ))}
           </div>
@@ -140,108 +159,84 @@ const FindJobs = () => {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="bg-card border border-border rounded-lg p-6 mb-8 animate-fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Job Type */}
-              <div>
-                <h4 className="font-semibold text-foreground mb-4">Job Type</h4>
-                <div className="space-y-3">
-                  {[
-                    { value: "full-time", label: "Full Time" },
-                    { value: "part-time", label: "Part Time" },
-                    { value: "internship", label: "Internship" },
-                    { value: "remote", label: "Remote" },
-                    { value: "contract", label: "Contract" },
-                  ].map((type) => (
-                    <label key={type.value} className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={selectedTypes.includes(type.value)}
-                        onCheckedChange={(checked) => handleTypeChange(type.value, !!checked)}
-                      />
-                      <span className="text-sm text-muted-foreground">{type.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Salary Range */}
-              <div>
-                <h4 className="font-semibold text-foreground mb-4">Salary (yearly)</h4>
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input placeholder="Min: $70,000" className="h-10" />
-                    <Input placeholder="Max: $120,000" className="h-10" />
-                  </div>
-                  {["$10 - $100", "$100 - $1,000", "$1,000 - $10,000", "$10,000 - $100,000", "$100,000 Up"].map((range) => (
-                    <label key={range} className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox />
-                      <span className="text-sm text-muted-foreground">{range}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Experience */}
-              <div>
-                <h4 className="font-semibold text-foreground mb-4">Experience</h4>
-                <div className="space-y-3">
-                  {["Freshers", "1-2 Years", "2-4 Years", "4-6 Years", "6+ Years"].map((exp) => (
-                    <label key={exp} className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox />
-                      <span className="text-sm text-muted-foreground">{exp}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Remote Job */}
-              <div>
-                <h4 className="font-semibold text-foreground mb-4">Remote Job</h4>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <Checkbox
-                    checked={selectedTypes.includes("remote")}
-                    onCheckedChange={(checked) => handleTypeChange("remote", !!checked)}
-                  />
-                  <span className="text-sm text-muted-foreground">Remote Only</span>
-                </label>
-              </div>
+          <div className="bg-card border border-border rounded-xl p-6 mb-8 animate-fade-in">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground">Filter Jobs</h3>
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  <X className="h-4 w-4 mr-1" />
+                  Clear all
+                </Button>
+              )}
             </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setSelectedTypes([]);
-                  setSearchTerm("");
-                  setSearchParams({});
-                }}
-              >
-                Clear Filters
-              </Button>
-              <Button className="btn-primary">Apply Filter</Button>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {[
+                { value: "full-time", label: "Full Time" },
+                { value: "part-time", label: "Part Time" },
+                { value: "internship", label: "Internship" },
+                { value: "remote", label: "Remote" },
+                { value: "contract", label: "Contract" },
+              ].map((type) => (
+                <label
+                  key={type.value}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    selectedTypes.includes(type.value)
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <Checkbox
+                    checked={selectedTypes.includes(type.value)}
+                    onCheckedChange={(checked) => handleTypeChange(type.value, !!checked)}
+                  />
+                  <span className="text-sm font-medium text-foreground">{type.label}</span>
+                </label>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Results Count */}
+        {/* Results Header */}
         <div className="flex items-center justify-between mb-6">
-          <p className="text-muted-foreground">
-            Showing <span className="font-medium text-foreground">{paginatedJobs.length}</span> of{" "}
-            <span className="font-medium text-foreground">{filteredJobs.length}</span> jobs
-          </p>
+          <div>
+            <p className="text-foreground">
+              <span className="font-semibold">{filteredJobs.length}</span> jobs found
+              {searchTerm && <span className="text-muted-foreground"> for "{searchTerm}"</span>}
+            </p>
+          </div>
+          {hasActiveFilters && (
+            <div className="flex items-center gap-2">
+              {selectedTypes.map((type) => (
+                <span
+                  key={type}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary text-sm rounded-full"
+                >
+                  {type.replace("-", " ")}
+                  <button onClick={() => handleTypeChange(type, false)}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Jobs Grid */}
         {isLoading ? (
-          <div className="text-center py-12">
+          <div className="text-center py-16">
             <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
             <p className="mt-4 text-muted-foreground">Loading jobs...</p>
           </div>
         ) : paginatedJobs.length === 0 ? (
-          <div className="text-center py-12">
-            <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <div className="text-center py-16 bg-card border border-border rounded-xl">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Briefcase className="h-8 w-8 text-primary" />
+            </div>
             <h3 className="text-lg font-semibold text-foreground mb-2">No jobs found</h3>
-            <p className="text-muted-foreground">Try adjusting your search or filters</p>
+            <p className="text-muted-foreground mb-6">Try adjusting your search or filters</p>
+            <Button variant="outline" onClick={clearFilters}>
+              Clear Filters
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -253,14 +248,15 @@ const FindJobs = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2">
-            <button
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <Button
+              variant="outline"
+              size="icon"
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="w-10 h-10 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors disabled:opacity-50 disabled:pointer-events-none"
             >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               let pageNum;
               if (totalPages <= 5) {
@@ -273,26 +269,24 @@ const FindJobs = () => {
                 pageNum = currentPage - 2 + i;
               }
               return (
-                <button
+                <Button
                   key={pageNum}
+                  variant={currentPage === pageNum ? "default" : "outline"}
+                  size="icon"
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                    currentPage === pageNum
-                      ? "bg-primary text-primary-foreground"
-                      : "border border-border text-muted-foreground hover:border-primary hover:text-primary"
-                  }`}
                 >
-                  {pageNum < 10 ? `0${pageNum}` : pageNum}
-                </button>
+                  {pageNum}
+                </Button>
               );
             })}
-            <button
+            <Button
+              variant="outline"
+              size="icon"
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="w-10 h-10 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors disabled:opacity-50 disabled:pointer-events-none"
             >
-              <ChevronRight className="h-5 w-5" />
-            </button>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         )}
       </div>
