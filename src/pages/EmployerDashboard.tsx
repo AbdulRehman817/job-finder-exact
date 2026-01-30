@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import {
   Briefcase,
@@ -8,19 +8,18 @@ import {
   MapPin,
   Eye,
   Trash2,
-  Edit,
   Plus,
   CheckCircle,
   XCircle,
   UserCheck,
   Clock,
-  TrendingUp,
-  FileText,
-  ExternalLink,
-  Mail,
   ChevronRight,
   Award,
-  AlertCircle,
+  FileText,
+  Mail,
+  Phone,
+  ExternalLink,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,37 +31,53 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import Layout from "@/components/layout/Layout";
+import ProfileCompletionBanner from "@/components/profile/ProfileCompletionBanner";
 import PostJobForm from "@/components/employer/PostJobForm";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMyJobs, useDeleteJob } from "@/hooks/useJobs";
+import { useMyJobs, useDeleteJob, useUpdateJob } from "@/hooks/useJobs";
 import { useMyCompanies } from "@/hooks/useCompanies";
 import { useJobApplications, useUpdateApplicationStatus } from "@/hooks/useApplications";
 import { useCreateNotification } from "@/hooks/useNotifications";
+import { useEmployerProfileCompletion } from "@/hooks/useProfileCompletion";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const EmployerDashboard = () => {
   const { user, profile, loading, userRole } = useAuth();
   const { data: jobs = [] } = useMyJobs();
   const { data: companies = [] } = useMyCompanies();
   const deleteJob = useDeleteJob();
+  const updateJob = useUpdateJob();
   const updateApplicationStatus = useUpdateApplicationStatus();
   const createNotification = useCreateNotification();
+  const profileCompletion = useEmployerProfileCompletion();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") || "overview";
   const [selectedJobForApps, setSelectedJobForApps] = useState<string | null>(null);
+  const [applicantDetail, setApplicantDetail] = useState<any>(null);
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     type: "shortlist" | "reject" | "hire" | null;
     applicationId: string;
     userId: string;
+    jobId: string;
     jobTitle: string;
+    companyName: string;
     applicantName: string;
-  }>({ open: false, type: null, applicationId: "", userId: "", jobTitle: "", applicantName: "" });
+  }>({ open: false, type: null, applicationId: "", userId: "", jobId: "", jobTitle: "", companyName: "", applicantName: "" });
 
   const { data: applications = [] } = useJobApplications(selectedJobForApps || undefined);
+
+  // Auto-select first job with applications
+  useEffect(() => {
+    if (!selectedJobForApps && jobs.length > 0) {
+      setSelectedJobForApps(jobs[0].id);
+    }
+  }, [jobs, selectedJobForApps]);
 
   if (loading) {
     return (
@@ -83,14 +98,15 @@ const EmployerDashboard = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Get all applications across all jobs for stats
   const activeJobs = jobs.filter(j => j.status === "active").length;
   const totalApplicants = applications.length;
   const pendingApplicants = applications.filter(a => a.status === "pending").length;
+  const hiredApplicants = applications.filter(a => a.status === "hired").length;
 
   const stats = [
     { label: "Active Jobs", value: activeJobs, icon: Briefcase, color: "bg-primary/10 text-primary", subtext: `${jobs.length} total` },
-    { label: "Applicants", value: totalApplicants, icon: Users, color: "bg-emerald-100 text-emerald-600", subtext: `${pendingApplicants} pending` },
+    { label: "Applicants", value: totalApplicants, icon: Users, color: "bg-blue-100 text-blue-600", subtext: `${pendingApplicants} pending` },
+    { label: "Hired", value: hiredApplicants, icon: Award, color: "bg-green-100 text-green-600", subtext: "Candidates" },
     { label: "Companies", value: companies.length, icon: Building2, color: "bg-violet-100 text-violet-600", subtext: "Registered" },
   ];
 
@@ -107,35 +123,45 @@ const EmployerDashboard = () => {
 
   const openConfirmDialog = (
     type: "shortlist" | "reject" | "hire",
-    applicationId: string,
-    userId: string,
-    jobTitle: string,
-    applicantName: string
+    application: any
   ) => {
-    setConfirmDialog({ open: true, type, applicationId, userId, jobTitle, applicantName });
+    const job = jobs.find(j => j.id === application.job_id);
+    const company = companies[0];
+    setConfirmDialog({
+      open: true,
+      type,
+      applicationId: application.id,
+      userId: application.user_id,
+      jobId: application.job_id,
+      jobTitle: job?.title || "Job",
+      companyName: company?.name || "Company",
+      applicantName: application.profiles?.full_name || "Applicant",
+    });
   };
 
   const handleUpdateStatus = async () => {
-    const { type, applicationId, userId, jobTitle } = confirmDialog;
+    const { type, applicationId, userId, jobId, jobTitle, companyName } = confirmDialog;
     if (!type) return;
 
     try {
-      await updateApplicationStatus.mutateAsync({ id: applicationId, status: type === "shortlist" ? "shortlisted" : type === "hire" ? "hired" : "rejected" });
+      const newStatus = type === "shortlist" ? "shortlisted" : type === "hire" ? "hired" : "rejected";
+      await updateApplicationStatus.mutateAsync({ id: applicationId, status: newStatus });
       
+      // Create notification with proper messages
       const notificationMessages = {
         shortlist: {
-          title: "You've been shortlisted! 🎯",
-          message: `Great news! Your application for "${jobTitle}" has been shortlisted. The employer is interested in your profile.`,
+          title: "🎯 You've been Shortlisted!",
+          message: `Congratulations! You have been shortlisted for the position of ${jobTitle} at ${companyName}.\n\nThe recruiter has reviewed your profile and may contact you soon. Please keep an eye on your notifications and messages for further updates.`,
           type: "shortlisted" as const,
         },
         reject: {
           title: "Application Update",
-          message: `We appreciate your interest in "${jobTitle}". Unfortunately, we've decided to move forward with other candidates. Keep applying!`,
+          message: `Your application for ${jobTitle} at ${companyName} was not selected at this time.\n\nThank you for your interest, and we encourage you to apply for other opportunities.`,
           type: "rejected" as const,
         },
         hire: {
-          title: "Congratulations! You're Hired! 🎉",
-          message: `Amazing news! You've been selected for "${jobTitle}". The employer will contact you with next steps soon.`,
+          title: "🎉 Congratulations! You're Hired!",
+          message: `We're excited to inform you that you have been selected and hired for the position of ${jobTitle} at ${companyName}.\n\nThe recruiter will contact you shortly with further details regarding joining, documents, and next steps. Congratulations and welcome aboard!`,
           type: "hired" as const,
         },
       };
@@ -146,17 +172,40 @@ const EmployerDashboard = () => {
         type: config.type,
         title: config.title,
         message: config.message,
-        job_id: selectedJobForApps,
+        job_id: jobId,
         application_id: applicationId,
       });
 
+      // If hired, close the job (remove from listings)
+      if (type === "hire") {
+        await updateJob.mutateAsync({ id: jobId, status: "closed" });
+      }
+
       toast({
-        title: type === "shortlist" ? "Candidate shortlisted" : type === "hire" ? "Candidate hired!" : "Application updated",
+        title: type === "shortlist" ? "Candidate shortlisted" : type === "hire" ? "Candidate hired!" : "Application rejected",
         description: "The candidate has been notified.",
       });
-      setConfirmDialog({ open: false, type: null, applicationId: "", userId: "", jobTitle: "", applicantName: "" });
+      setConfirmDialog({ ...confirmDialog, open: false });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const viewApplicantDetails = async (application: any) => {
+    setApplicantDetail(application);
+    // Get signed URL for resume if exists
+    if (application.profiles?.resume_url || application.resume_url) {
+      try {
+        const resumePath = application.resume_url || application.profiles?.resume_url;
+        const { data } = await supabase.storage
+          .from("resumes")
+          .createSignedUrl(resumePath, 3600);
+        setResumeUrl(data?.signedUrl || null);
+      } catch {
+        setResumeUrl(null);
+      }
+    } else {
+      setResumeUrl(null);
     }
   };
 
@@ -176,38 +225,39 @@ const EmployerDashboard = () => {
   const getAppStatusConfig = (status: string) => {
     switch (status) {
       case "pending":
-        return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", icon: Clock };
+        return { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", icon: Clock, label: "Applied" };
       case "shortlisted":
-        return { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", icon: UserCheck };
+        return { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", icon: UserCheck, label: "Shortlisted" };
       case "rejected":
-        return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", icon: XCircle };
+        return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", icon: XCircle, label: "Rejected" };
       case "hired":
-        return { bg: "bg-green-50", text: "text-green-700", border: "border-green-200", icon: Award };
+        return { bg: "bg-green-50", text: "text-green-700", border: "border-green-200", icon: Award, label: "Hired" };
       default:
-        return { bg: "bg-muted", text: "text-muted-foreground", border: "border-border", icon: Clock };
+        return { bg: "bg-muted", text: "text-muted-foreground", border: "border-border", icon: Clock, label: status };
     }
   };
 
   const selectedJob = jobs.find(j => j.id === selectedJobForApps);
+  const isActionDisabled = (status: string) => status === "hired" || status === "rejected";
 
   const dialogConfig = {
     shortlist: {
       title: "Shortlist Candidate",
-      description: `Are you sure you want to shortlist ${confirmDialog.applicantName} for "${confirmDialog.jobTitle}"? They will receive a notification.`,
+      description: `Are you sure you want to shortlist ${confirmDialog.applicantName} for "${confirmDialog.jobTitle}"?\n\nThey will receive a notification informing them they've been shortlisted.`,
       buttonText: "Shortlist",
       buttonClass: "bg-emerald-600 hover:bg-emerald-700 text-white",
       icon: UserCheck,
     },
     reject: {
       title: "Reject Application",
-      description: `Are you sure you want to reject ${confirmDialog.applicantName}'s application for "${confirmDialog.jobTitle}"? They will receive a notification.`,
+      description: `Are you sure you want to reject ${confirmDialog.applicantName}'s application for "${confirmDialog.jobTitle}"?\n\nThey will receive a notification. This action cannot be undone.`,
       buttonText: "Reject",
       buttonClass: "bg-destructive hover:bg-destructive/90 text-destructive-foreground",
       icon: XCircle,
     },
     hire: {
-      title: "Hire Candidate",
-      description: `Congratulations! You're about to hire ${confirmDialog.applicantName} for "${confirmDialog.jobTitle}". They will receive a notification with this great news!`,
+      title: "🎉 Hire Candidate",
+      description: `Congratulations! You're about to hire ${confirmDialog.applicantName} for "${confirmDialog.jobTitle}"!\n\nThey will receive a notification with this exciting news. The job will be closed and removed from active listings.`,
       buttonText: "Confirm Hire",
       buttonClass: "bg-green-600 hover:bg-green-700 text-white",
       icon: Award,
@@ -229,7 +279,7 @@ const EmployerDashboard = () => {
                   })()}
                   <DialogTitle>{dialogConfig[confirmDialog.type].title}</DialogTitle>
                 </div>
-                <DialogDescription className="pt-2">
+                <DialogDescription className="pt-2 whitespace-pre-line">
                   {dialogConfig[confirmDialog.type].description}
                 </DialogDescription>
               </DialogHeader>
@@ -244,6 +294,129 @@ const EmployerDashboard = () => {
                 >
                   {updateApplicationStatus.isPending ? "Processing..." : dialogConfig[confirmDialog.type].buttonText}
                 </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Applicant Detail Dialog */}
+      <Dialog open={!!applicantDetail} onOpenChange={(open) => !open && setApplicantDetail(null)}>
+        <DialogContent className="max-w-2xl">
+          {applicantDetail && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Applicant Details</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-6 pt-4">
+                {/* Profile Info */}
+                <div className="flex items-start gap-4">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-8 w-8 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold">{applicantDetail.profiles?.full_name || "Applicant"}</h3>
+                    <p className="text-muted-foreground">{applicantDetail.profiles?.title || "Job Seeker"}</p>
+                    {applicantDetail.profiles?.location && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                        <MapPin className="h-3 w-3" />
+                        {applicantDetail.profiles.location}
+                      </p>
+                    )}
+                  </div>
+                  <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border", getAppStatusConfig(applicantDetail.status).bg, getAppStatusConfig(applicantDetail.status).text, getAppStatusConfig(applicantDetail.status).border)}>
+                    {getAppStatusConfig(applicantDetail.status).label}
+                  </div>
+                </div>
+
+                {/* Skills */}
+                {applicantDetail.profiles?.skills?.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Skills</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {applicantDetail.profiles.skills.map((skill: string, i: number) => (
+                        <span key={i} className="px-2 py-1 bg-secondary rounded text-xs">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Experience */}
+                {applicantDetail.profiles?.experience_years !== null && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Experience</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {applicantDetail.profiles.experience_years} years
+                    </p>
+                  </div>
+                )}
+
+                {/* Cover Letter */}
+                {applicantDetail.cover_letter && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Cover Letter</h4>
+                    <div className="p-4 bg-secondary rounded-lg text-sm whitespace-pre-line">
+                      {applicantDetail.cover_letter}
+                    </div>
+                  </div>
+                )}
+
+                {/* Resume */}
+                {resumeUrl && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Resume</h4>
+                    <a href={resumeUrl} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Resume
+                      </Button>
+                    </a>
+                  </div>
+                )}
+
+                {/* Applied Date */}
+                <div className="text-xs text-muted-foreground">
+                  Applied {formatDistanceToNow(new Date(applicantDetail.applied_at), { addSuffix: true })}
+                </div>
+
+                {/* Actions */}
+                {!isActionDisabled(applicantDetail.status) && (
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                      onClick={() => {
+                        setApplicantDetail(null);
+                        openConfirmDialog("shortlist", applicantDetail);
+                      }}
+                      disabled={applicantDetail.status === "shortlisted"}
+                    >
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      Shortlist
+                    </Button>
+                    <Button
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => {
+                        setApplicantDetail(null);
+                        openConfirmDialog("hire", applicantDetail);
+                      }}
+                    >
+                      <Award className="h-4 w-4 mr-2" />
+                      Hire
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        setApplicantDetail(null);
+                        openConfirmDialog("reject", applicantDetail);
+                      }}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reject
+                    </Button>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -285,7 +458,12 @@ const EmployerDashboard = () => {
                   Profile
                 </Button>
               </Link>
-              <Button className="btn-primary" size="sm" onClick={() => setSearchParams({ tab: "post-job" })}>
+              <Button
+                className="btn-primary"
+                size="sm"
+                onClick={() => setSearchParams({ tab: "post-job" })}
+                disabled={!profileCompletion.isComplete}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Post New Job
               </Button>
@@ -295,8 +473,16 @@ const EmployerDashboard = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Profile Completion Banner */}
+        <ProfileCompletionBanner
+          isComplete={profileCompletion.isComplete}
+          missingFields={profileCompletion.missingFields}
+          completionPercentage={profileCompletion.completionPercentage}
+          type="employer"
+        />
+
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {stats.map((stat) => (
             <div
               key={stat.label}
@@ -324,7 +510,6 @@ const EmployerDashboard = () => {
                 value="overview"
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
               >
-                <TrendingUp className="h-4 w-4 mr-2" />
                 Overview
               </TabsTrigger>
               <TabsTrigger
@@ -332,7 +517,7 @@ const EmployerDashboard = () => {
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
               >
                 <Briefcase className="h-4 w-4 mr-2" />
-                My Jobs
+                My Jobs ({jobs.length})
               </TabsTrigger>
               <TabsTrigger
                 value="applications"
@@ -344,6 +529,7 @@ const EmployerDashboard = () => {
               <TabsTrigger
                 value="post-job"
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                disabled={!profileCompletion.isComplete}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Post Job
@@ -353,12 +539,109 @@ const EmployerDashboard = () => {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="mt-0 space-y-6">
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Recent Jobs */}
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                  <h3 className="font-semibold text-foreground">Recent Jobs</h3>
+                  <Button variant="ghost" size="sm" onClick={() => setSearchParams({ tab: "jobs" })}>
+                    View All <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+                {jobs.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Briefcase className="h-6 w-6 text-primary" />
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">No jobs posted yet</p>
+                    <Button
+                      size="sm"
+                      className="btn-primary"
+                      onClick={() => setSearchParams({ tab: "post-job" })}
+                      disabled={!profileCompletion.isComplete}
+                    >
+                      Post a Job
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {jobs.slice(0, 4).map((job) => {
+                      const statusConfig = getStatusConfig(job.status || "active");
+                      return (
+                        <div key={job.id} className="p-4 hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <Link to={`/job/${job.id}`} className="font-medium text-foreground hover:text-primary text-sm truncate block">
+                                {job.title}
+                              </Link>
+                              <p className="text-xs text-muted-foreground">
+                                {job.location} • {job.type}
+                              </p>
+                            </div>
+                            <span className={cn("px-2 py-1 rounded-full text-xs font-medium border capitalize shrink-0", statusConfig.bg, statusConfig.text, statusConfig.border)}>
+                              {job.status}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Applicants */}
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                  <h3 className="font-semibold text-foreground">Recent Applicants</h3>
+                  <Button variant="ghost" size="sm" onClick={() => setSearchParams({ tab: "applications" })}>
+                    View All <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+                {applications.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Users className="h-6 w-6 text-primary" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">No applicants yet</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {applications.slice(0, 4).map((app) => {
+                      const statusConfig = getAppStatusConfig(app.status || "pending");
+                      return (
+                        <div
+                          key={app.id}
+                          className="p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => viewApplicantDetails(app)}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                <User className="h-5 w-5 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm truncate">{app.profiles?.full_name || "Applicant"}</p>
+                                <p className="text-xs text-muted-foreground truncate">{app.profiles?.title || "Job Seeker"}</p>
+                              </div>
+                            </div>
+                            <div className={cn("flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border shrink-0", statusConfig.bg, statusConfig.text, statusConfig.border)}>
+                              {statusConfig.label}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Jobs Tab */}
+          <TabsContent value="jobs" className="mt-0">
             <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-border flex items-center justify-between">
-                <h3 className="font-semibold text-foreground">Recent Jobs</h3>
-                <Button variant="ghost" size="sm" onClick={() => setSearchParams({ tab: "jobs" })}>
-                  View All <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+              <div className="p-4 border-b border-border">
+                <h3 className="font-semibold text-foreground">All Jobs ({jobs.length})</h3>
               </div>
               {jobs.length === 0 ? (
                 <div className="p-12 text-center">
@@ -366,31 +649,36 @@ const EmployerDashboard = () => {
                     <Briefcase className="h-8 w-8 text-primary" />
                   </div>
                   <h4 className="font-semibold text-foreground mb-2">No jobs posted yet</h4>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    Post your first job to start receiving applications
-                  </p>
-                  <Button className="btn-primary" onClick={() => setSearchParams({ tab: "post-job" })}>
+                  <p className="text-sm text-muted-foreground mb-6">Post your first job to start receiving applications</p>
+                  <Button
+                    className="btn-primary"
+                    onClick={() => setSearchParams({ tab: "post-job" })}
+                    disabled={!profileCompletion.isComplete}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Post a Job
                   </Button>
                 </div>
               ) : (
                 <div className="divide-y divide-border">
-                  {jobs.slice(0, 5).map((job) => {
+                  {jobs.map((job) => {
                     const statusConfig = getStatusConfig(job.status || "active");
                     return (
                       <div key={job.id} className="p-4 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-4 min-w-0">
+                          <div className="flex items-center gap-4 min-w-0 flex-1">
                             <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-xl shrink-0">
                               💼
                             </div>
-                            <div className="min-w-0">
-                              <Link to={`/job/${job.id}`} className="font-medium text-foreground hover:text-primary truncate block">
+                            <div className="min-w-0 flex-1">
+                              <Link to={`/job/${job.id}`} className="font-medium text-foreground hover:text-primary">
                                 {job.title}
                               </Link>
                               <p className="text-sm text-muted-foreground">
                                 {job.location} • {job.type}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Posted {formatDistanceToNow(new Date(job.posted_date), { addSuffix: true })}
                               </p>
                             </div>
                           </div>
@@ -407,81 +695,11 @@ const EmployerDashboard = () => {
                               }}
                             >
                               <Users className="h-4 w-4 mr-1" />
-                              View Applicants
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Jobs Tab */}
-          <TabsContent value="jobs" className="mt-0">
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-border flex items-center justify-between">
-                <h3 className="font-semibold text-foreground">All Jobs ({jobs.length})</h3>
-                <Button className="btn-primary" size="sm" onClick={() => setSearchParams({ tab: "post-job" })}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Post New Job
-                </Button>
-              </div>
-              {jobs.length === 0 ? (
-                <div className="p-12 text-center">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Briefcase className="h-8 w-8 text-primary" />
-                  </div>
-                  <h4 className="font-semibold text-foreground mb-2">No jobs posted yet</h4>
-                  <p className="text-sm text-muted-foreground">Post your first job to start hiring</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {jobs.map((job) => {
-                    const statusConfig = getStatusConfig(job.status || "active");
-                    return (
-                      <div key={job.id} className="p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-4 min-w-0 flex-1">
-                            <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center text-2xl shrink-0">
-                              💼
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <Link to={`/job/${job.id}`} className="font-medium text-foreground hover:text-primary">
-                                {job.title}
-                              </Link>
-                              <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {job.location}
-                                </span>
-                                <span className="capitalize">{job.type}</span>
-                                <span>Posted {formatDistanceToNow(new Date(job.posted_date), { addSuffix: true })}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className={cn("px-3 py-1.5 rounded-full text-xs font-medium border capitalize", statusConfig.bg, statusConfig.text, statusConfig.border)}>
-                              {job.status}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setSelectedJobForApps(job.id);
-                                setSearchParams({ tab: "applications" });
-                              }}
-                            >
-                              <Users className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
-                              <Edit className="h-4 w-4" />
+                              Applicants
                             </Button>
                             <Button
                               variant="ghost"
-                              size="icon"
+                              size="sm"
                               onClick={() => handleDeleteJob(job.id)}
                               className="text-destructive hover:text-destructive"
                             >
@@ -498,175 +716,150 @@ const EmployerDashboard = () => {
           </TabsContent>
 
           {/* Applications Tab */}
-          <TabsContent value="applications" className="mt-0 space-y-6">
-            {/* Job Selector */}
-            <div className="bg-card border border-border rounded-xl p-4">
-              <h3 className="font-semibold text-foreground mb-4">Select a Job to View Applicants</h3>
-              {jobs.length === 0 ? (
-                <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-amber-600" />
-                  <p className="text-sm text-amber-700">Post a job first to receive applications.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {jobs.map((job) => (
-                    <button
-                      key={job.id}
-                      onClick={() => setSelectedJobForApps(job.id)}
-                      className={cn(
-                        "p-4 rounded-xl border text-left transition-all",
-                        selectedJobForApps === job.id
-                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                          : "border-border hover:border-primary/50 hover:bg-muted/50"
-                      )}
-                    >
-                      <p className="font-medium text-foreground truncate">{job.title}</p>
-                      <p className="text-sm text-muted-foreground mt-1">{job.location}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Applicants List */}
-            {selectedJob && (
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <div className="p-4 border-b border-border">
-                  <h3 className="font-semibold text-foreground">
-                    Applicants for "{selectedJob.title}" ({applications.length})
-                  </h3>
-                </div>
-                {applications.length === 0 ? (
-                  <div className="p-12 text-center">
-                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Users className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <h4 className="font-semibold text-foreground mb-2">No applicants yet</h4>
-                    <p className="text-sm text-muted-foreground">Share your job posting to attract candidates</p>
+          <TabsContent value="applications" className="mt-0">
+            <div className="grid lg:grid-cols-4 gap-6">
+              {/* Job Selector */}
+              <div className="lg:col-span-1">
+                <div className="bg-card border border-border rounded-xl overflow-hidden sticky top-4">
+                  <div className="p-4 border-b border-border">
+                    <h3 className="font-semibold text-foreground text-sm">Select Job</h3>
                   </div>
-                ) : (
-                  <div className="divide-y divide-border">
-                    {applications.map((app) => {
-                      const statusConfig = getAppStatusConfig(app.status || "pending");
-                      const StatusIcon = statusConfig.icon;
-                      const applicantName = app.profiles?.full_name || "Applicant";
-                      return (
-                        <div key={app.id} className="p-5 hover:bg-muted/50 transition-colors">
-                          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                            <div className="flex items-start gap-4">
-                              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                                {app.profiles?.avatar_url ? (
-                                  <img src={app.profiles.avatar_url} alt="" className="w-14 h-14 rounded-xl object-cover" />
-                                ) : (
+                  <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
+                    {jobs.filter(j => j.status === "active").length === 0 ? (
+                      <p className="p-4 text-sm text-muted-foreground">No active jobs</p>
+                    ) : (
+                      jobs.filter(j => j.status === "active").map((job) => (
+                        <button
+                          key={job.id}
+                          onClick={() => setSelectedJobForApps(job.id)}
+                          className={cn(
+                            "w-full p-3 text-left hover:bg-muted/50 transition-colors",
+                            selectedJobForApps === job.id && "bg-primary/10"
+                          )}
+                        >
+                          <p className="font-medium text-sm truncate">{job.title}</p>
+                          <p className="text-xs text-muted-foreground">{job.location}</p>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Applicants List */}
+              <div className="lg:col-span-3">
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="p-4 border-b border-border">
+                    <h3 className="font-semibold text-foreground">
+                      {selectedJob ? `Applicants for "${selectedJob.title}"` : "Select a job"} ({applications.length})
+                    </h3>
+                  </div>
+                  {applications.length === 0 ? (
+                    <div className="p-12 text-center">
+                      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Users className="h-8 w-8 text-primary" />
+                      </div>
+                      <h4 className="font-semibold text-foreground mb-2">No applicants yet</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Applicants will appear here when they apply for this job
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border">
+                      {applications.map((app) => {
+                        const statusConfig = getAppStatusConfig(app.status || "pending");
+                        const disabled = isActionDisabled(app.status || "pending");
+                        return (
+                          <div key={app.id} className="p-4 hover:bg-muted/50 transition-colors">
+                            <div className="flex items-center justify-between gap-4">
+                              <div
+                                className="flex items-center gap-4 min-w-0 flex-1 cursor-pointer"
+                                onClick={() => viewApplicantDetails(app)}
+                              >
+                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                                   <User className="h-6 w-6 text-primary" />
-                                )}
-                              </div>
-                              <div className="min-w-0">
-                                <h4 className="font-semibold text-foreground">{applicantName}</h4>
-                                <p className="text-sm text-muted-foreground">{app.profiles?.title || "Job Seeker"}</p>
-                                <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
-                                  {app.profiles?.location && (
-                                    <span className="flex items-center gap-1 text-muted-foreground">
-                                      <MapPin className="h-3 w-3" />
-                                      {app.profiles.location}
-                                    </span>
-                                  )}
-                                  {app.profiles?.experience_years && (
-                                    <span className="text-muted-foreground">{app.profiles.experience_years} yrs exp</span>
-                                  )}
-                                  <span className="text-muted-foreground">
-                                    Applied {formatDistanceToNow(new Date(app.applied_at), { addSuffix: true })}
-                                  </span>
                                 </div>
-                                {app.profiles?.skills && app.profiles.skills.length > 0 && (
-                                  <div className="flex flex-wrap gap-1.5 mt-2">
-                                    {app.profiles.skills.slice(0, 4).map((skill, i) => (
-                                      <span key={i} className="px-2 py-0.5 bg-secondary text-xs rounded-md text-muted-foreground">
-                                        {skill}
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium text-foreground">{app.profiles?.full_name || "Applicant"}</p>
+                                  <p className="text-sm text-muted-foreground">{app.profiles?.title || "Job Seeker"}</p>
+                                  <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                    {app.profiles?.location && (
+                                      <span className="flex items-center gap-1">
+                                        <MapPin className="h-3 w-3" />
+                                        {app.profiles.location}
                                       </span>
-                                    ))}
-                                    {app.profiles.skills.length > 4 && (
-                                      <span className="text-xs text-muted-foreground">+{app.profiles.skills.length - 4} more</span>
                                     )}
+                                    {app.profiles?.experience_years !== null && (
+                                      <span>{app.profiles?.experience_years} years exp</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border", statusConfig.bg, statusConfig.text, statusConfig.border)}>
+                                  <statusConfig.icon className="h-3 w-3" />
+                                  {statusConfig.label}
+                                </div>
+                                {!disabled && (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                                      onClick={() => openConfirmDialog("shortlist", app)}
+                                      disabled={app.status === "shortlisted"}
+                                    >
+                                      <UserCheck className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      className="bg-green-600 hover:bg-green-700 text-white"
+                                      onClick={() => openConfirmDialog("hire", app)}
+                                    >
+                                      <Award className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                                      onClick={() => openConfirmDialog("reject", app)}
+                                    >
+                                      <XCircle className="h-4 w-4" />
+                                    </Button>
                                   </div>
                                 )}
                               </div>
                             </div>
-
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 lg:shrink-0">
-                              <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border", statusConfig.bg, statusConfig.text, statusConfig.border)}>
-                                <StatusIcon className="h-3 w-3" />
-                                {app.status === "pending" ? "Pending Review" : app.status?.charAt(0).toUpperCase() + app.status?.slice(1)}
-                              </div>
-                              
-                              {app.status === "pending" && (
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                                    onClick={() => openConfirmDialog("shortlist", app.id, app.user_id, selectedJob.title, applicantName)}
-                                  >
-                                    <UserCheck className="h-4 w-4 mr-1" />
-                                    Shortlist
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-destructive border-destructive/30 hover:bg-destructive/5"
-                                    onClick={() => openConfirmDialog("reject", app.id, app.user_id, selectedJob.title, applicantName)}
-                                  >
-                                    <XCircle className="h-4 w-4 mr-1" />
-                                    Reject
-                                  </Button>
-                                </div>
-                              )}
-                              
-                              {app.status === "shortlisted" && (
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    className="bg-green-600 hover:bg-green-700 text-white"
-                                    onClick={() => openConfirmDialog("hire", app.id, app.user_id, selectedJob.title, applicantName)}
-                                  >
-                                    <Award className="h-4 w-4 mr-1" />
-                                    Hire
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-destructive border-destructive/30 hover:bg-destructive/5"
-                                    onClick={() => openConfirmDialog("reject", app.id, app.user_id, selectedJob.title, applicantName)}
-                                  >
-                                    <XCircle className="h-4 w-4 mr-1" />
-                                    Reject
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
                           </div>
-
-                          {app.cover_letter && (
-                            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                              <p className="text-xs font-medium text-muted-foreground mb-2">Cover Letter</p>
-                              <p className="text-sm text-foreground whitespace-pre-wrap">{app.cover_letter}</p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
+            </div>
           </TabsContent>
 
           {/* Post Job Tab */}
           <TabsContent value="post-job" className="mt-0">
-            <div className="bg-card border border-border rounded-xl p-6">
-              <h3 className="text-xl font-semibold text-foreground mb-6">Post a New Job</h3>
+            {!profileCompletion.isComplete ? (
+              <div className="bg-card border border-border rounded-xl p-12 text-center">
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Building2 className="h-8 w-8 text-amber-600" />
+                </div>
+                <h4 className="font-semibold text-foreground mb-2">Complete Your Profile First</h4>
+                <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+                  Please complete your company profile before posting jobs. This helps candidates learn about your company.
+                </p>
+                <Link to="/profile">
+                  <Button className="btn-primary">
+                    Complete Profile
+                  </Button>
+                </Link>
+              </div>
+            ) : (
               <PostJobForm />
-            </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

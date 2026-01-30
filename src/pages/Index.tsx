@@ -1,15 +1,20 @@
 import { Link } from "react-router-dom";
-import { Search, MapPin, ArrowRight, Briefcase, Building2, Users, FileText, Rocket, Target, CheckCircle } from "lucide-react";
+import { Search, MapPin, ArrowRight, Briefcase, Building2, Users, Rocket, Target, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Layout from "@/components/layout/Layout";
 import JobCard from "@/components/jobs/JobCard";
 import { useJobs } from "@/hooks/useJobs";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const { data: dbJobs = [], isLoading: jobsLoading } = useJobs();
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [locationTerm, setLocationTerm] = useState("");
 
   // Transform database jobs to match the Job interface used by JobCard
   const transformedJobs = dbJobs.map((job) => ({
@@ -27,6 +32,12 @@ const Index = () => {
   }));
 
   const hasJobs = transformedJobs.length > 0;
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.set("q", searchTerm);
+    navigate(`/find-jobs?${params.toString()}`);
+  };
 
   return (
     <Layout>
@@ -56,6 +67,9 @@ const Index = () => {
                   <Input
                     placeholder="Job title, keyword..."
                     className="pl-10 h-12 border-border"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   />
                 </div>
                 <div className="relative flex-1">
@@ -63,13 +77,13 @@ const Index = () => {
                   <Input
                     placeholder="Location"
                     className="pl-10 h-12 border-border"
+                    value={locationTerm}
+                    onChange={(e) => setLocationTerm(e.target.value)}
                   />
                 </div>
-                <Link to="/find-jobs">
-                  <Button className="btn-primary h-12 px-8 w-full md:w-auto">
-                    Search Jobs
-                  </Button>
-                </Link>
+                <Button className="btn-primary h-12 px-8" onClick={handleSearch}>
+                  Search Jobs
+                </Button>
               </div>
 
               {/* Quick stats */}
@@ -208,20 +222,22 @@ const Index = () => {
                 Our job board is growing. Recruiters can post jobs to reach talented candidates, 
                 and job seekers can check back soon for new opportunities.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/signup?type=employer">
-                  <Button className="btn-primary">
-                    <Building2 className="h-4 w-4 mr-2" />
-                    Post a Job
-                  </Button>
-                </Link>
-                <Link to="/signup">
-                  <Button variant="outline">
-                    <Users className="h-4 w-4 mr-2" />
-                    Create Profile
-                  </Button>
-                </Link>
-              </div>
+              {!user && (
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link to="/signup?type=employer">
+                    <Button className="btn-primary">
+                      <Building2 className="h-4 w-4 mr-2" />
+                      Post a Job
+                    </Button>
+                  </Link>
+                  <Link to="/signup">
+                    <Button variant="outline">
+                      <Users className="h-4 w-4 mr-2" />
+                      Create Profile
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -287,20 +303,41 @@ const Index = () => {
                 Ready to Take the Next Step?
               </h2>
               <p className="text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
-                Explore job opportunities or manage your applications from your dashboard.
+                {userRole === "employer" 
+                  ? "Post new job opportunities or manage your applicants from your dashboard."
+                  : "Explore job opportunities or manage your applications from your dashboard."
+                }
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/find-jobs">
-                  <Button variant="secondary" size="lg">
-                    <Search className="h-4 w-4 mr-2" />
-                    Browse Jobs
-                  </Button>
-                </Link>
-                <Link to="/dashboard">
-                  <Button variant="outline" size="lg" className="bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-                    Go to Dashboard
-                  </Button>
-                </Link>
+                {userRole === "employer" ? (
+                  <>
+                    <Link to="/employer-dashboard?tab=post-job">
+                      <Button variant="secondary" size="lg">
+                        <Briefcase className="h-4 w-4 mr-2" />
+                        Post a Job
+                      </Button>
+                    </Link>
+                    <Link to="/employer-dashboard">
+                      <Button variant="outline" size="lg" className="bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+                        Go to Dashboard
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/find-jobs">
+                      <Button variant="secondary" size="lg">
+                        <Search className="h-4 w-4 mr-2" />
+                        Browse Jobs
+                      </Button>
+                    </Link>
+                    <Link to="/dashboard">
+                      <Button variant="outline" size="lg" className="bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+                        Go to Dashboard
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>

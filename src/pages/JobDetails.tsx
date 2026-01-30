@@ -6,15 +6,13 @@ import {
   Briefcase, 
   Calendar, 
   GraduationCap, 
-  Clock,
   Bookmark,
   BookmarkCheck,
   Share2,
   ArrowRight,
   Building2,
   Globe,
-  Users,
-  Phone
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,14 +20,17 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import Layout from "@/components/layout/Layout";
 import JobCard from "@/components/jobs/JobCard";
 import { useJob, useJobs } from "@/hooks/useJobs";
 import { useApplyForJob, useHasApplied } from "@/hooks/useApplications";
 import { useSaveJob, useUnsaveJob, useIsJobSaved } from "@/hooks/useSavedJobs";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCandidateProfileCompletion } from "@/hooks/useProfileCompletion";
 import { useToast } from "@/hooks/use-toast";
 import { jobTypes } from "@/types";
 import { formatDistanceToNow } from "date-fns";
@@ -37,21 +38,23 @@ import { formatDistanceToNow } from "date-fns";
 const JobDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, userRole } = useAuth();
+  const { user, userRole, profile } = useAuth();
   const { toast } = useToast();
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
 
   const { data: job, isLoading } = useJob(id || "");
   const { data: relatedJobs = [] } = useJobs();
   const { data: hasApplied = false } = useHasApplied(id || "");
   const { data: isSaved = false } = useIsJobSaved(id || "");
+  const profileCompletion = useCandidateProfileCompletion();
   
   const applyForJob = useApplyForJob();
   const saveJob = useSaveJob();
   const unsaveJob = useUnsaveJob();
 
-  const handleApply = async () => {
+  const handleApplyClick = () => {
     if (!user) {
       toast({
         title: "Sign in required",
@@ -71,14 +74,25 @@ const JobDetails = () => {
       return;
     }
 
+    // Check profile completion
+    if (!profileCompletion.isComplete) {
+      setShowProfileModal(true);
+      return;
+    }
+
+    setShowApplyModal(true);
+  };
+
+  const handleApply = async () => {
     try {
       await applyForJob.mutateAsync({
         jobId: id!,
         coverLetter: coverLetter || undefined,
+        resumeUrl: profile?.resume_url || undefined,
       });
       toast({
-        title: "Application submitted!",
-        description: "Your application has been sent to the employer.",
+        title: "Application submitted! ✅",
+        description: "You have successfully applied for this job. The recruiter will review your application.",
       });
       setShowApplyModal(false);
       setCoverLetter("");
@@ -153,7 +167,7 @@ const JobDetails = () => {
   // Transform related jobs
   const transformedRelatedJobs = relatedJobs
     .filter((j) => j.id !== job.id)
-    .slice(0, 6)
+    .slice(0, 4)
     .map((j) => ({
       id: j.id,
       title: j.title,
@@ -170,6 +184,52 @@ const JobDetails = () => {
 
   return (
     <Layout>
+      {/* Profile Incomplete Modal */}
+      <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+              </div>
+              <DialogTitle>Complete Your Profile First</DialogTitle>
+            </div>
+            <DialogDescription className="pt-4">
+              To apply for jobs, you need to complete your profile. This helps recruiters learn more about you.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Profile Completion</span>
+                <span className="text-sm text-muted-foreground">{profileCompletion.completionPercentage}%</span>
+              </div>
+              <Progress value={profileCompletion.completionPercentage} className="h-2" />
+            </div>
+            {profileCompletion.missingFields.length > 0 && (
+              <div className="text-sm text-muted-foreground">
+                <p className="font-medium mb-1">Missing information:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  {profileCompletion.missingFields.map((field) => (
+                    <li key={field}>{field}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" onClick={() => setShowProfileModal(false)}>
+                Cancel
+              </Button>
+              <Link to="/profile" className="flex-1">
+                <Button className="btn-primary w-full">
+                  Complete Profile
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Breadcrumb */}
       <div className="bg-secondary py-6">
         <div className="container mx-auto px-4">
@@ -189,82 +249,90 @@ const JobDetails = () => {
           {/* Main Content */}
           <div className="lg:col-span-2">
             {/* Job Header */}
-            <div className="flex flex-col md:flex-row md:items-start gap-6 mb-8">
-              <div className="w-20 h-20 bg-secondary rounded-lg flex items-center justify-center overflow-hidden shrink-0">
-                {job.companies?.logo_url ? (
-                  <img 
-                    src={job.companies.logo_url} 
-                    alt={job.companies.name}
-                    className="w-12 h-12 object-contain"
-                  />
-                ) : (
-                  <Building2 className="h-10 w-10 text-muted-foreground" />
-                )}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h1 className="text-2xl font-bold text-foreground mb-2">
-                      {job.title}
-                    </h1>
-                    <div className="flex flex-wrap items-center gap-3">
-                      {job.featured && <span className="badge-featured">Featured</span>}
-                      <span className={typeConfig.className}>{typeConfig.label}</span>
-                    </div>
-                    {job.companies && (
-                      <Link 
-                        to={`/company/${job.company_id}`}
-                        className="flex items-center gap-2 mt-2 text-sm text-primary hover:underline"
-                      >
-                        <Globe className="h-4 w-4" />
-                        {job.companies.name}
-                      </Link>
-                    )}
+            <div className="bg-card border border-border rounded-xl p-6 mb-6">
+              <div className="flex flex-col md:flex-row md:items-start gap-6">
+                <div className="w-20 h-20 bg-secondary rounded-xl flex items-center justify-center overflow-hidden shrink-0">
+                  {job.companies?.logo_url ? (
+                    <img 
+                      src={job.companies.logo_url} 
+                      alt={job.companies.name}
+                      className="w-12 h-12 object-contain"
+                    />
+                  ) : (
+                    <Building2 className="h-10 w-10 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h1 className="text-2xl font-bold text-foreground mb-2">
+                    {job.title}
+                  </h1>
+                  <div className="flex flex-wrap items-center gap-3 mb-3">
+                    {job.featured && <span className="badge-featured">Featured</span>}
+                    <span className={typeConfig.className}>{typeConfig.label}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={handleSave}
-                      className={isSaved ? "text-primary border-primary" : ""}
+                  {job.companies && (
+                    <Link 
+                      to={`/company/${job.company_id}`}
+                      className="flex items-center gap-2 text-sm text-primary hover:underline"
                     >
-                      {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <Share2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                      <Globe className="h-4 w-4" />
+                      {job.companies.name}
+                    </Link>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={handleSave}
+                    className={isSaved ? "text-primary border-primary" : ""}
+                  >
+                    {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+                  </Button>
+                  <Button variant="outline" size="icon">
+                    <Share2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-              <div className="text-right">
-                {hasApplied ? (
-                  <Button disabled className="h-12 px-8">
-                    Already Applied
-                  </Button>
-                ) : userRole === "employer" ? (
-                  <Button disabled className="h-12 px-8">
-                    Employers can't apply
-                  </Button>
-                ) : (
-                  <Button 
-                    className="btn-primary h-12 px-8"
-                    onClick={() => setShowApplyModal(true)}
-                  >
-                    Apply Now <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                )}
-                {job.expiry_date && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Expires: <span className="text-destructive">
-                      {new Date(job.expiry_date).toLocaleDateString()}
-                    </span>
-                  </p>
-                )}
+              
+              <div className="mt-6 pt-6 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    {job.location}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <DollarSign className="h-4 w-4" />
+                    {salaryDisplay}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {formatDistanceToNow(new Date(job.posted_date), { addSuffix: true })}
+                  </span>
+                </div>
+                <div>
+                  {hasApplied ? (
+                    <Button disabled className="h-11 px-6">
+                      ✅ Already Applied
+                    </Button>
+                  ) : userRole === "employer" ? (
+                    <Button disabled className="h-11 px-6">
+                      Employers can't apply
+                    </Button>
+                  ) : (
+                    <Button 
+                      className="btn-primary h-11 px-6"
+                      onClick={handleApplyClick}
+                    >
+                      Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Job Description */}
-            <div className="bg-card border border-border rounded-lg p-6 mb-6">
+            <div className="bg-card border border-border rounded-xl p-6 mb-6">
               <h2 className="text-xl font-semibold text-foreground mb-4">Job Description</h2>
               <div className="text-muted-foreground leading-relaxed whitespace-pre-line">
                 {job.description}
@@ -273,7 +341,7 @@ const JobDetails = () => {
 
             {/* Requirements */}
             {job.requirements && job.requirements.length > 0 && (
-              <div className="bg-card border border-border rounded-lg p-6 mb-6">
+              <div className="bg-card border border-border rounded-xl p-6 mb-6">
                 <h2 className="text-xl font-semibold text-foreground mb-4">Requirements</h2>
                 <ul className="space-y-2">
                   {job.requirements.map((item, index) => (
@@ -288,7 +356,7 @@ const JobDetails = () => {
 
             {/* Responsibilities */}
             {job.responsibilities && job.responsibilities.length > 0 && (
-              <div className="bg-card border border-border rounded-lg p-6 mb-6">
+              <div className="bg-card border border-border rounded-xl p-6 mb-6">
                 <h2 className="text-xl font-semibold text-foreground mb-4">Responsibilities</h2>
                 <ul className="space-y-2">
                   {job.responsibilities.map((item, index) => (
@@ -317,7 +385,7 @@ const JobDetails = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Job Overview */}
-            <div className="bg-card border border-border rounded-lg p-6">
+            <div className="bg-card border border-border rounded-xl p-6">
               <h3 className="text-lg font-semibold text-foreground mb-6">Job Overview</h3>
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
@@ -327,7 +395,6 @@ const JobDetails = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Salary (USD)</p>
                     <p className="font-medium text-foreground">{salaryDisplay}</p>
-                    <p className="text-xs text-muted-foreground">Yearly salary</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -335,19 +402,17 @@ const JobDetails = () => {
                     <MapPin className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Job Location</p>
+                    <p className="text-sm text-muted-foreground">Location</p>
                     <p className="font-medium text-foreground">{job.location}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                    <Calendar className="h-5 w-5 text-primary" />
+                    <Briefcase className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Posted</p>
-                    <p className="font-medium text-foreground">
-                      {formatDistanceToNow(new Date(job.posted_date), { addSuffix: true })}
-                    </p>
+                    <p className="text-sm text-muted-foreground">Job Type</p>
+                    <p className="font-medium text-foreground">{typeConfig.label}</p>
                   </div>
                 </div>
                 {job.experience_level && (
@@ -363,11 +428,13 @@ const JobDetails = () => {
                 )}
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                    <Briefcase className="h-5 w-5 text-primary" />
+                    <Calendar className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Job Type</p>
-                    <p className="font-medium text-foreground">{typeConfig.label}</p>
+                    <p className="text-sm text-muted-foreground">Posted</p>
+                    <p className="font-medium text-foreground">
+                      {formatDistanceToNow(new Date(job.posted_date), { addSuffix: true })}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -375,13 +442,13 @@ const JobDetails = () => {
 
             {/* Job Benefits */}
             {job.benefits && job.benefits.length > 0 && (
-              <div className="bg-card border border-border rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Job Benefits</h3>
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Benefits</h3>
                 <div className="flex flex-wrap gap-2">
                   {job.benefits.map((benefit, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1.5 bg-success/10 text-success text-xs rounded-full"
+                      className="px-3 py-1.5 bg-green-50 text-green-700 text-xs rounded-full border border-green-200"
                     >
                       {benefit}
                     </span>
@@ -392,9 +459,9 @@ const JobDetails = () => {
 
             {/* Company Info */}
             {job.companies && (
-              <div className="bg-card border border-border rounded-lg p-6">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 bg-secondary rounded-lg flex items-center justify-center overflow-hidden">
+              <div className="bg-card border border-border rounded-xl p-6">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-14 h-14 bg-secondary rounded-lg flex items-center justify-center overflow-hidden">
                     {job.companies.logo_url ? (
                       <img 
                         src={job.companies.logo_url} 
@@ -402,7 +469,7 @@ const JobDetails = () => {
                         className="w-10 h-10 object-contain"
                       />
                     ) : (
-                      <Building2 className="h-8 w-8 text-muted-foreground" />
+                      <Building2 className="h-7 w-7 text-muted-foreground" />
                     )}
                   </div>
                   <div>
@@ -447,28 +514,39 @@ const JobDetails = () => {
                 <p className="text-sm text-muted-foreground">{job.companies?.name}</p>
               </div>
             </div>
+
+            {/* Profile Summary */}
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm font-medium text-green-800 mb-1">Your Profile</p>
+              <p className="text-sm text-green-700">
+                {profile?.full_name} • {profile?.title || "Job Seeker"}
+              </p>
+              {profile?.resume_url && (
+                <p className="text-xs text-green-600 mt-1">✅ Resume attached</p>
+              )}
+            </div>
+
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">
                 Cover Letter (Optional)
               </label>
               <Textarea
+                placeholder="Tell the employer why you're a great fit for this role..."
                 value={coverLetter}
                 onChange={(e) => setCoverLetter(e.target.value)}
-                placeholder="Write a brief cover letter explaining why you're a great fit for this role..."
-                className="min-h-[150px]"
+                className="min-h-[120px]"
               />
             </div>
-            <div className="flex gap-3 pt-4">
-              <Button variant="outline" onClick={() => setShowApplyModal(false)}>
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" onClick={() => setShowApplyModal(false)} className="flex-1">
                 Cancel
               </Button>
               <Button 
-                className="btn-primary flex-1" 
+                className="btn-primary flex-1"
                 onClick={handleApply}
                 disabled={applyForJob.isPending}
               >
                 {applyForJob.isPending ? "Submitting..." : "Submit Application"}
-                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </div>

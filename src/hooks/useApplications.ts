@@ -133,6 +133,8 @@ export const useApplyForJob = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["job-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["has-applied"] });
     },
   });
 };
