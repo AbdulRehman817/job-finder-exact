@@ -20,6 +20,10 @@ import {
   Phone,
   ExternalLink,
   Download,
+  Globe,
+  Linkedin,
+  Github,
+  Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,12 +37,14 @@ import {
 import Layout from "@/components/layout/Layout";
 import ProfileCompletionBanner from "@/components/profile/ProfileCompletionBanner";
 import PostJobForm from "@/components/employer/PostJobForm";
+import CompanyProfileForm from "@/components/company/CompanyProfileForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyJobs, useDeleteJob, useUpdateJob } from "@/hooks/useJobs";
 import { useMyCompanies } from "@/hooks/useCompanies";
 import { useJobApplications, useUpdateApplicationStatus } from "@/hooks/useApplications";
 import { useCreateNotification } from "@/hooks/useNotifications";
 import { useEmployerProfileCompletion } from "@/hooks/useProfileCompletion";
+import { sendNotificationEmail } from "@/hooks/useEmailNotification";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -59,6 +65,7 @@ const EmployerDashboard = () => {
   const [selectedJobForApps, setSelectedJobForApps] = useState<string | null>(null);
   const [applicantDetail, setApplicantDetail] = useState<any>(null);
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+  const [editingCompany, setEditingCompany] = useState<any>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     type: "shortlist" | "reject" | "hire" | null;
@@ -68,7 +75,8 @@ const EmployerDashboard = () => {
     jobTitle: string;
     companyName: string;
     applicantName: string;
-  }>({ open: false, type: null, applicationId: "", userId: "", jobId: "", jobTitle: "", companyName: "", applicantName: "" });
+    applicantEmail: string;
+  }>({ open: false, type: null, applicationId: "", userId: "", jobId: "", jobTitle: "", companyName: "", applicantName: "", applicantEmail: "" });
 
   const { data: applications = [] } = useJobApplications(selectedJobForApps || undefined);
 
@@ -121,12 +129,22 @@ const EmployerDashboard = () => {
     }
   };
 
-  const openConfirmDialog = (
+  const openConfirmDialog = async (
     type: "shortlist" | "reject" | "hire",
     application: any
   ) => {
     const job = jobs.find(j => j.id === application.job_id);
     const company = companies[0];
+    
+    // Fetch applicant email
+    let applicantEmail = "";
+    try {
+      const { data } = await supabase.auth.admin.getUserById(application.user_id);
+      applicantEmail = data?.user?.email || "";
+    } catch {
+      // Fallback - email not available
+    }
+    
     setConfirmDialog({
       open: true,
       type,
@@ -136,11 +154,12 @@ const EmployerDashboard = () => {
       jobTitle: job?.title || "Job",
       companyName: company?.name || "Company",
       applicantName: application.profiles?.full_name || "Applicant",
+      applicantEmail,
     });
   };
 
   const handleUpdateStatus = async () => {
-    const { type, applicationId, userId, jobId, jobTitle, companyName } = confirmDialog;
+    const { type, applicationId, userId, jobId, jobTitle, companyName, applicantName, applicantEmail } = confirmDialog;
     if (!type) return;
 
     try {
@@ -175,6 +194,17 @@ const EmployerDashboard = () => {
         job_id: jobId,
         application_id: applicationId,
       });
+
+      // Send email notification (fire and forget)
+      if (applicantEmail) {
+        sendNotificationEmail({
+          to: applicantEmail,
+          type: config.type as "shortlisted" | "hired" | "rejected",
+          jobTitle,
+          companyName,
+          candidateName: applicantName,
+        }).catch(console.error);
+      }
 
       // If hired, close the job (remove from listings)
       if (type === "hire") {
