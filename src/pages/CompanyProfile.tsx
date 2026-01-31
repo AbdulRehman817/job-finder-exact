@@ -6,20 +6,25 @@ import {
   Calendar,
   Building2,
   Briefcase,
-  Mail,
-  Phone,
   ExternalLink,
+  Linkedin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
-import JobCard from "@/components/jobs/JobCard";
 import { useCompany, useCompanyJobs } from "@/hooks/useCompanies";
+import { useAuth } from "@/contexts/AuthContext";
 import { jobTypes } from "@/types";
 
 const CompanyProfile = () => {
   const { id } = useParams<{ id: string }>();
   const { data: company, isLoading: companyLoading } = useCompany(id || "");
   const { data: jobs = [], isLoading: jobsLoading } = useCompanyJobs(id || "");
+  const { user, userRole } = useAuth();
+
+  // Check if the current user is the owner of this company
+  const isOwner = user && company && company.user_id === user.id;
+  // Job seekers should not see contact information
+  const showContactInfo = userRole === "employer" || isOwner;
 
   if (companyLoading) {
     return (
@@ -232,70 +237,71 @@ const CompanyProfile = () => {
               </div>
             </div>
 
-            {/* Contact Info */}
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-6">Contact Information</h3>
-              <div className="space-y-4">
-                {company.email && (
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-5 w-5 text-muted-foreground" />
-                    <a href={`mailto:${company.email}`} className="text-primary hover:underline">
-                      {company.email}
-                    </a>
-                  </div>
-                )}
-                {company.phone && (
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-5 w-5 text-muted-foreground" />
-                    <a href={`tel:${company.phone}`} className="text-primary hover:underline">
-                      {company.phone}
-                    </a>
-                  </div>
-                )}
-                {company.website && (
-                  <div className="flex items-center gap-3">
-                    <Globe className="h-5 w-5 text-muted-foreground" />
-                    <a
-                      href={company.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      {company.website.replace(/^https?:\/\//, "")}
-                    </a>
+            {/* Contact Info - Only show to employers or company owners */}
+            {showContactInfo && (company.email || company.phone || company.website) && (
+              <div className="bg-card border border-border rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-6">Contact Information</h3>
+                <div className="space-y-4">
+                  {company.email && (
+                    <div className="flex items-center gap-3">
+                      <Globe className="h-5 w-5 text-muted-foreground" />
+                      <a href={`mailto:${company.email}`} className="text-primary hover:underline">
+                        {company.email}
+                      </a>
+                    </div>
+                  )}
+                  {company.phone && (
+                    <div className="flex items-center gap-3">
+                      <Globe className="h-5 w-5 text-muted-foreground" />
+                      <a href={`tel:${company.phone}`} className="text-primary hover:underline">
+                        {company.phone}
+                      </a>
+                    </div>
+                  )}
+                  {company.website && (
+                    <div className="flex items-center gap-3">
+                      <Globe className="h-5 w-5 text-muted-foreground" />
+                      <a
+                        href={company.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        {company.website.replace(/^https?:\/\//, "")}
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {/* Social Links */}
+                {(company.linkedin_url || company.twitter_url) && (
+                  <div className="mt-6 pt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground mb-3">Follow us</p>
+                    <div className="flex gap-2">
+                      {company.linkedin_url && (
+                        <a
+                          href={company.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                        >
+                          <Linkedin className="h-4 w-4" />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
+            )}
 
-              {/* Social Links */}
-              {(company.linkedin_url || company.twitter_url) && (
-                <div className="mt-6 pt-4 border-t border-border">
-                  <p className="text-sm text-muted-foreground mb-3">Follow us</p>
-                  <div className="flex gap-2">
-                    {company.linkedin_url && (
-                      <a
-                        href={company.linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
-                      >
-                        in
-                      </a>
-                    )}
-                    {company.twitter_url && (
-                      <a
-                        href={company.twitter_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
-                      >
-                        𝕏
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Message for job seekers */}
+            {!showContactInfo && (
+              <div className="bg-muted/50 border border-border rounded-lg p-4">
+                <p className="text-sm text-muted-foreground text-center">
+                  📧 Apply through job listings to contact this company
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

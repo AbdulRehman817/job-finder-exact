@@ -9,7 +9,7 @@ import {
   GraduationCap,
   Globe,
   Linkedin,
-  Twitter,
+  Github,
   Save,
   Upload,
   Camera,
@@ -49,7 +49,7 @@ const Profile = () => {
     experience_years: 0,
     website: "",
     linkedin_url: "",
-    twitter_url: "",
+    github_url: "",
   });
 
   // Initialize form data when profile loads
@@ -66,7 +66,7 @@ const Profile = () => {
         experience_years: profile.experience_years || 0,
         website: profile.website || "",
         linkedin_url: profile.linkedin_url || "",
-        twitter_url: profile.twitter_url || "",
+        github_url: (profile as any).github_url || "",
       });
 
       // Load resume URL if exists
@@ -89,6 +89,11 @@ const Profile = () => {
 
   if (!user) {
     return <Navigate to="/signin" replace />;
+  }
+
+  // Redirect employers to their own profile page
+  if (userRole === "employer") {
+    return <Navigate to="/employer-dashboard?tab=overview" replace />;
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -137,7 +142,6 @@ const Profile = () => {
           experience_years: Number(formData.experience_years),
           website: formData.website,
           linkedin_url: formData.linkedin_url,
-          twitter_url: formData.twitter_url,
         })
         .eq("user_id", user.id);
 
@@ -169,30 +173,28 @@ const Profile = () => {
               <div className="text-sm text-muted-foreground">
                 <Link to="/" className="hover:text-primary">Home</Link>
                 <span className="mx-2">/</span>
-                <Link to={userRole === "employer" ? "/employer-dashboard" : "/dashboard"} className="hover:text-primary">
+                <Link to="/dashboard" className="hover:text-primary">
                   Dashboard
                 </Link>
                 <span className="mx-2">/</span>
                 <span className="text-foreground">Profile</span>
               </div>
             </div>
-            {userRole === "candidate" && (
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Profile Completion</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Progress value={profileCompletion.completionPercentage} className="h-2 w-24" />
-                    <span className="text-sm font-medium">{profileCompletion.completionPercentage}%</span>
-                  </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Profile Completion</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Progress value={profileCompletion.completionPercentage} className="h-2 w-24" />
+                  <span className="text-sm font-medium">{profileCompletion.completionPercentage}%</span>
                 </div>
-                {profileCompletion.isComplete && (
-                  <div className="flex items-center gap-1 text-green-600">
-                    <CheckCircle className="h-5 w-5" />
-                    <span className="text-sm font-medium">Complete</span>
-                  </div>
-                )}
               </div>
-            )}
+              {profileCompletion.isComplete && (
+                <div className="flex items-center gap-1 text-green-600">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="text-sm font-medium">Complete</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -245,7 +247,7 @@ const Profile = () => {
                         value={formData.title}
                         onChange={handleInputChange}
                         placeholder="Software Developer"
-                        required={userRole === "candidate"}
+                        required
                       />
                     </div>
                   </div>
@@ -282,7 +284,7 @@ const Profile = () => {
                     value={formData.location}
                     onChange={handleInputChange}
                     placeholder="New York, USA"
-                    required={userRole === "candidate"}
+                    required
                   />
                 </div>
               </div>
@@ -304,7 +306,7 @@ const Profile = () => {
                     onChange={handleInputChange}
                     placeholder="Tell us about yourself..."
                     className="min-h-[120px]"
-                    required={userRole === "candidate"}
+                    required
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -316,7 +318,7 @@ const Profile = () => {
                       value={formData.skills}
                       onChange={handleInputChange}
                       placeholder="React, TypeScript, Node.js"
-                      required={userRole === "candidate"}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -344,7 +346,7 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Social Links */}
+            {/* Social Links - GitHub instead of Twitter */}
             <div className="bg-card border border-border rounded-xl p-6 md:p-8">
               <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
                 <Globe className="h-5 w-5 text-primary" />
@@ -352,7 +354,10 @@ const Profile = () => {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
+                  <Label htmlFor="website" className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    Website
+                  </Label>
                   <Input
                     id="website"
                     name="website"
@@ -362,7 +367,10 @@ const Profile = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="linkedin_url">LinkedIn</Label>
+                  <Label htmlFor="linkedin_url" className="flex items-center gap-2">
+                    <Linkedin className="h-4 w-4" />
+                    LinkedIn
+                  </Label>
                   <Input
                     id="linkedin_url"
                     name="linkedin_url"
@@ -372,115 +380,98 @@ const Profile = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="twitter_url">Twitter</Label>
+                  <Label htmlFor="github_url" className="flex items-center gap-2">
+                    <Github className="h-4 w-4" />
+                    GitHub
+                  </Label>
                   <Input
-                    id="twitter_url"
-                    name="twitter_url"
-                    value={formData.twitter_url}
+                    id="github_url"
+                    name="github_url"
+                    value={formData.github_url}
                     onChange={handleInputChange}
-                    placeholder="https://twitter.com/username"
+                    placeholder="https://github.com/username"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Resume Upload - Only for candidates */}
-            {userRole === "candidate" && (
-              <div className="bg-card border border-border rounded-xl p-6 md:p-8">
-                <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  Resume *
-                </h3>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleResumeUpload}
-                  accept=".pdf,.doc,.docx"
-                  className="hidden"
-                />
-                {profile?.resume_url ? (
-                  <div className="border-2 border-primary/20 bg-primary/5 rounded-lg p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                          <FileText className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">Resume uploaded</p>
-                          <p className="text-sm text-muted-foreground">PDF or Word document</p>
-                        </div>
+            {/* Resume Upload */}
+            <div className="bg-card border border-border rounded-xl p-6 md:p-8">
+              <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Resume *
+              </h3>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleResumeUpload}
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+              />
+              {profile?.resume_url ? (
+                <div className="border-2 border-primary/20 bg-primary/5 rounded-lg p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                        <FileText className="h-6 w-6 text-primary" />
                       </div>
-                      <div className="flex gap-2">
-                        {resumeUrl && (
-                          <a href={resumeUrl} target="_blank" rel="noopener noreferrer">
-                            <Button type="button" variant="outline" size="sm">
-                              <Download className="h-4 w-4 mr-2" />
-                              View
-                            </Button>
-                          </a>
-                        )}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploading}
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Replace
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleDeleteResume}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div>
+                        <p className="font-medium text-foreground">Resume uploaded</p>
+                        <p className="text-sm text-muted-foreground">PDF or Word document</p>
                       </div>
                     </div>
+                    <div className="flex gap-2">
+                      {resumeUrl && (
+                        <a href={resumeUrl} target="_blank" rel="noopener noreferrer" download>
+                          <Button type="button" variant="outline" size="sm">
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        </a>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Replace
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDeleteResume}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                ) : (
-                  <div
-                    className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                    <p className="font-medium text-foreground mb-1">
-                      {uploading ? "Uploading..." : "Click to upload your resume"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      PDF or Word document (max 10MB)
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-4"
-                      disabled={uploading}
-                    >
-                      {uploading ? "Uploading..." : "Select File"}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
+                </div>
+              ) : (
+                <div
+                  className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="font-medium text-foreground mb-1">
+                    {uploading ? "Uploading..." : "Click to upload your resume"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    PDF or Word document (max 10MB)
+                  </p>
+                </div>
+              )}
+            </div>
 
-            {/* Save Button */}
+            {/* Submit Button */}
             <div className="flex justify-end">
               <Button type="submit" className="btn-primary" disabled={saving}>
-                {saving ? (
-                  <>
-                    <div className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full mr-2" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Changes
-                  </>
-                )}
+                <Save className="h-4 w-4 mr-2" />
+                {saving ? "Saving..." : "Save Profile"}
               </Button>
             </div>
           </form>

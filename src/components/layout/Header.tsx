@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 
 const Header = () => {
   const location = useLocation();
@@ -75,8 +76,9 @@ const Header = () => {
             </nav>
           </div>
 
-          {/* Right side */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            
             {user ? (
               <>
                 <NotificationDropdown />
