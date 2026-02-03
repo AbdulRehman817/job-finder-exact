@@ -34,6 +34,7 @@ import { useCandidateProfileCompletion } from "@/hooks/useProfileCompletion";
 import { useToast } from "@/hooks/use-toast";
 import { jobTypes } from "@/types";
 import { formatDistanceToNow } from "date-fns";
+import { formatSalaryRange } from "@/lib/formatters";
 
 const JobDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -160,9 +161,7 @@ const JobDetails = () => {
   }
 
   const typeConfig = jobTypes[job.type as keyof typeof jobTypes] || jobTypes["full-time"];
-  const salaryDisplay = job.salary_min && job.salary_max
-    ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}`
-    : "Competitive";
+  const salaryDisplay = formatSalaryRange(job.salary_min, job.salary_max, job.salary_currency);
 
   // Transform related jobs
   const transformedRelatedJobs = relatedJobs
@@ -175,7 +174,7 @@ const JobDetails = () => {
       companyLogo: j.companies?.logo_url || "",
       location: j.location,
       salary: j.salary_min && j.salary_max 
-        ? `$${j.salary_min.toLocaleString()} - $${j.salary_max.toLocaleString()}`
+        ? formatSalaryRange(j.salary_min, j.salary_max, j.salary_currency)
         : "Competitive",
       type: j.type as "full-time" | "part-time" | "internship" | "remote" | "contract",
       featured: j.featured || false,
@@ -189,7 +188,7 @@ const JobDetails = () => {
         <DialogContent>
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 rounded-lg">
+              <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-lg">
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
               </div>
               <DialogTitle>Complete Your Profile First</DialogTitle>
@@ -231,7 +230,7 @@ const JobDetails = () => {
       </Dialog>
 
       {/* Breadcrumb */}
-      <div className="bg-secondary py-6">
+      <div className="bg-secondary/70 py-6">
         <div className="container mx-auto px-4">
           <h1 className="text-2xl font-bold text-foreground mb-2">Job Details</h1>
           <div className="text-sm text-muted-foreground">
@@ -393,7 +392,9 @@ const JobDetails = () => {
                     <DollarSign className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Salary (USD)</p>
+                    <p className="text-sm text-muted-foreground">
+                      Salary ({job.salary_currency || "USD"})
+                    </p>
                     <p className="font-medium text-foreground">{salaryDisplay}</p>
                   </div>
                 </div>
@@ -448,7 +449,7 @@ const JobDetails = () => {
                   {job.benefits.map((benefit, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1.5 bg-green-50 text-green-700 text-xs rounded-full border border-green-200"
+                      className="px-3 py-1.5 bg-green-50 text-green-700 text-xs rounded-full border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800"
                     >
                       {benefit}
                     </span>
@@ -516,7 +517,7 @@ const JobDetails = () => {
             </div>
 
             {/* Profile Summary */}
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg dark:bg-green-900/30 dark:border-green-800">
               <p className="text-sm font-medium text-green-800 mb-1">Your Profile</p>
               <p className="text-sm text-green-700">
                 {profile?.full_name} • {profile?.title || "Job Seeker"}

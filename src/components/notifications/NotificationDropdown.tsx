@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Bell, Check, CheckCheck, Trash2 } from "lucide-react";
+import { Bell, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,21 +35,6 @@ const NotificationDropdown = () => {
         return "📩";
       default:
         return "🔔";
-    }
-  };
-
-  const getNotificationColor = (type: string) => {
-    switch (type) {
-      case "shortlisted":
-        return "bg-blue-100 text-blue-700";
-      case "rejected":
-        return "bg-red-100 text-red-700";
-      case "hired":
-        return "bg-green-100 text-green-700";
-      case "application_received":
-        return "bg-purple-100 text-purple-700";
-      default:
-        return "bg-muted text-muted-foreground";
     }
   };
 

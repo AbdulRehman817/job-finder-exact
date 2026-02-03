@@ -17,11 +17,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useJobs } from "@/hooks/useJobs";
-import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { formatSalaryRange } from "@/lib/formatters";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -38,9 +45,9 @@ const FindJobs = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
-  const [locationTerm, setLocationTerm] = useState("");
+  const [locationTerm, setLocationTerm] = useState(searchParams.get("location") || "");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const { userRole } = useAuth();
+  const [sortOption, setSortOption] = useState("newest");
 
   const { data: dbJobs = [], isLoading } = useJobs({ search: searchTerm });
 
@@ -54,6 +61,7 @@ const FindJobs = () => {
     location: job.location,
     salary_min: job.salary_min,
     salary_max: job.salary_max,
+    salary_currency: job.salary_currency,
     type: job.type as "full-time" | "part-time" | "internship" | "remote" | "contract",
     featured: job.featured || false,
     postedDate: job.posted_date,
@@ -73,9 +81,22 @@ const FindJobs = () => {
     );
   }
 
+  const sortedJobs = [...filteredJobs].sort((a, b) => {
+    if (sortOption === "newest") {
+      return new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime();
+    }
+    if (sortOption === "salary-high") {
+      return (b.salary_max || 0) - (a.salary_max || 0);
+    }
+    if (sortOption === "salary-low") {
+      return (a.salary_min || 0) - (b.salary_min || 0);
+    }
+    return 0;
+  });
+
   // Pagination
-  const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
-  const paginatedJobs = filteredJobs.slice(
+  const totalPages = Math.ceil(sortedJobs.length / ITEMS_PER_PAGE);
+  const paginatedJobs = sortedJobs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -90,11 +111,10 @@ const FindJobs = () => {
   };
 
   const handleSearch = () => {
-    if (searchTerm) {
-      setSearchParams({ q: searchTerm });
-    } else {
-      setSearchParams({});
-    }
+    const params: Record<string, string> = {};
+    if (searchTerm) params.q = searchTerm;
+    if (locationTerm) params.location = locationTerm;
+    setSearchParams(params);
     setCurrentPage(1);
   };
 
@@ -108,12 +128,8 @@ const FindJobs = () => {
 
   const hasActiveFilters = selectedTypes.length > 0 || locationTerm || searchTerm;
 
-  const formatSalary = (min: number | null, max: number | null) => {
-    if (!min && !max) return "Competitive";
-    if (min && max) return `$${(min/1000).toFixed(0)}k - $${(max/1000).toFixed(0)}k`;
-    if (min) return `$${(min/1000).toFixed(0)}k+`;
-    return `Up to $${(max!/1000).toFixed(0)}k`;
-  };
+  const formatSalary = (min: number | null, max: number | null, currency?: string | null) =>
+    formatSalaryRange(min, max, currency);
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,7 +148,7 @@ const FindJobs = () => {
           </div>
           
           {/* Search Box */}
-          <div className="max-w-4xl mx-auto bg-card rounded-2xl shadow-lg border border-border p-4">
+          <div className="max-w-4xl mx-auto bg-card/90 backdrop-blur rounded-2xl shadow-soft border border-border p-4">
             <div className="flex flex-col lg:flex-row gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -169,7 +185,7 @@ const FindJobs = () => {
             "lg:w-72 shrink-0",
             showFilters ? "block" : "hidden lg:block"
           )}>
-            <div className="bg-card border border-border rounded-xl p-6 sticky top-24">
+            <div className="bg-card border border-border rounded-2xl p-6 sticky top-24">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
                   <SlidersHorizontal className="h-4 w-4" />
@@ -236,28 +252,48 @@ const FindJobs = () => {
             </div>
 
             {/* Results Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div>
                 <p className="text-foreground">
                   <span className="font-semibold">{filteredJobs.length}</span> jobs found
                   {searchTerm && <span className="text-muted-foreground"> for "{searchTerm}"</span>}
                 </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Curated listings tailored to your search preferences.
+                </p>
               </div>
-              {hasActiveFilters && (
-                <div className="hidden sm:flex items-center gap-2">
-                  {selectedTypes.map((type) => (
-                    <Badge
-                      key={type}
-                      variant="secondary"
-                      className="flex items-center gap-1 cursor-pointer hover:bg-destructive/10"
-                      onClick={() => handleTypeChange(type, false)}
-                    >
-                      {type.replace("-", " ")}
-                      <X className="h-3 w-3" />
-                    </Badge>
-                  ))}
+              <div className="flex flex-wrap items-center gap-3">
+                {hasActiveFilters && (
+                  <div className="hidden sm:flex items-center gap-2">
+                    {selectedTypes.map((type) => (
+                      <Badge
+                        key={type}
+                        variant="secondary"
+                        className="flex items-center gap-1 cursor-pointer hover:bg-destructive/10"
+                        onClick={() => handleTypeChange(type, false)}
+                      >
+                        {type.replace("-", " ")}
+                        <X className="h-3 w-3" />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <div className="w-44">
+                  <Select value={sortOption} onValueChange={(value) => {
+                    setSortOption(value);
+                    setCurrentPage(1);
+                  }}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border">
+                      <SelectItem value="newest">Newest</SelectItem>
+                      <SelectItem value="salary-high">Highest salary</SelectItem>
+                      <SelectItem value="salary-low">Lowest salary</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Jobs List */}
@@ -267,7 +303,7 @@ const FindJobs = () => {
                 <p className="mt-4 text-muted-foreground">Loading jobs...</p>
               </div>
             ) : paginatedJobs.length === 0 ? (
-              <div className="text-center py-16 bg-card border border-border rounded-xl">
+              <div className="text-center py-16 bg-card border border-border rounded-2xl">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Briefcase className="h-8 w-8 text-primary" />
                 </div>
@@ -283,7 +319,7 @@ const FindJobs = () => {
                   <Link
                     key={job.id}
                     to={`/job/${job.id}`}
-                    className="block bg-card border border-border rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all group"
+                    className="block bg-card border border-border rounded-2xl p-6 hover:shadow-lg hover:border-primary/30 transition-all group"
                   >
                     <div className="flex flex-col sm:flex-row gap-4">
                       {/* Company Logo */}
@@ -319,7 +355,7 @@ const FindJobs = () => {
                           </span>
                           <span className="flex items-center gap-1">
                             <DollarSign className="h-4 w-4" />
-                            {formatSalary(job.salary_min, job.salary_max)}
+                            {formatSalary(job.salary_min, job.salary_max, job.salary_currency)}
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />

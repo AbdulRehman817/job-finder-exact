@@ -67,22 +67,22 @@ const CandidateDashboard = () => {
   const rejectedCount = applications.filter(a => a.status === "rejected").length;
 
   const stats = [
-    { label: "Applied", value: applications.length, icon: FileText, color: "bg-blue-100 text-blue-600", subtext: `${appliedCount} pending` },
-    { label: "Shortlisted", value: shortlistedCount, icon: Target, color: "bg-emerald-100 text-emerald-600", subtext: "In review" },
-    { label: "Hired", value: hiredCount, icon: Award, color: "bg-green-100 text-green-600", subtext: "Success!" },
-    { label: "Saved Jobs", value: savedJobs.length, icon: Heart, color: "bg-rose-100 text-rose-600", subtext: "Bookmarked" },
+    { label: "Applied", value: applications.length, icon: FileText, color: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300", subtext: `${appliedCount} pending` },
+    { label: "Shortlisted", value: shortlistedCount, icon: Target, color: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300", subtext: "In review" },
+    { label: "Hired", value: hiredCount, icon: Award, color: "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-300", subtext: "Success!" },
+    { label: "Saved Jobs", value: savedJobs.length, icon: Heart, color: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-300", subtext: "Bookmarked" },
   ];
 
   const getStatusConfig = (status: string) => {
     switch (status) {
       case "pending":
-        return { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", icon: Clock, label: "Applied" };
+        return { bg: "bg-blue-50 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-300", border: "border-blue-200 dark:border-blue-800", icon: Clock, label: "Applied" };
       case "shortlisted":
-        return { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", icon: Target, label: "Shortlisted" };
+        return { bg: "bg-emerald-50 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300", border: "border-emerald-200 dark:border-emerald-800", icon: Target, label: "Shortlisted" };
       case "rejected":
-        return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", icon: XCircle, label: "Rejected" };
+        return { bg: "bg-red-50 dark:bg-red-900/30", text: "text-red-700 dark:text-red-300", border: "border-red-200 dark:border-red-800", icon: XCircle, label: "Rejected" };
       case "hired":
-        return { bg: "bg-green-50", text: "text-green-700", border: "border-green-200", icon: CheckCircle2, label: "Hired" };
+        return { bg: "bg-green-50 dark:bg-green-900/30", text: "text-green-700 dark:text-green-300", border: "border-green-200 dark:border-green-800", icon: CheckCircle2, label: "Hired" };
       default:
         return { bg: "bg-muted", text: "text-muted-foreground", border: "border-border", icon: Clock, label: status };
     }
@@ -91,11 +91,11 @@ const CandidateDashboard = () => {
   const getNotificationColor = (type: string) => {
     switch (type) {
       case "shortlisted":
-        return "bg-emerald-100 border-emerald-200";
+        return "bg-emerald-100 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800";
       case "rejected":
-        return "bg-red-100 border-red-200";
+        return "bg-red-100 border-red-200 dark:bg-red-900/30 dark:border-red-800";
       case "hired":
-        return "bg-green-100 border-green-200";
+        return "bg-green-100 border-green-200 dark:bg-green-900/30 dark:border-green-800";
       default:
         return "bg-muted border-border";
     }
@@ -117,7 +117,7 @@ const CandidateDashboard = () => {
   return (
     <Layout>
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent py-8">
+      <div className="bg-gradient-to-br from-primary/15 via-primary/5 to-background py-10">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -162,7 +162,7 @@ const CandidateDashboard = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-10">
         {/* Profile Completion Banner */}
         <ProfileCompletionBanner
           isComplete={profileCompletion.isComplete}
@@ -172,15 +172,15 @@ const CandidateDashboard = () => {
         />
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="bg-card border border-border rounded-xl p-5 hover:shadow-md transition-shadow"
+              className="bg-card border border-border rounded-2xl p-6 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-3xl font-semibold text-foreground">{stat.value}</p>
                   <p className="text-sm font-medium text-foreground mt-1">{stat.label}</p>
                   <p className="text-xs text-muted-foreground">{stat.subtext}</p>
                 </div>
@@ -194,8 +194,8 @@ const CandidateDashboard = () => {
 
         {/* Main Content Tabs */}
         <Tabs value={defaultTab} onValueChange={(v) => setSearchParams({ tab: v })} className="w-full">
-          <div className="bg-card border border-border rounded-xl mb-6">
-            <TabsList className="w-full justify-start p-1 bg-transparent">
+          <div className="bg-card border border-border rounded-2xl mb-6">
+            <TabsList className="w-full justify-start p-2 bg-transparent gap-2">
               <TabsTrigger
                 value="overview"
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
@@ -235,7 +235,7 @@ const CandidateDashboard = () => {
           <TabsContent value="overview" className="mt-0 space-y-6">
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Recent Applications */}
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="bg-card border border-border rounded-2xl overflow-hidden">
                 <div className="p-4 border-b border-border flex items-center justify-between">
                   <h3 className="font-semibold text-foreground">Recent Applications</h3>
                   <Button variant="ghost" size="sm" onClick={() => setSearchParams({ tab: "applications" })}>
@@ -283,7 +283,7 @@ const CandidateDashboard = () => {
               </div>
 
               {/* Recent Notifications */}
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="bg-card border border-border rounded-2xl overflow-hidden">
                 <div className="p-4 border-b border-border flex items-center justify-between">
                   <h3 className="font-semibold text-foreground">Recent Notifications</h3>
                   <Button variant="ghost" size="sm" onClick={() => setSearchParams({ tab: "notifications" })}>
@@ -326,7 +326,7 @@ const CandidateDashboard = () => {
 
           {/* Applications Tab */}
           <TabsContent value="applications" className="mt-0">
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-border">
                 <h3 className="font-semibold text-foreground">All Applications ({applications.length})</h3>
               </div>
@@ -391,7 +391,7 @@ const CandidateDashboard = () => {
 
           {/* Saved Jobs Tab */}
           <TabsContent value="saved" className="mt-0">
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-border">
                 <h3 className="font-semibold text-foreground">Saved Jobs ({savedJobs.length})</h3>
               </div>
@@ -453,7 +453,7 @@ const CandidateDashboard = () => {
 
           {/* Notifications Tab */}
           <TabsContent value="notifications" className="mt-0">
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-border flex items-center justify-between">
                 <h3 className="font-semibold text-foreground">
                   Notifications {unreadNotifications > 0 && `(${unreadNotifications} unread)`}

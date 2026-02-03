@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Briefcase, ChevronDown, Menu, X, User, LogOut, Settings, Home, Search, PlusCircle } from "lucide-react";
+import { Briefcase, ChevronDown, Menu, X, User, LogOut, Settings, Home, Search, PlusCircle, LayoutDashboard, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,11 +13,13 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
 import ThemeToggle from "@/components/theme/ThemeToggle";
+import { useUnreadNotificationsCount } from "@/hooks/useNotifications";
 
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, userRole, profile, signOut } = useAuth();
+  const { data: unreadCount = 0 } = useUnreadNotificationsCount();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Navigation links - consistent for all users
@@ -26,10 +28,15 @@ const Header = () => {
     { label: "Find Jobs", path: "/find-jobs", icon: Search },
   ];
 
-  // Add employer-specific link
-  const navLinks = userRole === "employer" 
-    ? [...mainNavLinks, { label: "Post a Job", path: "/employer-dashboard?tab=post-job", icon: PlusCircle }]
-    : mainNavLinks;
+  const dashboardLink = user
+    ? { label: "Dashboard", path: userRole === "employer" ? "/employer-dashboard" : "/dashboard", icon: LayoutDashboard }
+    : null;
+
+  const navLinks = [
+    ...mainNavLinks,
+    ...(dashboardLink ? [dashboardLink] : []),
+    ...(userRole === "employer" ? [{ label: "Post a Job", path: "/post-job", icon: PlusCircle }] : []),
+  ];
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
@@ -111,13 +118,7 @@ const Header = () => {
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to={userRole === "employer" ? "/employer-dashboard" : "/dashboard"}>
-                        <Briefcase className="mr-2 h-4 w-4" />
-                        Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/profile">
+                      <Link to={userRole === "employer" ? "/recruiter-profile" : "/profile"}>
                         <User className="mr-2 h-4 w-4" />
                         My Profile
                       </Link>
@@ -182,20 +183,25 @@ const Header = () => {
               {user && (
                 <>
                   <Link
-                    to={userRole === "employer" ? "/employer-dashboard" : "/dashboard"}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted"
-                  >
-                    <Briefcase className="h-5 w-5" />
-                    Dashboard
-                  </Link>
-                  <Link
-                    to="/profile"
+                    to={userRole === "employer" ? "/recruiter-profile" : "/profile"}
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted"
                   >
                     <User className="h-5 w-5" />
                     My Profile
+                  </Link>
+                  <Link
+                    to="/notifications"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted"
+                  >
+                    <Bell className="h-5 w-5" />
+                    Notifications
+                    {unreadCount > 0 && (
+                      <span className="ml-auto rounded-full bg-destructive px-2 py-0.5 text-xs text-destructive-foreground">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
                   </Link>
                 </>
               )}

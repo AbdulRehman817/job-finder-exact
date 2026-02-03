@@ -30,6 +30,7 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
     company_id: "",
     location: "",
     type: "full-time" as "full-time" | "part-time" | "internship" | "remote" | "contract",
+    salary_currency: "USD",
     salary_min: "",
     salary_max: "",
     experience_level: "",
@@ -123,6 +124,7 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
         type: formData.type,
         salary_min: formData.salary_min ? parseInt(formData.salary_min) : null,
         salary_max: formData.salary_max ? parseInt(formData.salary_max) : null,
+        salary_currency: formData.salary_currency || null,
         experience_level: formData.experience_level || null,
         category: formData.category || null,
         description: formData.description,
@@ -284,7 +286,29 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
           </div>
 
           <div>
-            <Label>Min Salary (USD/year)</Label>
+            <Label>Salary Currency</Label>
+            <Select
+              value={formData.salary_currency}
+              onValueChange={(value) => setFormData((prev) => ({ ...prev, salary_currency: value }))}
+            >
+              <SelectTrigger className="mt-2 h-12">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border border-border">
+                <SelectItem value="USD">USD - US Dollar</SelectItem>
+                <SelectItem value="EUR">EUR - Euro</SelectItem>
+                <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                <SelectItem value="INR">INR - Indian Rupee</SelectItem>
+                <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
+                <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
+                <SelectItem value="SGD">SGD - Singapore Dollar</SelectItem>
+                <SelectItem value="AED">AED - UAE Dirham</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Min Salary ({formData.salary_currency}/year)</Label>
             <Input
               type="number"
               value={formData.salary_min}
@@ -295,7 +319,7 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
           </div>
 
           <div>
-            <Label>Max Salary (USD/year)</Label>
+            <Label>Max Salary ({formData.salary_currency}/year)</Label>
             <Input
               type="number"
               value={formData.salary_max}

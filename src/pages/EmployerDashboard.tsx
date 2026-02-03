@@ -6,24 +6,17 @@ import {
   Building2,
   User,
   MapPin,
-  Eye,
   Trash2,
-  Plus,
-  CheckCircle,
   XCircle,
   UserCheck,
   Clock,
   ChevronRight,
   Award,
-  FileText,
   Mail,
   Phone,
-  ExternalLink,
   Download,
-  Globe,
   Linkedin,
   Github,
-  Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,8 +29,6 @@ import {
 } from "@/components/ui/dialog";
 import Layout from "@/components/layout/Layout";
 import ProfileCompletionBanner from "@/components/profile/ProfileCompletionBanner";
-import PostJobForm from "@/components/employer/PostJobForm";
-import CompanyProfileForm from "@/components/company/CompanyProfileForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyJobs, useDeleteJob, useUpdateJob } from "@/hooks/useJobs";
 import { useMyCompanies } from "@/hooks/useCompanies";
@@ -64,8 +55,8 @@ const EmployerDashboard = () => {
   const defaultTab = searchParams.get("tab") || "overview";
   const [selectedJobForApps, setSelectedJobForApps] = useState<string | null>(null);
   const [applicantDetail, setApplicantDetail] = useState<any>(null);
+  const [applicantContactEmail, setApplicantContactEmail] = useState<string | null>(null);
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
-  const [editingCompany, setEditingCompany] = useState<any>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     type: "shortlist" | "reject" | "hire" | null;
@@ -113,9 +104,9 @@ const EmployerDashboard = () => {
 
   const stats = [
     { label: "Active Jobs", value: activeJobs, icon: Briefcase, color: "bg-primary/10 text-primary", subtext: `${jobs.length} total` },
-    { label: "Applicants", value: totalApplicants, icon: Users, color: "bg-blue-100 text-blue-600", subtext: `${pendingApplicants} pending` },
-    { label: "Hired", value: hiredApplicants, icon: Award, color: "bg-green-100 text-green-600", subtext: "Candidates" },
-    { label: "Companies", value: companies.length, icon: Building2, color: "bg-violet-100 text-violet-600", subtext: "Registered" },
+    { label: "Applicants", value: totalApplicants, icon: Users, color: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300", subtext: `${pendingApplicants} pending` },
+    { label: "Hired", value: hiredApplicants, icon: Award, color: "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-300", subtext: "Candidates" },
+    { label: "Companies", value: companies.length, icon: Building2, color: "bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300", subtext: "Registered" },
   ];
 
   const handleDeleteJob = async (jobId: string) => {
@@ -223,6 +214,7 @@ const EmployerDashboard = () => {
 
   const viewApplicantDetails = async (application: any) => {
     setApplicantDetail(application);
+    setApplicantContactEmail(null);
     // Get signed URL for resume if exists
     if (application.profiles?.resume_url || application.resume_url) {
       try {
@@ -237,16 +229,23 @@ const EmployerDashboard = () => {
     } else {
       setResumeUrl(null);
     }
+
+    try {
+      const { data } = await supabase.auth.admin.getUserById(application.user_id);
+      setApplicantContactEmail(data?.user?.email || null);
+    } catch {
+      setApplicantContactEmail(null);
+    }
   };
 
   const getStatusConfig = (status: string) => {
     switch (status) {
       case "active":
-        return { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" };
+        return { bg: "bg-emerald-50 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300", border: "border-emerald-200 dark:border-emerald-800" };
       case "draft":
-        return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" };
+        return { bg: "bg-amber-50 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300", border: "border-amber-200 dark:border-amber-800" };
       case "closed":
-        return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" };
+        return { bg: "bg-red-50 dark:bg-red-900/30", text: "text-red-700 dark:text-red-300", border: "border-red-200 dark:border-red-800" };
       default:
         return { bg: "bg-muted", text: "text-muted-foreground", border: "border-border" };
     }
@@ -255,13 +254,13 @@ const EmployerDashboard = () => {
   const getAppStatusConfig = (status: string) => {
     switch (status) {
       case "pending":
-        return { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", icon: Clock, label: "Applied" };
+        return { bg: "bg-blue-50 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-300", border: "border-blue-200 dark:border-blue-800", icon: Clock, label: "Applied" };
       case "shortlisted":
-        return { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", icon: UserCheck, label: "Shortlisted" };
+        return { bg: "bg-emerald-50 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300", border: "border-emerald-200 dark:border-emerald-800", icon: UserCheck, label: "Shortlisted" };
       case "rejected":
-        return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", icon: XCircle, label: "Rejected" };
+        return { bg: "bg-red-50 dark:bg-red-900/30", text: "text-red-700 dark:text-red-300", border: "border-red-200 dark:border-red-800", icon: XCircle, label: "Rejected" };
       case "hired":
-        return { bg: "bg-green-50", text: "text-green-700", border: "border-green-200", icon: Award, label: "Hired" };
+        return { bg: "bg-green-50 dark:bg-green-900/30", text: "text-green-700 dark:text-green-300", border: "border-green-200 dark:border-green-800", icon: Award, label: "Hired" };
       default:
         return { bg: "bg-muted", text: "text-muted-foreground", border: "border-border", icon: Clock, label: status };
     }
@@ -360,6 +359,47 @@ const EmployerDashboard = () => {
                 </div>
 
                 {/* Skills */}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4 text-primary" />
+                    <span>{applicantContactEmail || "Email not shared"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-4 w-4 text-primary" />
+                    <span>{applicantDetail.profiles?.phone || "Phone not shared"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Linkedin className="h-4 w-4 text-primary" />
+                    {applicantDetail.profiles?.linkedin_url ? (
+                      <a
+                        href={applicantDetail.profiles.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        LinkedIn Profile
+                      </a>
+                    ) : (
+                      <span>LinkedIn not shared</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Github className="h-4 w-4 text-primary" />
+                    {applicantDetail.profiles?.github_url ? (
+                      <a
+                        href={applicantDetail.profiles.github_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        GitHub Profile
+                      </a>
+                    ) : (
+                      <span>GitHub not shared</span>
+                    )}
+                  </div>
+                </div>
+
                 {applicantDetail.profiles?.skills?.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium mb-2">Skills</h4>
@@ -454,7 +494,7 @@ const EmployerDashboard = () => {
       </Dialog>
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent py-8">
+      <div className="bg-gradient-to-br from-primary/15 via-primary/5 to-background py-10">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -482,27 +522,27 @@ const EmployerDashboard = () => {
               </div>
             </div>
             <div className="flex gap-3">
-              <Link to="/profile">
+              <Link to="/recruiter-profile">
                 <Button variant="outline" size="sm">
                   <User className="h-4 w-4 mr-2" />
-                  Profile
+                  Recruiter Profile
                 </Button>
               </Link>
-              <Button
-                className="btn-primary"
-                size="sm"
-                onClick={() => setSearchParams({ tab: "post-job" })}
-                disabled={!profileCompletion.isComplete}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Post New Job
-              </Button>
+              <Link to="/post-job">
+                <Button
+                  className="btn-primary"
+                  size="sm"
+                  disabled={!profileCompletion.isComplete}
+                >
+                  Post New Job
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-10">
         {/* Profile Completion Banner */}
         <ProfileCompletionBanner
           isComplete={profileCompletion.isComplete}
@@ -512,15 +552,15 @@ const EmployerDashboard = () => {
         />
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="bg-card border border-border rounded-xl p-5 hover:shadow-md transition-shadow"
+              className="bg-card border border-border rounded-2xl p-6 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-3xl font-semibold text-foreground">{stat.value}</p>
                   <p className="text-sm font-medium text-foreground mt-1">{stat.label}</p>
                   <p className="text-xs text-muted-foreground">{stat.subtext}</p>
                 </div>
@@ -534,8 +574,8 @@ const EmployerDashboard = () => {
 
         {/* Tabs */}
         <Tabs value={defaultTab} onValueChange={(v) => setSearchParams({ tab: v })} className="w-full">
-          <div className="bg-card border border-border rounded-xl mb-6">
-            <TabsList className="w-full justify-start p-1 bg-transparent">
+          <div className="bg-card border border-border rounded-2xl mb-6">
+            <TabsList className="w-full justify-start p-2 bg-transparent gap-2">
               <TabsTrigger
                 value="overview"
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
@@ -556,14 +596,6 @@ const EmployerDashboard = () => {
                 <Users className="h-4 w-4 mr-2" />
                 Applicants
               </TabsTrigger>
-              <TabsTrigger
-                value="post-job"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
-                disabled={!profileCompletion.isComplete}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Post Job
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -571,7 +603,7 @@ const EmployerDashboard = () => {
           <TabsContent value="overview" className="mt-0 space-y-6">
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Recent Jobs */}
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="bg-card border border-border rounded-2xl overflow-hidden">
                 <div className="p-4 border-b border-border flex items-center justify-between">
                   <h3 className="font-semibold text-foreground">Recent Jobs</h3>
                   <Button variant="ghost" size="sm" onClick={() => setSearchParams({ tab: "jobs" })}>
@@ -584,14 +616,15 @@ const EmployerDashboard = () => {
                       <Briefcase className="h-6 w-6 text-primary" />
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">No jobs posted yet</p>
-                    <Button
-                      size="sm"
-                      className="btn-primary"
-                      onClick={() => setSearchParams({ tab: "post-job" })}
-                      disabled={!profileCompletion.isComplete}
-                    >
-                      Post a Job
-                    </Button>
+                    <Link to="/post-job">
+                      <Button
+                        size="sm"
+                        className="btn-primary"
+                        disabled={!profileCompletion.isComplete}
+                      >
+                        Post a Job
+                      </Button>
+                    </Link>
                   </div>
                 ) : (
                   <div className="divide-y divide-border">
@@ -620,7 +653,7 @@ const EmployerDashboard = () => {
               </div>
 
               {/* Recent Applicants */}
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="bg-card border border-border rounded-2xl overflow-hidden">
                 <div className="p-4 border-b border-border flex items-center justify-between">
                   <h3 className="font-semibold text-foreground">Recent Applicants</h3>
                   <Button variant="ghost" size="sm" onClick={() => setSearchParams({ tab: "applications" })}>
@@ -669,7 +702,7 @@ const EmployerDashboard = () => {
 
           {/* Jobs Tab */}
           <TabsContent value="jobs" className="mt-0">
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-border">
                 <h3 className="font-semibold text-foreground">All Jobs ({jobs.length})</h3>
               </div>
@@ -680,14 +713,14 @@ const EmployerDashboard = () => {
                   </div>
                   <h4 className="font-semibold text-foreground mb-2">No jobs posted yet</h4>
                   <p className="text-sm text-muted-foreground mb-6">Post your first job to start receiving applications</p>
-                  <Button
-                    className="btn-primary"
-                    onClick={() => setSearchParams({ tab: "post-job" })}
-                    disabled={!profileCompletion.isComplete}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Post a Job
-                  </Button>
+                  <Link to="/post-job">
+                    <Button
+                      className="btn-primary"
+                      disabled={!profileCompletion.isComplete}
+                    >
+                      Post a Job
+                    </Button>
+                  </Link>
                 </div>
               ) : (
                 <div className="divide-y divide-border">
@@ -750,7 +783,7 @@ const EmployerDashboard = () => {
             <div className="grid lg:grid-cols-4 gap-6">
               {/* Job Selector */}
               <div className="lg:col-span-1">
-                <div className="bg-card border border-border rounded-xl overflow-hidden sticky top-4">
+                <div className="bg-card border border-border rounded-2xl overflow-hidden sticky top-4">
                   <div className="p-4 border-b border-border">
                     <h3 className="font-semibold text-foreground text-sm">Select Job</h3>
                   </div>
@@ -778,7 +811,7 @@ const EmployerDashboard = () => {
 
               {/* Applicants List */}
               <div className="lg:col-span-3">
-                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="bg-card border border-border rounded-2xl overflow-hidden">
                   <div className="p-4 border-b border-border">
                     <h3 className="font-semibold text-foreground">
                       {selectedJob ? `Applicants for "${selectedJob.title}"` : "Select a job"} ({applications.length})
@@ -870,27 +903,6 @@ const EmployerDashboard = () => {
             </div>
           </TabsContent>
 
-          {/* Post Job Tab */}
-          <TabsContent value="post-job" className="mt-0">
-            {!profileCompletion.isComplete ? (
-              <div className="bg-card border border-border rounded-xl p-12 text-center">
-                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Building2 className="h-8 w-8 text-amber-600" />
-                </div>
-                <h4 className="font-semibold text-foreground mb-2">Complete Your Profile First</h4>
-                <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-                  Please complete your company profile before posting jobs. This helps candidates learn about your company.
-                </p>
-                <Link to="/profile">
-                  <Button className="btn-primary">
-                    Complete Profile
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <PostJobForm />
-            )}
-          </TabsContent>
         </Tabs>
       </div>
     </Layout>
