@@ -11,6 +11,7 @@ export interface Job {
   location: string;
   salary_min: number | null;
   salary_max: number | null;
+  salary_currency?: string | null;
   type: "full-time" | "part-time" | "internship" | "remote" | "contract";
   experience_level: string | null;
   category: string | null;

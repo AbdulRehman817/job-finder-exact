@@ -93,7 +93,7 @@ const Profile = () => {
 
   // Redirect employers to their own profile page
   if (userRole === "employer") {
-    return <Navigate to="/employer-dashboard?tab=overview" replace />;
+    return <Navigate to="/recruiter-profile" replace />;
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -142,6 +142,7 @@ const Profile = () => {
           experience_years: Number(formData.experience_years),
           website: formData.website,
           linkedin_url: formData.linkedin_url,
+          github_url: formData.github_url,
         })
         .eq("user_id", user.id);
 

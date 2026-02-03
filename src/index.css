@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -88,6 +88,15 @@
     --accent: 39 100% 50%;
     --accent-foreground: 0 0% 100%;
 
+    --success: 142 70% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 39 90% 45%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 214 90% 50%;
+    --info-foreground: 0 0% 100%;
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
@@ -102,6 +111,16 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --jp-blue: 214 90% 55%;
+    --jp-blue-light: 214 70% 20%;
+    --jp-dark: 210 40% 98%;
+    --jp-gray: 215 20% 65%;
+    --jp-gray-light: 217 20% 18%;
+    --jp-green: 142 70% 40%;
+    --jp-orange: 24 90% 55%;
+    --jp-red: 0 70% 45%;
+    --jp-yellow: 45 93% 55%;
   }
 }
 

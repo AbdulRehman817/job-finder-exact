@@ -8,6 +8,7 @@ import { useJobs } from "@/hooks/useJobs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatSalaryRange } from "@/lib/formatters";
 
 const Index = () => {
   const { data: dbJobs = [], isLoading: jobsLoading } = useJobs();
@@ -23,9 +24,7 @@ const Index = () => {
     company: job.companies?.name || "Company",
     companyLogo: job.companies?.logo_url || "",
     location: job.location,
-    salary: job.salary_min && job.salary_max 
-      ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}`
-      : "Competitive",
+    salary: formatSalaryRange(job.salary_min, job.salary_max, job.salary_currency),
     type: job.type as "full-time" | "part-time" | "internship" | "remote" | "contract",
     featured: job.featured || false,
     postedDate: job.posted_date,
@@ -36,13 +35,14 @@ const Index = () => {
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (searchTerm) params.set("q", searchTerm);
+    if (locationTerm) params.set("location", locationTerm);
     navigate(`/find-jobs?${params.toString()}`);
   };
 
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary/5 via-secondary to-primary/10 py-16 lg:py-24">
+      <section className="bg-gradient-to-br from-primary/10 via-secondary/40 to-primary/5 py-16 lg:py-24">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="animate-fade-in">
@@ -61,7 +61,7 @@ const Index = () => {
               </p>
 
               {/* Search Box */}
-              <div className="bg-card p-4 rounded-xl shadow-lg flex flex-col md:flex-row gap-4">
+              <div className="bg-card/80 backdrop-blur border border-border/60 p-4 rounded-2xl shadow-lg flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
@@ -140,7 +140,7 @@ const Index = () => {
       </section>
 
       {/* How it Works */}
-      <section className="py-16 bg-card">
+      <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-foreground mb-4">How Jobpilot Works</h2>
@@ -311,7 +311,7 @@ const Index = () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 {userRole === "employer" ? (
                   <>
-                    <Link to="/employer-dashboard?tab=post-job">
+                    <Link to="/post-job">
                       <Button variant="secondary" size="lg">
                         <Briefcase className="h-4 w-4 mr-2" />
                         Post a Job

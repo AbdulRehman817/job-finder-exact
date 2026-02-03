@@ -32,6 +32,10 @@ export interface JobApplication {
     location: string | null;
     skills: string[] | null;
     experience_years: number | null;
+    phone?: string | null;
+    linkedin_url?: string | null;
+    github_url?: string | null;
+    website?: string | null;
   };
 }
 
@@ -92,7 +96,7 @@ export const useJobApplications = (jobId?: string) => {
         (applications || []).map(async (app) => {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("id, full_name, avatar_url, title, location, skills, experience_years")
+            .select("id, full_name, avatar_url, title, location, skills, experience_years, phone, linkedin_url, github_url, website")
             .eq("user_id", app.user_id)
             .maybeSingle();
           

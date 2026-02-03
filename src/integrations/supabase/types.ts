@@ -172,6 +172,7 @@ export type Database = {
           posted_date: string
           requirements: string[] | null
           responsibilities: string[] | null
+          salary_currency: string | null
           salary_max: number | null
           salary_min: number | null
           status: string | null
@@ -194,6 +195,7 @@ export type Database = {
           posted_date?: string
           requirements?: string[] | null
           responsibilities?: string[] | null
+          salary_currency?: string | null
           salary_max?: number | null
           salary_min?: number | null
           status?: string | null
@@ -216,6 +218,7 @@ export type Database = {
           posted_date?: string
           requirements?: string[] | null
           responsibilities?: string[] | null
+          salary_currency?: string | null
           salary_max?: number | null
           salary_min?: number | null
           status?: string | null
@@ -293,6 +296,7 @@ export type Database = {
           education: string | null
           experience_years: number | null
           full_name: string
+          github_url: string | null
           id: string
           linkedin_url: string | null
           location: string | null
@@ -312,6 +316,7 @@ export type Database = {
           education?: string | null
           experience_years?: number | null
           full_name: string
+          github_url?: string | null
           id?: string
           linkedin_url?: string | null
           location?: string | null
@@ -331,6 +336,7 @@ export type Database = {
           education?: string | null
           experience_years?: number | null
           full_name?: string
+          github_url?: string | null
           id?: string
           linkedin_url?: string | null
           location?: string | null
