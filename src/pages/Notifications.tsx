@@ -52,13 +52,13 @@ const Notifications = () => {
   const getNotificationColor = (type: string) => {
     switch (type) {
       case "shortlisted":
-        return "bg-blue-100 text-blue-700 border-blue-200";
+        return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800/60";
       case "rejected":
-        return "bg-red-100 text-red-700 border-red-200";
+        return "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800/60";
       case "hired":
-        return "bg-green-100 text-green-700 border-green-200";
+        return "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800/60";
       case "application_received":
-        return "bg-purple-100 text-purple-700 border-purple-200";
+        return "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800/60";
       default:
         return "bg-muted text-muted-foreground border-border";
     }

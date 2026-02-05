@@ -25,10 +25,10 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useResumeUpload } from "@/hooks/useResumeUpload";
 import { useCandidateProfileCompletion } from "@/hooks/useProfileCompletion";
+import { databases, DATABASE_ID, COLLECTIONS } from "@/lib/appwrite";
 
 const Profile = () => {
   const { user, profile, loading, refreshProfile, userRole } = useAuth();
@@ -93,7 +93,7 @@ const Profile = () => {
 
   // Redirect employers to their own profile page
   if (userRole === "employer") {
-    return <Navigate to="/employer-dashboard?tab=overview" replace />;
+    return <Navigate to="/recruiter-profile" replace />;
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -129,23 +129,33 @@ const Profile = () => {
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: formData.full_name,
-          title: formData.title,
-          phone: formData.phone,
-          location: formData.location,
-          bio: formData.bio,
-          skills: skillsArray,
-          education: formData.education,
-          experience_years: Number(formData.experience_years),
-          website: formData.website,
-          linkedin_url: formData.linkedin_url,
-        })
-        .eq("user_id", user.id);
+      // Find the user's profile document
+      const { documents } = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PROFILES,
+        [`user_id=${user.id}`]
+      );
 
-      if (error) throw error;
+      if (documents.length > 0) {
+        await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.PROFILES,
+          documents[0].$id,
+          {
+            full_name: formData.full_name,
+            title: formData.title,
+            phone: formData.phone,
+            location: formData.location,
+            bio: formData.bio,
+            skills: skillsArray,
+            education: formData.education,
+            experience_years: Number(formData.experience_years),
+            website: formData.website,
+            linkedin_url: formData.linkedin_url,
+            github_url: formData.github_url,
+          }
+        );
+      }
 
       await refreshProfile();
       toast({

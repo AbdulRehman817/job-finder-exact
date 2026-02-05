@@ -160,23 +160,28 @@ const JobDetails = () => {
   }
 
   const typeConfig = jobTypes[job.type as keyof typeof jobTypes] || jobTypes["full-time"];
-  const salaryDisplay = job.salary_min && job.salary_max
-    ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}`
-    : "Competitive";
+  const formatSalary = (min: number | null, max: number | null, currency: string | null) => {
+    const unit = currency || "USD";
+    if (!min && !max) return "Competitive";
+    if (min && max) return `${unit} ${min.toLocaleString()} - ${max.toLocaleString()}`;
+    if (min) return `${unit} ${min.toLocaleString()}+`;
+    return `Up to ${unit} ${max!.toLocaleString()}`;
+  };
+
+  const salaryDisplay = formatSalary(job.salary_min, job.salary_max, job.currency || "USD");
+  const currencyLabel = job.currency || "USD";
 
   // Transform related jobs
   const transformedRelatedJobs = relatedJobs
     .filter((j) => j.id !== job.id)
     .slice(0, 4)
-    .map((j) => ({
+      .map((j) => ({
       id: j.id,
       title: j.title,
       company: j.companies?.name || "Company",
       companyLogo: j.companies?.logo_url || "",
       location: j.location,
-      salary: j.salary_min && j.salary_max 
-        ? `$${j.salary_min.toLocaleString()} - $${j.salary_max.toLocaleString()}`
-        : "Competitive",
+      salary: formatSalary(j.salary_min, j.salary_max, j.currency || "USD"),
       type: j.type as "full-time" | "part-time" | "internship" | "remote" | "contract",
       featured: j.featured || false,
       postedDate: j.posted_date,
@@ -189,8 +194,8 @@ const JobDetails = () => {
         <DialogContent>
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <div className="p-2 bg-amber-100 rounded-lg dark:bg-amber-900/40">
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-300" />
               </div>
               <DialogTitle>Complete Your Profile First</DialogTitle>
             </div>
@@ -393,7 +398,7 @@ const JobDetails = () => {
                     <DollarSign className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Salary (USD)</p>
+                    <p className="text-sm text-muted-foreground">Salary ({currencyLabel})</p>
                     <p className="font-medium text-foreground">{salaryDisplay}</p>
                   </div>
                 </div>
@@ -448,7 +453,7 @@ const JobDetails = () => {
                   {job.benefits.map((benefit, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1.5 bg-green-50 text-green-700 text-xs rounded-full border border-green-200"
+                      className="px-3 py-1.5 bg-green-50 text-green-700 text-xs rounded-full border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800/60"
                     >
                       {benefit}
                     </span>
@@ -516,13 +521,13 @@ const JobDetails = () => {
             </div>
 
             {/* Profile Summary */}
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm font-medium text-green-800 mb-1">Your Profile</p>
-              <p className="text-sm text-green-700">
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg dark:bg-green-900/30 dark:border-green-800/60">
+              <p className="text-sm font-medium text-green-800 mb-1 dark:text-green-100">Your Profile</p>
+              <p className="text-sm text-green-700 dark:text-green-200">
                 {profile?.full_name} • {profile?.title || "Job Seeker"}
               </p>
               {profile?.resume_url && (
-                <p className="text-xs text-green-600 mt-1">✅ Resume attached</p>
+                <p className="text-xs text-green-600 mt-1 dark:text-green-300">✅ Resume attached</p>
               )}
             </div>
 

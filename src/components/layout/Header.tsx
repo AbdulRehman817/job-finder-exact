@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Briefcase, ChevronDown, Menu, X, User, LogOut, Settings, Home, Search, PlusCircle } from "lucide-react";
+import { Briefcase, ChevronDown, Menu, X, User, LogOut, Settings, Home, Search, PlusCircle, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
+import {  useAuth } from "@/contexts/AuthContext";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 
@@ -20,16 +20,25 @@ const Header = () => {
   const { user, userRole, profile, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  console.log('🔄 Header: Component rendered with auth data:', { user: user?.id, userRole, profile: profile?.id });
+
+  useEffect(() => {
+    console.log("📊 Header: Auth state updated - userRole:", userRole, "profile:", profile?.id, "user:", user?.id);
+    
+  }, [userRole, profile, user]);
+
   // Navigation links - consistent for all users
   const mainNavLinks = [
     { label: "Home", path: "/", icon: Home },
     { label: "Find Jobs", path: "/find-jobs", icon: Search },
   ];
 
-  // Add employer-specific link
-  const navLinks = userRole === "employer" 
-    ? [...mainNavLinks, { label: "Post a Job", path: "/employer-dashboard?tab=post-job", icon: PlusCircle }]
-    : mainNavLinks;
+  const dashboardPath = userRole === "employer" ? "/employer-dashboard" : "/dashboard";
+  const navLinks = [
+    ...mainNavLinks,
+    ...(user ? [{ label: "Dashboard", path: dashboardPath, icon: LayoutDashboard }] : []),
+    ...(userRole === "employer" ? [{ label: "Post a Job", path: "/post-job", icon: PlusCircle }] : []),
+  ];
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
@@ -37,7 +46,9 @@ const Header = () => {
   };
 
   const handleSignOut = async () => {
+    console.log('🔄 Header: Sign out initiated');
     await signOut();
+    console.log('✅ Header: Sign out completed, navigating to home');
     navigate("/");
   };
 
@@ -111,13 +122,7 @@ const Header = () => {
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to={userRole === "employer" ? "/employer-dashboard" : "/dashboard"}>
-                        <Briefcase className="mr-2 h-4 w-4" />
-                        Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/profile">
+                      <Link to={userRole === "employer" ? "/recruiter-profile" : "/profile"}>
                         <User className="mr-2 h-4 w-4" />
                         My Profile
                       </Link>
@@ -180,24 +185,14 @@ const Header = () => {
                 </Link>
               ))}
               {user && (
-                <>
-                  <Link
-                    to={userRole === "employer" ? "/employer-dashboard" : "/dashboard"}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted"
-                  >
-                    <Briefcase className="h-5 w-5" />
-                    Dashboard
-                  </Link>
-                  <Link
-                    to="/profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted"
-                  >
-                    <User className="h-5 w-5" />
-                    My Profile
-                  </Link>
-                </>
+                <Link
+                  to={userRole === "employer" ? "/recruiter-profile" : "/profile"}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted"
+                >
+                  <User className="h-5 w-5" />
+                  My Profile
+                </Link>
               )}
             </nav>
           </div>

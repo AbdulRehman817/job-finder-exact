@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, ID, COLLECTIONS, DATABASE_ID, Query } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface Company {
-  id: string;
+  $id: string;
   user_id: string;
   name: string;
   logo_url: string | null;
@@ -18,40 +18,58 @@ export interface Company {
   linkedin_url: string | null;
   twitter_url: string | null;
   featured: boolean;
-  created_at: string;
-  updated_at: string;
+  $createdAt: string;
+  $updatedAt: string;
 }
 
 export const useCompanies = () => {
   return useQuery({
     queryKey: ["companies"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("companies")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as Company[];
+      console.log('🔄 useCompanies: Fetching all companies');
+      try {
+        console.log('📡 useCompanies: Querying companies from Appwrite');
+        const { documents } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.COMPANIES,
+          [Query.orderDesc('$createdAt')]
+        );
+        console.log('📥 useCompanies: Received companies:', documents.length);
+        console.log('✅ useCompanies: Companies fetched successfully');
+        return documents as unknown as Company[];
+      } catch (error) {
+        console.error('❌ useCompanies: Error fetching companies:', error);
+        throw error;
+      }
     },
   });
 };
 
 export const useMyCompanies = () => {
   const { user } = useAuth();
-  
+
   return useQuery({
     queryKey: ["my-companies", user?.id],
     queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from("companies")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as Company[];
+      if (!user) {
+        console.log('ℹ️ useMyCompanies: No user, returning empty array');
+        return [] as Company[];
+      }
+      console.log('🔄 useMyCompanies: Fetching companies for user:', user.id);
+      try {
+        console.log('📡 useMyCompanies: Querying user companies from Appwrite');
+        const { documents } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.COMPANIES,
+          [Query.equal('user_id', user.id), Query.orderDesc('$createdAt')]
+        );
+        console.log('📥 useMyCompanies: Received user companies:', documents.length);
+        console.log('✅ useMyCompanies: User companies fetched successfully');
+        return documents as unknown as Company[];
+      } catch (error) {
+        console.error('❌ useMyCompanies: Error fetching my companies:', error);
+        throw error;
+      }
     },
     enabled: !!user,
   });
@@ -62,31 +80,35 @@ export const useCreateCompany = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (company: Partial<Omit<Company, "id" | "user_id" | "created_at" | "updated_at" | "featured">>) => {
-      if (!user) throw new Error("Not authenticated");
-      
-      const { data, error } = await supabase
-        .from("companies")
-        .insert({
-          name: company.name || "",
-          logo_url: company.logo_url || null,
-          description: company.description || null,
-          website: company.website || null,
-          location: company.location || null,
-          industry: company.industry || null,
-          size: company.size || null,
-          founded: company.founded || null,
-          email: company.email || null,
-          phone: company.phone || null,
-          linkedin_url: company.linkedin_url || null,
-          twitter_url: company.twitter_url || null,
-          user_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+    mutationFn: async (company: Partial<Omit<Company, "$id" | "user_id" | "$createdAt" | "$updatedAt" | "featured">>) => {
+      if (!user) throw new Error("You must be signed in to create a company.");
+      try {
+        const document = await databases.createDocument(
+          DATABASE_ID,
+          COLLECTIONS.COMPANIES,
+          ID.unique(),
+          {
+            name: company.name || "",
+            logo_url: company.logo_url || null,
+            description: company.description || null,
+            website: company.website || null,
+            location: company.location || null,
+            industry: company.industry || null,
+            size: company.size || null,
+            founded: company.founded || null,
+            email: company.email || null,
+            phone: company.phone || null,
+            linkedin_url: company.linkedin_url || null,
+            twitter_url: company.twitter_url || null,
+            user_id: user.id,
+            featured: false,
+          }
+        );
+        return document as unknown as Company;
+      } catch (error) {
+        console.error('Error creating company:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["companies"] });
@@ -100,15 +122,18 @@ export const useUpdateCompany = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Company> & { id: string }) => {
-      const { data, error } = await supabase
-        .from("companies")
-        .update(updates)
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      try {
+        const document = await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.COMPANIES,
+          id,
+          updates
+        );
+        return document as unknown as Company;
+      } catch (error) {
+        console.error('Error updating company:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["companies"] });
@@ -121,14 +146,17 @@ export const useCompany = (id: string) => {
   return useQuery({
     queryKey: ["company", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("companies")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data as Company | null;
+      try {
+        const document = await databases.getDocument(
+          DATABASE_ID,
+          COLLECTIONS.COMPANIES,
+          id
+        );
+        return document as unknown as Company;
+      } catch (error) {
+        console.error('Error fetching company:', error);
+        throw error;
+      }
     },
     enabled: !!id,
   });
@@ -138,15 +166,43 @@ export const useCompanyJobs = (companyId: string) => {
   return useQuery({
     queryKey: ["company-jobs", companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("jobs")
-        .select("*")
-        .eq("company_id", companyId)
-        .eq("status", "active")
-        .order("posted_date", { ascending: false });
+      if (!companyId) return [];
+      console.log('🔄 useCompanyJobs: Fetching jobs for company:', companyId);
+      try {
+        console.log('📡 useCompanyJobs: Querying jobs from Appwrite');
+        const { documents } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.JOBS,
+          [Query.equal('company_id', companyId), Query.equal('status', 'active'), Query.orderDesc('posted_date')]
+        );
+        console.log('📥 useCompanyJobs: Received jobs:', documents.length);
 
-      if (error) throw error;
-      return data;
+        // Fetch company data for each job
+        console.log('📡 useCompanyJobs: Fetching company data for jobs');
+        const jobsWithCompanies = await Promise.all(
+          documents.map(async (job) => {
+            try {
+              const company = await databases.getDocument(
+                DATABASE_ID,
+                COLLECTIONS.COMPANIES,
+                job.company_id
+              );
+              const result = { ...job, companies: company };
+              console.log('📋 useCompanyJobs: Processed job with company:', { jobId: job.$id, companyName: company.name });
+              return result;
+            } catch (error) {
+              console.error('❌ useCompanyJobs: Error fetching company for job:', job.$id, error);
+              return job;
+            }
+          })
+        );
+
+        console.log('✅ useCompanyJobs: Company jobs fetched successfully:', jobsWithCompanies.length);
+        return jobsWithCompanies;
+      } catch (error) {
+        console.error('❌ useCompanyJobs: Error fetching company jobs:', error);
+        throw error;
+      }
     },
     enabled: !!companyId,
   });

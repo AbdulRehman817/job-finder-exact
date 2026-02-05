@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface Job {
-  id: string;
+  $id: string;
   company_id: string;
   user_id: string;
   title: string;
@@ -11,6 +11,7 @@ export interface Job {
   location: string;
   salary_min: number | null;
   salary_max: number | null;
+  currency: "USD" | "PKR" | null;
   type: "full-time" | "part-time" | "internship" | "remote" | "contract";
   experience_level: string | null;
   category: string | null;
@@ -21,10 +22,10 @@ export interface Job {
   status: "active" | "closed" | "draft";
   posted_date: string;
   expiry_date: string | null;
-  created_at: string;
-  updated_at: string;
+  $createdAt: string;
+  $updatedAt: string;
   companies?: {
-    id: string;
+    $id: string;
     name: string;
     logo_url: string | null;
     location: string | null;
@@ -35,30 +36,69 @@ export const useJobs = (filters?: { type?: string; location?: string; search?: s
   return useQuery({
     queryKey: ["jobs", filters],
     queryFn: async () => {
-      let query = supabase
-        .from("jobs")
-        .select(`
-          *,
-          companies (
-            id,
-            name,
-            logo_url,
-            location
-          )
-        `)
-        .eq("status", "active")
-        .order("posted_date", { ascending: false });
+      console.log('🔄 useJobs: Fetching jobs with filters:', filters);
+      try {
+        let queries = [
+          Query.equal('status', 'active'),
+          Query.orderDesc('posted_date')
+        ];
 
-      if (filters?.type) {
-        query = query.eq("type", filters.type);
-      }
-      if (filters?.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-      }
+        if (filters?.type) {
+          queries.push(Query.equal('type', filters.type));
+          console.log('📋 useJobs: Added type filter:', filters.type);
+        }
+        if (filters?.location) {
+          queries.push(Query.search('location', filters.location));
+          console.log('📋 useJobs: Added location filter:', filters.location);
+        }
+        if (filters?.search) {
+          queries.push(Query.search('title', filters.search));
+          console.log('📋 useJobs: Added search filter:', filters.search);
+        }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as Job[];
+        console.log('📡 useJobs: Querying Appwrite for jobs with queries:', queries);
+        const { documents: jobs } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.JOBS,
+          queries
+        );
+        console.log('📥 useJobs: Received jobs from Appwrite:', jobs.length);
+
+        // Fetch company data for each job
+        console.log('📡 useJobs: Fetching company data for jobs');
+        const jobsWithCompanies = await Promise.all(
+          jobs.map(async (job) => {
+            try {
+              const { documents: companies } = await databases.listDocuments(
+                DATABASE_ID,
+                COLLECTIONS.COMPANIES,
+                [Query.equal('$id', job.company_id)]
+              );
+
+              const result = {
+                ...job,
+                companies: companies.length > 0 ? {
+                  id: companies[0].$id,
+                  name: companies[0].name,
+                  logo_url: companies[0].logo_url,
+                  location: companies[0].location
+                } : undefined
+              };
+              console.log('📋 useJobs: Processed job with company:', { jobId: job.$id, companyName: result.companies?.name });
+              return result;
+            } catch (error) {
+              console.error('❌ useJobs: Error fetching company for job:', job.$id, error);
+              return job;
+            }
+          })
+        );
+
+        console.log('✅ useJobs: Jobs fetched successfully:', jobsWithCompanies.length);
+        return jobsWithCompanies;
+      } catch (error) {
+        console.error('❌ useJobs: Error fetching jobs:', error);
+        throw error;
+      }
     },
   });
 };
@@ -67,17 +107,36 @@ export const useJob = (id: string) => {
   return useQuery({
     queryKey: ["job", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("jobs")
-        .select(`
-          *,
-          companies (*)
-        `)
-        .eq("id", id)
-        .maybeSingle();
+      console.log('🔄 useJob: Fetching single job:', id);
+      try {
+        console.log('📡 useJob: Getting job document from Appwrite');
+        const job = await databases.getDocument(DATABASE_ID, COLLECTIONS.JOBS, id);
+        console.log('📥 useJob: Received job:', job.$id);
 
-      if (error) throw error;
-      return data as Job & { companies: any };
+        // Fetch company data
+        console.log('📡 useJob: Fetching company data for job');
+        const { documents: companies } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.COMPANIES,
+          [Query.equal('$id', job.company_id)]
+        );
+        console.log('📥 useJob: Received company data:', companies.length > 0 ? companies[0].name : 'none');
+
+        const result = {
+          ...job,
+          companies: companies.length > 0 ? {
+            id: companies[0].$id,
+            name: companies[0].name,
+            logo_url: companies[0].logo_url,
+            location: companies[0].location
+          } : undefined
+        };
+        console.log('✅ useJob: Job with company data ready');
+        return result;
+      } catch (error) {
+        console.error('❌ useJob: Error fetching job:', error);
+        throw error;
+      }
     },
     enabled: !!id,
   });
@@ -85,27 +144,49 @@ export const useJob = (id: string) => {
 
 export const useMyJobs = () => {
   const { user } = useAuth();
-  
+
   return useQuery({
     queryKey: ["my-jobs", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from("jobs")
-        .select(`
-          *,
-          companies (
-            id,
-            name,
-            logo_url,
-            location
-          )
-        `)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      try {
+        const { documents } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.JOBS,
+          [`user_id=${user.id}`, `orderDesc=$createdAt`]
+        );
 
-      if (error) throw error;
-      return data as Job[];
+        // Fetch company data for each job
+        const jobsWithCompanies = await Promise.all(
+          documents.map(async (job) => {
+            try {
+              const { documents: companies } = await databases.listDocuments(
+                DATABASE_ID,
+                COLLECTIONS.COMPANIES,
+                [`$id=${job.company_id}`]
+              );
+
+              return {
+                ...job,
+                companies: companies.length > 0 ? {
+                  id: companies[0].$id,
+                  name: companies[0].name,
+                  logo_url: companies[0].logo_url,
+                  location: companies[0].location
+                } : undefined
+              };
+            } catch (error) {
+              console.error('Error fetching company for job:', job.$id, error);
+              return job;
+            }
+          })
+        );
+
+        return jobsWithCompanies;
+      } catch (error) {
+        console.error('Error fetching my jobs:', error);
+        throw error;
+      }
     },
     enabled: !!user,
   });
@@ -116,20 +197,44 @@ export const useCreateJob = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (job: Omit<Job, "id" | "user_id" | "created_at" | "updated_at" | "posted_date" | "featured" | "companies">) => {
-      if (!user) throw new Error("Not authenticated");
-      
-      const { data, error } = await supabase
-        .from("jobs")
-        .insert({
-          ...job,
-          user_id: user.id,
-        })
-        .select()
-        .single();
+    mutationFn: async (job: Omit<Job, "$id" | "user_id" | "$createdAt" | "$updatedAt" | "posted_date" | "featured" | "companies">) => {
+      if (!user) throw new Error("You must be signed in to post a job.");
 
-      if (error) throw error;
-      return data;
+      const payload = {
+        ...job,
+        user_id: user.id,
+        posted_date: new Date().toISOString(),
+        featured: false,
+      };
+
+      try {
+        const document = await databases.createDocument(
+          DATABASE_ID,
+          COLLECTIONS.JOBS,
+          ID.unique(),
+          payload
+        );
+
+        // Fetch company data
+        const { documents: companies } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.COMPANIES,
+          [`$id=${document.company_id}`]
+        );
+
+        return {
+          ...document,
+          companies: companies.length > 0 ? {
+            id: companies[0].$id,
+            name: companies[0].name,
+            logo_url: companies[0].logo_url,
+            location: companies[0].location
+          } : undefined
+        };
+      } catch (error) {
+        console.error('Error creating job:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
@@ -143,15 +248,34 @@ export const useUpdateJob = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Job> & { id: string }) => {
-      const { data, error } = await supabase
-        .from("jobs")
-        .update(updates)
-        .eq("id", id)
-        .select()
-        .single();
+      try {
+        const document = await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.JOBS,
+          id,
+          updates
+        );
 
-      if (error) throw error;
-      return data;
+        // Fetch company data
+        const { documents: companies } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.COMPANIES,
+          [`$id=${document.company_id}`]
+        );
+
+        return {
+          ...document,
+          companies: companies.length > 0 ? {
+            id: companies[0].$id,
+            name: companies[0].name,
+            logo_url: companies[0].logo_url,
+            location: companies[0].location
+          } : undefined
+        };
+      } catch (error) {
+        console.error('Error updating job:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
@@ -165,12 +289,12 @@ export const useDeleteJob = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("jobs")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
+      try {
+        await databases.deleteDocument(DATABASE_ID, COLLECTIONS.JOBS, id);
+      } catch (error) {
+        console.error('Error deleting job:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });

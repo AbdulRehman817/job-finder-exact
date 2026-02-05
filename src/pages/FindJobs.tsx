@@ -18,7 +18,6 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useJobs } from "@/hooks/useJobs";
-import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -40,7 +39,6 @@ const FindJobs = () => {
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [locationTerm, setLocationTerm] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const { userRole } = useAuth();
 
   const { data: dbJobs = [], isLoading } = useJobs({ search: searchTerm });
 
@@ -54,6 +52,7 @@ const FindJobs = () => {
     location: job.location,
     salary_min: job.salary_min,
     salary_max: job.salary_max,
+    currency: job.currency || "USD",
     type: job.type as "full-time" | "part-time" | "internship" | "remote" | "contract",
     featured: job.featured || false,
     postedDate: job.posted_date,
@@ -108,11 +107,12 @@ const FindJobs = () => {
 
   const hasActiveFilters = selectedTypes.length > 0 || locationTerm || searchTerm;
 
-  const formatSalary = (min: number | null, max: number | null) => {
+  const formatSalary = (min: number | null, max: number | null, currency: string) => {
     if (!min && !max) return "Competitive";
-    if (min && max) return `$${(min/1000).toFixed(0)}k - $${(max/1000).toFixed(0)}k`;
-    if (min) return `$${(min/1000).toFixed(0)}k+`;
-    return `Up to $${(max!/1000).toFixed(0)}k`;
+    const unit = currency || "USD";
+    if (min && max) return `${unit} ${(min / 1000).toFixed(0)}k - ${unit} ${(max / 1000).toFixed(0)}k`;
+    if (min) return `${unit} ${(min / 1000).toFixed(0)}k+`;
+    return `Up to ${unit} ${(max! / 1000).toFixed(0)}k`;
   };
 
   return (
@@ -120,7 +120,9 @@ const FindJobs = () => {
       <Header />
       
       {/* Hero Search Section */}
-      <section className="bg-gradient-to-br from-primary/10 via-primary/5 to-background py-12">
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-primary/5 py-14">
+        <div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-primary/15 blur-3xl" />
+        <div className="absolute -bottom-24 left-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center mb-8">
             <h1 className="text-4xl font-bold text-foreground mb-3">
@@ -132,7 +134,7 @@ const FindJobs = () => {
           </div>
           
           {/* Search Box */}
-          <div className="max-w-4xl mx-auto bg-card rounded-2xl shadow-lg border border-border p-4">
+          <div className="max-w-4xl mx-auto bg-card/80 rounded-2xl shadow-lg border border-border/60 p-4 backdrop-blur">
             <div className="flex flex-col lg:flex-row gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -169,7 +171,7 @@ const FindJobs = () => {
             "lg:w-72 shrink-0",
             showFilters ? "block" : "hidden lg:block"
           )}>
-            <div className="bg-card border border-border rounded-xl p-6 sticky top-24">
+            <div className="bg-card/80 border border-border/60 rounded-2xl p-6 sticky top-24 backdrop-blur">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
                   <SlidersHorizontal className="h-4 w-4" />
@@ -267,7 +269,7 @@ const FindJobs = () => {
                 <p className="mt-4 text-muted-foreground">Loading jobs...</p>
               </div>
             ) : paginatedJobs.length === 0 ? (
-              <div className="text-center py-16 bg-card border border-border rounded-xl">
+              <div className="text-center py-16 bg-card/80 border border-border/60 rounded-2xl backdrop-blur">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Briefcase className="h-8 w-8 text-primary" />
                 </div>
@@ -283,7 +285,7 @@ const FindJobs = () => {
                   <Link
                     key={job.id}
                     to={`/job/${job.id}`}
-                    className="block bg-card border border-border rounded-xl p-6 hover:shadow-lg hover:border-primary/30 transition-all group"
+                    className="block bg-card/90 border border-border/60 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-primary/30 transition-all group backdrop-blur"
                   >
                     <div className="flex flex-col sm:flex-row gap-4">
                       {/* Company Logo */}
@@ -319,7 +321,7 @@ const FindJobs = () => {
                           </span>
                           <span className="flex items-center gap-1">
                             <DollarSign className="h-4 w-4" />
-                            {formatSalary(job.salary_min, job.salary_max)}
+                            {formatSalary(job.salary_min, job.salary_max, job.currency)}
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />

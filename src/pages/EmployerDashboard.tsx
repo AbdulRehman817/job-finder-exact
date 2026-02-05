@@ -6,24 +6,19 @@ import {
   Building2,
   User,
   MapPin,
-  Eye,
   Trash2,
   Plus,
-  CheckCircle,
   XCircle,
   UserCheck,
   Clock,
   ChevronRight,
   Award,
-  FileText,
   Mail,
   Phone,
   ExternalLink,
   Download,
-  Globe,
   Linkedin,
   Github,
-  Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,8 +31,6 @@ import {
 } from "@/components/ui/dialog";
 import Layout from "@/components/layout/Layout";
 import ProfileCompletionBanner from "@/components/profile/ProfileCompletionBanner";
-import PostJobForm from "@/components/employer/PostJobForm";
-import CompanyProfileForm from "@/components/company/CompanyProfileForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyJobs, useDeleteJob, useUpdateJob } from "@/hooks/useJobs";
 import { useMyCompanies } from "@/hooks/useCompanies";
@@ -48,7 +41,7 @@ import { sendNotificationEmail } from "@/hooks/useEmailNotification";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { storage, BUCKETS } from "@/lib/appwrite";
 
 const EmployerDashboard = () => {
   const { user, profile, loading, userRole } = useAuth();
@@ -61,11 +54,11 @@ const EmployerDashboard = () => {
   const profileCompletion = useEmployerProfileCompletion();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const defaultTab = searchParams.get("tab") || "overview";
+  const rawTab = searchParams.get("tab") || "overview";
+  const defaultTab = ["overview", "jobs", "applications"].includes(rawTab) ? rawTab : "overview";
   const [selectedJobForApps, setSelectedJobForApps] = useState<string | null>(null);
   const [applicantDetail, setApplicantDetail] = useState<any>(null);
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
-  const [editingCompany, setEditingCompany] = useState<any>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     type: "shortlist" | "reject" | "hire" | null;
@@ -112,10 +105,10 @@ const EmployerDashboard = () => {
   const hiredApplicants = applications.filter(a => a.status === "hired").length;
 
   const stats = [
-    { label: "Active Jobs", value: activeJobs, icon: Briefcase, color: "bg-primary/10 text-primary", subtext: `${jobs.length} total` },
-    { label: "Applicants", value: totalApplicants, icon: Users, color: "bg-blue-100 text-blue-600", subtext: `${pendingApplicants} pending` },
-    { label: "Hired", value: hiredApplicants, icon: Award, color: "bg-green-100 text-green-600", subtext: "Candidates" },
-    { label: "Companies", value: companies.length, icon: Building2, color: "bg-violet-100 text-violet-600", subtext: "Registered" },
+    { label: "Active Jobs", value: activeJobs, icon: Briefcase, color: "bg-primary/10 text-primary dark:bg-primary/20", subtext: `${jobs.length} total` },
+    { label: "Applicants", value: totalApplicants, icon: Users, color: "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300", subtext: `${pendingApplicants} pending` },
+    { label: "Hired", value: hiredApplicants, icon: Award, color: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300", subtext: "Candidates" },
+    { label: "Companies", value: companies.length, icon: Building2, color: "bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300", subtext: "Registered" },
   ];
 
   const handleDeleteJob = async (jobId: string) => {
@@ -136,14 +129,7 @@ const EmployerDashboard = () => {
     const job = jobs.find(j => j.id === application.job_id);
     const company = companies[0];
     
-    // Fetch applicant email
-    let applicantEmail = "";
-    try {
-      const { data } = await supabase.auth.admin.getUserById(application.user_id);
-      applicantEmail = data?.user?.email || "";
-    } catch {
-      // Fallback - email not available
-    }
+    const applicantEmail = application.profiles?.email || "";
     
     setConfirmDialog({
       open: true,
@@ -223,15 +209,23 @@ const EmployerDashboard = () => {
 
   const viewApplicantDetails = async (application: any) => {
     setApplicantDetail(application);
+    console.log('Application details:', applicantDetail);
     // Get signed URL for resume if exists
     if (application.profiles?.resume_url || application.resume_url) {
       try {
-        const resumePath = application.resume_url || application.profiles?.resume_url;
-        const { data } = await supabase.storage
-          .from("resumes")
-          .createSignedUrl(resumePath, 3600);
-        setResumeUrl(data?.signedUrl || null);
-      } catch {
+        const resumeFileId = application.resume_url || application.profiles?.resume_url;
+        if (resumeFileId) {
+          if (resumeFileId.startsWith("http")) {
+            setResumeUrl(resumeFileId);
+          } else {
+            const fileUrl = storage.getFileView(BUCKETS.RESUMES, resumeFileId);
+            setResumeUrl(fileUrl.toString());
+          }
+        } else {
+          setResumeUrl(null);
+        }
+      } catch (error) {
+        console.error('Error getting resume URL:', error);
         setResumeUrl(null);
       }
     } else {
@@ -242,11 +236,11 @@ const EmployerDashboard = () => {
   const getStatusConfig = (status: string) => {
     switch (status) {
       case "active":
-        return { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" };
+        return { bg: "bg-emerald-50 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300", border: "border-emerald-200 dark:border-emerald-800/60" };
       case "draft":
-        return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" };
+        return { bg: "bg-amber-50 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-300", border: "border-amber-200 dark:border-amber-800/60" };
       case "closed":
-        return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" };
+        return { bg: "bg-red-50 dark:bg-red-900/30", text: "text-red-700 dark:text-red-300", border: "border-red-200 dark:border-red-800/60" };
       default:
         return { bg: "bg-muted", text: "text-muted-foreground", border: "border-border" };
     }
@@ -255,13 +249,13 @@ const EmployerDashboard = () => {
   const getAppStatusConfig = (status: string) => {
     switch (status) {
       case "pending":
-        return { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", icon: Clock, label: "Applied" };
+        return { bg: "bg-blue-50 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-300", border: "border-blue-200 dark:border-blue-800/60", icon: Clock, label: "Applied" };
       case "shortlisted":
-        return { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", icon: UserCheck, label: "Shortlisted" };
+        return { bg: "bg-emerald-50 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-300", border: "border-emerald-200 dark:border-emerald-800/60", icon: UserCheck, label: "Shortlisted" };
       case "rejected":
-        return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", icon: XCircle, label: "Rejected" };
+        return { bg: "bg-red-50 dark:bg-red-900/30", text: "text-red-700 dark:text-red-300", border: "border-red-200 dark:border-red-800/60", icon: XCircle, label: "Rejected" };
       case "hired":
-        return { bg: "bg-green-50", text: "text-green-700", border: "border-green-200", icon: Award, label: "Hired" };
+        return { bg: "bg-green-50 dark:bg-green-900/30", text: "text-green-700 dark:text-green-300", border: "border-green-200 dark:border-green-800/60", icon: Award, label: "Hired" };
       default:
         return { bg: "bg-muted", text: "text-muted-foreground", border: "border-border", icon: Clock, label: status };
     }
@@ -383,6 +377,63 @@ const EmployerDashboard = () => {
                   </div>
                 )}
 
+                {/* Contact */}
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Contact</h4>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="h-4 w-4 text-primary" />
+                      {applicantDetail.profiles?.email ? (
+                        <a href={`mailto:${applicantDetail.profiles.email}`} className="hover:text-primary">
+                          {applicantDetail.profiles.email}
+                        </a>
+                      ) : (
+                        <span>Email not available</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="h-4 w-4 text-primary" />
+                      {applicantDetail.profiles?.phone ? (
+                        <a href={`tel:${applicantDetail.profiles.phone}`} className="hover:text-primary">
+                          {applicantDetail.profiles.phone}
+                        </a>
+                      ) : (
+                        <span>Phone not available</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Linkedin className="h-4 w-4 text-primary" />
+                      {applicantDetail.profiles?.linkedin_url ? (
+                        <a
+                          href={applicantDetail.profiles.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 hover:text-primary"
+                        >
+                          LinkedIn <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : (
+                        <span>LinkedIn not available</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Github className="h-4 w-4 text-primary" />
+                      {applicantDetail.profiles?.github_url ? (
+                        <a
+                          href={applicantDetail.profiles.github_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 hover:text-primary"
+                        >
+                          GitHub <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : (
+                        <span>GitHub not available</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Cover Letter */}
                 {applicantDetail.cover_letter && (
                   <div>
@@ -454,7 +505,7 @@ const EmployerDashboard = () => {
       </Dialog>
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent py-8">
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent py-10">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -482,27 +533,28 @@ const EmployerDashboard = () => {
               </div>
             </div>
             <div className="flex gap-3">
-              <Link to="/profile">
+              <Link to="/recruiter-profile">
                 <Button variant="outline" size="sm">
                   <User className="h-4 w-4 mr-2" />
                   Profile
                 </Button>
               </Link>
-              <Button
-                className="btn-primary"
-                size="sm"
-                onClick={() => setSearchParams({ tab: "post-job" })}
-                disabled={!profileCompletion.isComplete}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Post New Job
-              </Button>
+              <Link to="/post-job">
+                <Button
+                  className="btn-primary"
+                  size="sm"
+                  disabled={!profileCompletion.isComplete}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Post New Job
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-10">
         {/* Profile Completion Banner */}
         <ProfileCompletionBanner
           isComplete={profileCompletion.isComplete}
@@ -512,11 +564,11 @@ const EmployerDashboard = () => {
         />
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="bg-card border border-border rounded-xl p-5 hover:shadow-md transition-shadow"
+              className="bg-card/80 border border-border/60 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow backdrop-blur"
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -534,7 +586,7 @@ const EmployerDashboard = () => {
 
         {/* Tabs */}
         <Tabs value={defaultTab} onValueChange={(v) => setSearchParams({ tab: v })} className="w-full">
-          <div className="bg-card border border-border rounded-xl mb-6">
+          <div className="bg-card/80 border border-border/60 rounded-2xl mb-6 backdrop-blur">
             <TabsList className="w-full justify-start p-1 bg-transparent">
               <TabsTrigger
                 value="overview"
@@ -556,14 +608,6 @@ const EmployerDashboard = () => {
                 <Users className="h-4 w-4 mr-2" />
                 Applicants
               </TabsTrigger>
-              <TabsTrigger
-                value="post-job"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
-                disabled={!profileCompletion.isComplete}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Post Job
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -584,14 +628,15 @@ const EmployerDashboard = () => {
                       <Briefcase className="h-6 w-6 text-primary" />
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">No jobs posted yet</p>
-                    <Button
-                      size="sm"
-                      className="btn-primary"
-                      onClick={() => setSearchParams({ tab: "post-job" })}
-                      disabled={!profileCompletion.isComplete}
-                    >
-                      Post a Job
-                    </Button>
+                    <Link to="/post-job">
+                      <Button
+                        size="sm"
+                        className="btn-primary"
+                        disabled={!profileCompletion.isComplete}
+                      >
+                        Post a Job
+                      </Button>
+                    </Link>
                   </div>
                 ) : (
                   <div className="divide-y divide-border">
@@ -680,14 +725,15 @@ const EmployerDashboard = () => {
                   </div>
                   <h4 className="font-semibold text-foreground mb-2">No jobs posted yet</h4>
                   <p className="text-sm text-muted-foreground mb-6">Post your first job to start receiving applications</p>
-                  <Button
-                    className="btn-primary"
-                    onClick={() => setSearchParams({ tab: "post-job" })}
-                    disabled={!profileCompletion.isComplete}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Post a Job
-                  </Button>
+                  <Link to="/post-job">
+                    <Button
+                      className="btn-primary"
+                      disabled={!profileCompletion.isComplete}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Post a Job
+                    </Button>
+                  </Link>
                 </div>
               ) : (
                 <div className="divide-y divide-border">
@@ -870,27 +916,6 @@ const EmployerDashboard = () => {
             </div>
           </TabsContent>
 
-          {/* Post Job Tab */}
-          <TabsContent value="post-job" className="mt-0">
-            {!profileCompletion.isComplete ? (
-              <div className="bg-card border border-border rounded-xl p-12 text-center">
-                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Building2 className="h-8 w-8 text-amber-600" />
-                </div>
-                <h4 className="font-semibold text-foreground mb-2">Complete Your Profile First</h4>
-                <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-                  Please complete your company profile before posting jobs. This helps candidates learn about your company.
-                </p>
-                <Link to="/profile">
-                  <Button className="btn-primary">
-                    Complete Profile
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <PostJobForm />
-            )}
-          </TabsContent>
         </Tabs>
       </div>
     </Layout>

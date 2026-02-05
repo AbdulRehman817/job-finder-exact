@@ -41,13 +41,13 @@ const NotificationDropdown = () => {
   const getNotificationColor = (type: string) => {
     switch (type) {
       case "shortlisted":
-        return "bg-blue-100 text-blue-700";
+        return "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300";
       case "rejected":
-        return "bg-red-100 text-red-700";
+        return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300";
       case "hired":
-        return "bg-green-100 text-green-700";
+        return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300";
       case "application_received":
-        return "bg-purple-100 text-purple-700";
+        return "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300";
       default:
         return "bg-muted text-muted-foreground";
     }

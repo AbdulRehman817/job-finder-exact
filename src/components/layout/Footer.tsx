@@ -3,7 +3,7 @@ import { Briefcase, Phone, MapPin, Facebook, Youtube, Instagram, Twitter } from 
 
 const Footer = () => {
   return (
-    <footer className="bg-foreground text-primary-foreground">
+    <footer className="bg-slate-900 text-slate-50">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand */}
@@ -75,7 +75,7 @@ const Footer = () => {
       <div className="border-t border-primary-foreground/10">
         <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-primary-foreground/70">
-            © 2024 Jobpilot - Job Portal. All rights Reserved
+            (c) 2024 Jobpilot - Job Portal. All rights Reserved
           </p>
           <div className="flex items-center gap-4">
             <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">

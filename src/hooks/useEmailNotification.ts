@@ -1,5 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
-
 interface SendEmailParams {
   to: string;
   type: "shortlisted" | "hired" | "rejected";
@@ -9,19 +7,6 @@ interface SendEmailParams {
 }
 
 export const sendNotificationEmail = async (params: SendEmailParams) => {
-  try {
-    const { data, error } = await supabase.functions.invoke("send-notification-email", {
-      body: params,
-    });
-
-    if (error) {
-      console.error("Failed to send notification email:", error);
-      return { success: false, error };
-    }
-
-    return { success: true, data };
-  } catch (err) {
-    console.error("Error sending notification email:", err);
-    return { success: false, error: err };
-  }
+  console.warn("Email notifications are disabled (no provider configured).", params);
+  return { success: false, error: "Email provider not configured" };
 };

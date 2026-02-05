@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { storage, databases, DATABASE_ID, COLLECTIONS, BUCKETS, ID } from "@/lib/appwrite";
 
 export const useResumeUpload = () => {
-  const { user, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
 
@@ -18,7 +18,6 @@ export const useResumeUpload = () => {
       return null;
     }
 
-    // Validate file type
     const allowedTypes = [
       "application/pdf",
       "application/msword",
@@ -33,7 +32,6 @@ export const useResumeUpload = () => {
       return null;
     }
 
-    // Validate file size (max 10MB)
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
@@ -47,33 +45,37 @@ export const useResumeUpload = () => {
     setUploading(true);
 
     try {
-      // Create a unique file path
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}_resume.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      const safeName = file.name.replace(/\s+/g, "_");
+      const fileId = ID.unique();
+      const filePath = `${user.id}/${Date.now()}_${safeName}`;
 
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from("resumes")
-        .upload(filePath, file, { upsert: true });
+      // Delete existing resume if it exists
+      if (profile?.resume_url) {
+        try {
+          await storage.deleteFile(BUCKETS.RESUMES, profile.resume_url);
+        } catch (error) {
+          console.warn('Could not delete existing resume:', error);
+        }
+      }
 
-      if (uploadError) throw uploadError;
+      // Upload new file
+      const fileUpload = await storage.createFile(BUCKETS.RESUMES, fileId, file);
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("resumes")
-        .getPublicUrl(filePath);
+      // Update profile with new resume file ID
+      const { documents } = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PROFILES,
+        [`user_id=${user.id}`]
+      );
 
-      // Since the bucket is private, we'll store the path and use signed URLs when needed
-      const resumePath = filePath;
-
-      // Update profile with resume URL
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ resume_url: resumePath })
-        .eq("user_id", user.id);
-
-      if (updateError) throw updateError;
+      if (documents.length > 0) {
+        await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.PROFILES,
+          documents[0].$id,
+          { resume_url: fileId }
+        );
+      }
 
       await refreshProfile();
 
@@ -82,8 +84,9 @@ export const useResumeUpload = () => {
         description: "Your resume has been uploaded successfully",
       });
 
-      return resumePath;
+      return fileId;
     } catch (error: any) {
+      console.error('Resume upload error:', error);
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload resume",
@@ -95,15 +98,14 @@ export const useResumeUpload = () => {
     }
   };
 
-  const getResumeUrl = async (path: string): Promise<string | null> => {
+  const getResumeUrl = async (fileId: string): Promise<string | null> => {
     try {
-      const { data, error } = await supabase.storage
-        .from("resumes")
-        .createSignedUrl(path, 3600); // 1 hour expiry
-
-      if (error) throw error;
-      return data.signedUrl;
-    } catch {
+      if (!fileId) return null;
+      if (fileId.startsWith("http")) return fileId;
+      const fileUrl = storage.getFileView(BUCKETS.RESUMES, fileId);
+      return fileUrl.toString();
+    } catch (error) {
+      console.error('Error getting resume URL:', error);
       return null;
     }
   };
@@ -112,23 +114,25 @@ export const useResumeUpload = () => {
     if (!user) return false;
 
     try {
-      // Get current resume path from profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("resume_url")
-        .eq("user_id", user.id)
-        .single();
-
       if (profile?.resume_url) {
-        // Delete from storage
-        await supabase.storage.from("resumes").remove([profile.resume_url]);
+        await storage.deleteFile(BUCKETS.RESUMES, profile.resume_url);
       }
 
-      // Update profile
-      await supabase
-        .from("profiles")
-        .update({ resume_url: null })
-        .eq("user_id", user.id);
+      // Update profile to remove resume_url
+      const { documents } = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PROFILES,
+        [`user_id=${user.id}`]
+      );
+
+      if (documents.length > 0) {
+        await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.PROFILES,
+          documents[0].$id,
+          { resume_url: null }
+        );
+      }
 
       await refreshProfile();
 
@@ -139,6 +143,7 @@ export const useResumeUpload = () => {
 
       return true;
     } catch (error: any) {
+      console.error('Resume delete error:', error);
       toast({
         title: "Error",
         description: error.message,

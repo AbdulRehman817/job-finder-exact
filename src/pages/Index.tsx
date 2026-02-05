@@ -17,15 +17,21 @@ const Index = () => {
   const [locationTerm, setLocationTerm] = useState("");
 
   // Transform database jobs to match the Job interface used by JobCard
+  const formatSalary = (min: number | null, max: number | null, currency: string | null) => {
+    const unit = currency || "USD";
+    if (!min && !max) return "Competitive";
+    if (min && max) return `${unit} ${min.toLocaleString()} - ${max.toLocaleString()}`;
+    if (min) return `${unit} ${min.toLocaleString()}+`;
+    return `Up to ${unit} ${max!.toLocaleString()}`;
+  };
+
   const transformedJobs = dbJobs.map((job) => ({
     id: job.id,
     title: job.title,
     company: job.companies?.name || "Company",
     companyLogo: job.companies?.logo_url || "",
     location: job.location,
-    salary: job.salary_min && job.salary_max 
-      ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}`
-      : "Competitive",
+    salary: formatSalary(job.salary_min, job.salary_max, job.currency || "USD"),
     type: job.type as "full-time" | "part-time" | "internship" | "remote" | "contract",
     featured: job.featured || false,
     postedDate: job.posted_date,
@@ -42,7 +48,9 @@ const Index = () => {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary/5 via-secondary to-primary/10 py-16 lg:py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-primary/5 py-16 lg:py-24">
+        <div className="absolute -top-32 right-0 h-80 w-80 rounded-full bg-primary/15 blur-3xl" />
+        <div className="absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="animate-fade-in">
@@ -61,7 +69,7 @@ const Index = () => {
               </p>
 
               {/* Search Box */}
-              <div className="bg-card p-4 rounded-xl shadow-lg flex flex-col md:flex-row gap-4">
+              <div className="bg-card/80 p-4 rounded-2xl shadow-lg border border-border/60 flex flex-col md:flex-row gap-4 backdrop-blur">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
@@ -140,7 +148,7 @@ const Index = () => {
       </section>
 
       {/* How it Works */}
-      <section className="py-16 bg-card">
+      <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-foreground mb-4">How Jobpilot Works</h2>
@@ -157,7 +165,7 @@ const Index = () => {
             ].map((item, index) => (
               <div key={index} className="text-center relative group">
                 <div className="relative inline-block mb-4">
-                  <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-4xl group-hover:bg-primary/20 transition-colors">
+                  <div className="w-20 h-20 bg-card border border-border/60 rounded-2xl flex items-center justify-center mx-auto text-4xl group-hover:shadow-md transition-all">
                     {item.icon}
                   </div>
                   <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
@@ -177,7 +185,7 @@ const Index = () => {
 
       {/* Featured Jobs - Only show if there are jobs */}
       {hasJobs && (
-        <section className="py-16 bg-secondary">
+        <section className="py-16 bg-secondary/40">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between mb-8">
               <div>
@@ -209,7 +217,7 @@ const Index = () => {
 
       {/* Empty State - When no jobs */}
       {!hasJobs && !jobsLoading && (
-        <section className="py-16 bg-secondary">
+        <section className="py-16 bg-secondary/40">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto text-center">
               <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -249,7 +257,7 @@ const Index = () => {
           <div className="container mx-auto px-4">
             <div className="grid md:grid-cols-2 gap-6">
               {/* Candidate CTA */}
-              <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-8 relative overflow-hidden border border-primary/20">
+              <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-3xl p-8 relative overflow-hidden border border-primary/20">
                 <div className="relative z-10">
                   <div className="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-4">
                     <Users className="h-7 w-7 text-primary" />
@@ -270,7 +278,7 @@ const Index = () => {
               </div>
 
               {/* Employer CTA */}
-              <div className="bg-foreground rounded-2xl p-8 relative overflow-hidden">
+              <div className="bg-slate-900 rounded-3xl p-8 relative overflow-hidden">
                 <div className="relative z-10">
                   <div className="w-14 h-14 bg-primary-foreground/20 rounded-xl flex items-center justify-center mb-4">
                     <Building2 className="h-7 w-7 text-primary-foreground" />
@@ -311,7 +319,7 @@ const Index = () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 {userRole === "employer" ? (
                   <>
-                    <Link to="/employer-dashboard?tab=post-job">
+                    <Link to="/post-job">
                       <Button variant="secondary" size="lg">
                         <Briefcase className="h-4 w-4 mr-2" />
                         Post a Job

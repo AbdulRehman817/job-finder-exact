@@ -1,17 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, ID, COLLECTIONS, DATABASE_ID } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface Notification {
-  id: string;
+  $id: string;
   user_id: string;
-  type: "shortlisted" | "rejected" | "hired" | "application_received";
+  type: "shortlisted" | "rejected" | "hired" | "application_received" | "general";
   title: string;
   message: string;
   job_id: string | null;
   application_id: string | null;
   is_read: boolean;
-  created_at: string;
+  $createdAt: string;
 }
 
 export const useNotifications = () => {
@@ -20,15 +20,19 @@ export const useNotifications = () => {
   return useQuery({
     queryKey: ["notifications", user?.id],
     queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as Notification[];
+      if (!user) return [] as Notification[];
+      try {
+        const { documents } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.NOTIFICATIONS,
+          [`user_id=${user.id}`],
+          { orderBy: ['$createdAt', 'DESC'] }
+        );
+        return documents as Notification[];
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+        throw error;
+      }
     },
     enabled: !!user,
   });
@@ -41,14 +45,17 @@ export const useUnreadNotificationsCount = () => {
     queryKey: ["notifications-unread-count", user?.id],
     queryFn: async () => {
       if (!user) return 0;
-      const { count, error } = await supabase
-        .from("notifications")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("is_read", false);
-
-      if (error) throw error;
-      return count || 0;
+      try {
+        const { documents } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.NOTIFICATIONS,
+          [`user_id=${user.id}`, `is_read=false`]
+        );
+        return documents.length;
+      } catch (error) {
+        console.error('Error fetching unread notifications count:', error);
+        return 0;
+      }
     },
     enabled: !!user,
   });
@@ -59,12 +66,17 @@ export const useMarkNotificationRead = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("notifications")
-        .update({ is_read: true })
-        .eq("id", id);
-
-      if (error) throw error;
+      try {
+        await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.NOTIFICATIONS,
+          id,
+          { is_read: true }
+        );
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -79,14 +91,30 @@ export const useMarkAllNotificationsRead = () => {
 
   return useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("Not authenticated");
-      const { error } = await supabase
-        .from("notifications")
-        .update({ is_read: true })
-        .eq("user_id", user.id)
-        .eq("is_read", false);
+      if (!user) throw new Error("Not signed in");
+      try {
+        // Get all unread notifications
+        const { documents } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.NOTIFICATIONS,
+          [`user_id=${user.id}`, `is_read=false`]
+        );
 
-      if (error) throw error;
+        // Mark each one as read
+        await Promise.all(
+          documents.map(notification =>
+            databases.updateDocument(
+              DATABASE_ID,
+              COLLECTIONS.NOTIFICATIONS,
+              notification.$id,
+              { is_read: true }
+            )
+          )
+        );
+      } catch (error) {
+        console.error('Error marking all notifications as read:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -99,18 +127,27 @@ export const useCreateNotification = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (notification: Omit<Notification, "id" | "created_at" | "is_read">) => {
-      const { data, error } = await supabase
-        .from("notifications")
-        .insert({
-          ...notification,
-          is_read: false,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+    mutationFn: async (notification: Omit<Notification, "$id" | "$createdAt" | "is_read">) => {
+      try {
+        const document = await databases.createDocument(
+          DATABASE_ID,
+          COLLECTIONS.NOTIFICATIONS,
+          ID.unique(),
+          {
+            user_id: notification.user_id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            job_id: notification.job_id || null,
+            application_id: notification.application_id || null,
+            is_read: false,
+          }
+        );
+        return document as Notification;
+      } catch (error) {
+        console.error('Error creating notification:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -124,12 +161,16 @@ export const useDeleteNotification = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("notifications")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
+      try {
+        await databases.deleteDocument(
+          DATABASE_ID,
+          COLLECTIONS.NOTIFICATIONS,
+          id
+        );
+      } catch (error) {
+        console.error('Error deleting notification:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });

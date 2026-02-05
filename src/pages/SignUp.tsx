@@ -24,6 +24,20 @@ const SignUp = () => {
   const { signUp } = useAuth();
   const { toast } = useToast();
 
+  const getSignupErrorMessage = (error: any) => {
+    if (!error?.message) {
+      return "Something went wrong. Please try again.";
+    }
+    const message = String(error.message).toLowerCase();
+    if (message.includes("rate limit") || message.includes("too many")) {
+      return "Signup emails are temporarily limited. Please wait a few minutes and try again.";
+    }
+    if (message.includes("user already registered") || message.includes("already registered")) {
+      return "This email is already registered. Try signing in instead.";
+    }
+    return error.message;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -52,7 +66,7 @@ const SignUp = () => {
     if (error) {
       toast({
         title: "Sign up failed",
-        description: error.message,
+        description: getSignupErrorMessage(error),
         variant: "destructive",
       });
     } else {
@@ -229,8 +243,8 @@ const SignUp = () => {
       </div>
 
       {/* Right side - Image */}
-      <div className="hidden lg:block relative bg-foreground">
-        <div className="absolute inset-0 bg-gradient-to-br from-foreground/90 to-foreground/70" />
+      <div className="hidden lg:block relative bg-slate-900">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 to-slate-900/70" />
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-50"
           style={{

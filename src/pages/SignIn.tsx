@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowRight, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,18 @@ const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [shouldNavigate, setShouldNavigate] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn, userRole } = useAuth();
+  const { signIn, userRole, loading: authLoading } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (shouldNavigate && !authLoading && userRole) {
+      navigate(userRole === "employer" ? "/employer-dashboard" : "/dashboard");
+      setShouldNavigate(false);
+    }
+  }, [shouldNavigate, userRole, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,18 +37,16 @@ const SignIn = () => {
         description: error.message,
         variant: "destructive",
       });
+      setLoading(false);
     } else {
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
-      // Navigate based on role after a small delay to let role fetch complete
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 100);
+      // Trigger navigation when profile is loaded
+      setShouldNavigate(true);
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
@@ -142,8 +148,8 @@ const SignIn = () => {
       </div>
 
       {/* Right side - Image */}
-      <div className="hidden lg:block relative bg-foreground">
-        <div className="absolute inset-0 bg-gradient-to-br from-foreground/90 to-foreground/70" />
+      <div className="hidden lg:block relative bg-slate-900">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 to-slate-900/70" />
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-50"
           style={{

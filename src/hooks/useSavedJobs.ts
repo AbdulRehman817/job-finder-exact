@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { databases, DATABASE_ID, COLLECTIONS, ID } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface SavedJob {
@@ -25,35 +25,61 @@ export interface SavedJob {
 
 export const useSavedJobs = () => {
   const { user } = useAuth();
-  
+
   return useQuery({
     queryKey: ["saved-jobs", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from("saved_jobs")
-        .select(`
-          *,
-          jobs (
-            id,
-            title,
-            location,
-            type,
-            salary_min,
-            salary_max,
-            posted_date,
-            companies (
-              id,
-              name,
-              logo_url
-            )
-          )
-        `)
-        .eq("user_id", user.id)
-        .order("saved_at", { ascending: false });
+      try {
+        const { documents: savedJobs } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.SAVED_JOBS,
+          [`user_id=${user.id}`, `orderDesc=saved_at`]
+        );
 
-      if (error) throw error;
-      return data as SavedJob[];
+        // Fetch job and company data for each saved job
+        const savedJobsWithData = await Promise.all(
+          savedJobs.map(async (savedJob) => {
+            try {
+              // Fetch job data
+              const job = await databases.getDocument(DATABASE_ID, COLLECTIONS.JOBS, savedJob.job_id);
+
+              // Fetch company data
+              const { documents: companies } = await databases.listDocuments(
+                DATABASE_ID,
+                COLLECTIONS.COMPANIES,
+                [`$id=${job.company_id}`]
+              );
+
+              return {
+                ...savedJob,
+                jobs: {
+                  id: job.$id,
+                  title: job.title,
+                  location: job.location,
+                  type: job.type,
+                  salary_min: job.salary_min,
+                  salary_max: job.salary_max,
+                  posted_date: job.posted_date,
+                  companies: companies.length > 0 ? {
+                    id: companies[0].$id,
+                    name: companies[0].name,
+                    logo_url: companies[0].logo_url
+                  } : undefined
+                }
+              };
+            } catch (error) {
+              console.error('Error fetching data for saved job:', savedJob.$id, error);
+              return savedJob;
+            }
+          })
+        );
+
+        return savedJobsWithData;
+      } catch (error) {
+        console.error('Error fetching saved jobs:', error);
+        throw error;
+      }
     },
     enabled: !!user,
   });
@@ -65,19 +91,27 @@ export const useSaveJob = () => {
 
   return useMutation({
     mutationFn: async (jobId: string) => {
-      if (!user) throw new Error("Not authenticated");
-      
-      const { data, error } = await supabase
-        .from("saved_jobs")
-        .insert({
-          job_id: jobId,
-          user_id: user.id,
-        })
-        .select()
-        .single();
+      if (!user) throw new Error("You must be signed in to save jobs.");
 
-      if (error) throw error;
-      return data;
+      try {
+        const document = await databases.createDocument(
+          DATABASE_ID,
+          COLLECTIONS.SAVED_JOBS,
+          ID.unique(),
+          {
+            job_id: jobId,
+            user_id: user.id,
+            saved_at: new Date().toISOString(),
+          }
+        );
+        return document;
+      } catch (error: any) {
+        if (error.code === 409) {
+          return { message: "Already saved" };
+        }
+        console.error('Error saving job:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["saved-jobs"] });
@@ -92,15 +126,23 @@ export const useUnsaveJob = () => {
 
   return useMutation({
     mutationFn: async (jobId: string) => {
-      if (!user) throw new Error("Not authenticated");
-      
-      const { error } = await supabase
-        .from("saved_jobs")
-        .delete()
-        .eq("job_id", jobId)
-        .eq("user_id", user.id);
+      if (!user) throw new Error("You must be signed in.");
 
-      if (error) throw error;
+      try {
+        // Find the saved job document
+        const { documents } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.SAVED_JOBS,
+          [`user_id=${user.id}`, `job_id=${jobId}`]
+        );
+
+        if (documents.length > 0) {
+          await databases.deleteDocument(DATABASE_ID, COLLECTIONS.SAVED_JOBS, documents[0].$id);
+        }
+      } catch (error) {
+        console.error('Error unsaving job:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["saved-jobs"] });
@@ -111,21 +153,23 @@ export const useUnsaveJob = () => {
 
 export const useIsJobSaved = (jobId: string) => {
   const { user } = useAuth();
-  
+
   return useQuery({
     queryKey: ["is-job-saved", jobId, user?.id],
     queryFn: async () => {
-      if (!user || !jobId) return false;
-      const { data, error } = await supabase
-        .from("saved_jobs")
-        .select("id")
-        .eq("job_id", jobId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      return !!data;
+      if (!jobId || !user) return false;
+      try {
+        const { documents } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.SAVED_JOBS,
+          [`user_id=${user.id}`, `job_id=${jobId}`]
+        );
+        return documents.length > 0;
+      } catch (error) {
+        console.error('Error checking if job is saved:', error);
+        return false;
+      }
     },
-    enabled: !!user && !!jobId,
+    enabled: !!jobId && !!user,
   });
 };

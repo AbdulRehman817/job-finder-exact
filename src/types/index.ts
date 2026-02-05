@@ -5,6 +5,7 @@ export interface Job {
   companyLogo: string;
   location: string;
   salary: string;
+  currency?: "USD" | "PKR";
   type: "full-time" | "part-time" | "internship" | "remote" | "contract";
   featured?: boolean;
   description?: string;

@@ -32,6 +32,7 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
     type: "full-time" as "full-time" | "part-time" | "internship" | "remote" | "contract",
     salary_min: "",
     salary_max: "",
+    currency: "USD" as "USD" | "PKR",
     experience_level: "",
     category: "",
     description: "",
@@ -123,6 +124,7 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
         type: formData.type,
         salary_min: formData.salary_min ? parseInt(formData.salary_min) : null,
         salary_max: formData.salary_max ? parseInt(formData.salary_max) : null,
+        currency: formData.currency,
         experience_level: formData.experience_level || null,
         category: formData.category || null,
         description: formData.description,
@@ -284,7 +286,20 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
           </div>
 
           <div>
-            <Label>Min Salary (USD/year)</Label>
+            <Label>Currency</Label>
+            <Select value={formData.currency} onValueChange={(value: "USD" | "PKR") => setFormData((prev) => ({ ...prev, currency: value }))}>
+              <SelectTrigger className="mt-2 h-12">
+                <SelectValue placeholder="Select currency" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border border-border">
+                <SelectItem value="USD">USD - US Dollar</SelectItem>
+                <SelectItem value="PKR">PKR - Pakistani Rupee</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Min Salary ({formData.currency}/year)</Label>
             <Input
               type="number"
               value={formData.salary_min}
@@ -295,7 +310,7 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
           </div>
 
           <div>
-            <Label>Max Salary (USD/year)</Label>
+            <Label>Max Salary ({formData.currency}/year)</Label>
             <Input
               type="number"
               value={formData.salary_max}
