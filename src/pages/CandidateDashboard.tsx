@@ -257,7 +257,7 @@ const CandidateDashboard = () => {
                     {applications.slice(0, 4).map((application) => {
                       const statusConfig = getStatusConfig(application.status || "pending");
                       return (
-                        <div key={application.id} className="p-4 hover:bg-muted/50 transition-colors">
+                        <div key={application.$id} className="p-4 hover:bg-muted/50 transition-colors">
                           <div className="flex items-center justify-between gap-3">
                             <div className="min-w-0 flex-1">
                               <Link
@@ -301,8 +301,8 @@ const CandidateDashboard = () => {
                   <div className="divide-y divide-border">
                     {notifications.slice(0, 4).map((notification) => (
                       <div
-                        key={notification.id}
-                        onClick={() => !notification.is_read && markRead.mutate(notification.id)}
+                        key={notification.$id}
+                        onClick={() => !notification.is_read && markRead.mutate(notification.$id)}
                         className={cn("p-4 cursor-pointer hover:bg-muted/50 transition-colors", !notification.is_read && "bg-primary/5")}
                       >
                         <div className="flex items-start gap-3">
@@ -312,7 +312,7 @@ const CandidateDashboard = () => {
                           <div className="flex-1 min-w-0">
                             <p className={cn("text-sm truncate", !notification.is_read && "font-medium")}>{notification.title}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                              {formatDistanceToNow(new Date(notification.$createdAt), { addSuffix: true })}
                             </p>
                           </div>
                         </div>
@@ -346,7 +346,7 @@ const CandidateDashboard = () => {
                   {applications.map((application) => {
                     const statusConfig = getStatusConfig(application.status || "pending");
                     return (
-                      <div key={application.id} className="p-4 hover:bg-muted/50 transition-colors">
+                      <div key={application.$id} className="p-4 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-4 min-w-0 flex-1">
                             <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-xl shrink-0">
@@ -483,8 +483,8 @@ const CandidateDashboard = () => {
                 <div className="divide-y divide-border">
                   {notifications.map((notification) => (
                     <div
-                      key={notification.id}
-                      onClick={() => !notification.is_read && markRead.mutate(notification.id)}
+                      key={notification.$id}
+                      onClick={() => !notification.is_read && markRead.mutate(notification.$id)}
                       className={cn("p-4 cursor-pointer hover:bg-muted/50 transition-colors", !notification.is_read && "bg-primary/5")}
                     >
                       <div className="flex items-start gap-4">
@@ -497,7 +497,7 @@ const CandidateDashboard = () => {
                           </p>
                           <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
                           <p className="text-xs text-muted-foreground mt-2">
-                            {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                            {formatDistanceToNow(new Date(notification.$createdAt), { addSuffix: true })}
                           </p>
                           {notification.job_id && (
                             <Link

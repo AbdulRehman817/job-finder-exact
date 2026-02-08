@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { databases, ID, COLLECTIONS, DATABASE_ID } from "@/lib/appwrite";
+import { databases, ID, COLLECTIONS, DATABASE_ID, Query } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface Notification {
@@ -25,8 +25,7 @@ export const useNotifications = () => {
         const { documents } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.NOTIFICATIONS,
-          [`user_id=${user.id}`],
-          { orderBy: ['$createdAt', 'DESC'] }
+          [Query.equal('user_id', user.id), Query.orderDesc('$createdAt')]
         );
         return documents as Notification[];
       } catch (error) {
@@ -49,7 +48,7 @@ export const useUnreadNotificationsCount = () => {
         const { documents } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.NOTIFICATIONS,
-          [`user_id=${user.id}`, `is_read=false`]
+          [Query.equal('user_id', user.id), Query.equal('is_read', false)]
         );
         return documents.length;
       } catch (error) {
@@ -97,7 +96,7 @@ export const useMarkAllNotificationsRead = () => {
         const { documents } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.NOTIFICATIONS,
-          [`user_id=${user.id}`, `is_read=false`]
+          [Query.equal('user_id', user.id), Query.equal('is_read', false)]
         );
 
         // Mark each one as read

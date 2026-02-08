@@ -115,7 +115,7 @@ const Notifications = () => {
               <div className="divide-y divide-border">
                 {notifications.map((notification) => (
                   <div
-                    key={notification.id}
+                    key={notification.$id}
                     className={cn(
                       "p-4 flex items-start gap-4 transition-colors",
                       !notification.is_read && "bg-primary/5"
@@ -138,7 +138,7 @@ const Notifications = () => {
                           </h4>
                           <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
                           <p className="text-xs text-muted-foreground mt-2">
-                            {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                            {formatDistanceToNow(new Date(notification.$createdAt), { addSuffix: true })}
                           </p>
                         </div>
 
@@ -147,7 +147,7 @@ const Notifications = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => markRead.mutate(notification.id)}
+                              onClick={() => markRead.mutate(notification.$id)}
                               className="h-8 w-8"
                             >
                               <Check className="h-4 w-4" />
@@ -156,7 +156,7 @@ const Notifications = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => deleteNotification.mutate(notification.id)}
+                            onClick={() => deleteNotification.mutate(notification.$id)}
                             className="h-8 w-8 text-destructive hover:text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -166,10 +166,10 @@ const Notifications = () => {
 
                       {notification.job_id && (
                         <Link
-                          to={`/job/${notification.job_id}`}
+                          to={`/employer-dashboard`}
                           className="inline-block mt-3 text-sm text-primary hover:underline"
                         >
-                          View Job Details →
+                          View User Details →
                         </Link>
                       )}
                     </div>

@@ -44,11 +44,11 @@ const FindJobs = () => {
 
   // Transform database jobs
   const transformedJobs = dbJobs.map((job) => ({
-    id: job.id,
+    id: job.$id,
     title: job.title,
     company: job.companies?.name || "Company",
     companyLogo: job.companies?.logo_url || "",
-    companyId: job.companies?.id || "",
+    companyId: job.companies?.$id || "",
     location: job.location,
     salary_min: job.salary_min,
     salary_max: job.salary_max,

@@ -17,15 +17,15 @@ import ThemeToggle from "@/components/theme/ThemeToggle";
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, userRole, profile, signOut } = useAuth();
+  const { user, userRole, profile, signOut, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  console.log('🔄 Header: Component rendered with auth data:', { user: user?.id, userRole, profile: profile?.id });
+  // console.log('🔄 Header: Component rendered with auth data:', { loading, user: user?.id, userRole, profile: profile });
 
-  useEffect(() => {
-    console.log("📊 Header: Auth state updated - userRole:", userRole, "profile:", profile?.id, "user:", user?.id);
+  // useEffect(() => {
+  //   console.log("📊 Header: Auth state updated - loading:", loading, "userRole:", userRole, "profile:", profile?.id, "profile full_name:", profile?.full_name, "user:", user?.id);
     
-  }, [userRole, profile, user]);
+  // }, [loading, userRole, profile, user]);
 
   // Navigation links - consistent for all users
   const mainNavLinks = [

@@ -2,6 +2,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { databases, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
 
+// Helper function to parse JSON strings stored in Appwrite
+const parseJobData = (job: any): Job => {
+  return {
+    ...job,
+    requirements: job.requirements ? (typeof job.requirements === 'string' ? JSON.parse(job.requirements) : job.requirements) : null,
+    responsibilities: job.responsibilities ? (typeof job.responsibilities === 'string' ? JSON.parse(job.responsibilities) : job.responsibilities) : null,
+    benefits: job.benefits ? (typeof job.benefits === 'string' ? JSON.parse(job.benefits) : job.benefits) : null,
+  };
+};
+
 export interface Job {
   $id: string;
   company_id: string;
@@ -75,8 +85,9 @@ export const useJobs = (filters?: { type?: string; location?: string; search?: s
                 [Query.equal('$id', job.company_id)]
               );
 
+              const parsedJob = parseJobData(job);
               const result = {
-                ...job,
+                ...parsedJob,
                 companies: companies.length > 0 ? {
                   id: companies[0].$id,
                   name: companies[0].name,
@@ -88,7 +99,7 @@ export const useJobs = (filters?: { type?: string; location?: string; search?: s
               return result;
             } catch (error) {
               console.error('❌ useJobs: Error fetching company for job:', job.$id, error);
-              return job;
+              return parseJobData(job);
             }
           })
         );
@@ -122,8 +133,9 @@ export const useJob = (id: string) => {
         );
         console.log('📥 useJob: Received company data:', companies.length > 0 ? companies[0].name : 'none');
 
+        const parsedJob = parseJobData(job);
         const result = {
-          ...job,
+          ...parsedJob,
           companies: companies.length > 0 ? {
             id: companies[0].$id,
             name: companies[0].name,
@@ -153,7 +165,7 @@ export const useMyJobs = () => {
         const { documents } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.JOBS,
-          [`user_id=${user.id}`, `orderDesc=$createdAt`]
+          [Query.equal('user_id', user.id), Query.orderDesc('$createdAt')]
         );
 
         // Fetch company data for each job
@@ -163,11 +175,12 @@ export const useMyJobs = () => {
               const { documents: companies } = await databases.listDocuments(
                 DATABASE_ID,
                 COLLECTIONS.COMPANIES,
-                [`$id=${job.company_id}`]
+                [Query.equal('$id', job.company_id)]
               );
 
+              const parsedJob = parseJobData(job);
               return {
-                ...job,
+                ...parsedJob,
                 companies: companies.length > 0 ? {
                   id: companies[0].$id,
                   name: companies[0].name,
@@ -177,7 +190,7 @@ export const useMyJobs = () => {
               };
             } catch (error) {
               console.error('Error fetching company for job:', job.$id, error);
-              return job;
+              return parseJobData(job);
             }
           })
         );
@@ -219,7 +232,7 @@ export const useCreateJob = () => {
         const { documents: companies } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.COMPANIES,
-          [`$id=${document.company_id}`]
+          [Query.equal('$id', document.company_id)]
         );
 
         return {
@@ -260,7 +273,7 @@ export const useUpdateJob = () => {
         const { documents: companies } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.COMPANIES,
-          [`$id=${document.company_id}`]
+          [Query.equal('$id', document.company_id)]
         );
 
         return {

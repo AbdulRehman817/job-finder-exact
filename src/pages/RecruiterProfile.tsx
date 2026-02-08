@@ -8,7 +8,7 @@ import {
   Phone,
   Globe,
   Linkedin,
-  Github,
+  Facebook,
   Save,
   Edit,
   CheckCircle,
@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEmployerProfileCompletion } from "@/hooks/useProfileCompletion";
 import { useCreateCompany, useMyCompanies } from "@/hooks/useCompanies";
 import CompanyProfileForm from "@/components/company/CompanyProfileForm";
-import { databases, DATABASE_ID, COLLECTIONS } from "@/lib/appwrite";
+import { databases, DATABASE_ID, COLLECTIONS, Query } from "@/lib/appwrite";
 
 const RecruiterProfile = () => {
   const { user, profile, loading, refreshProfile, userRole } = useAuth();
@@ -42,8 +42,9 @@ const RecruiterProfile = () => {
     location: "",
     bio: "",
     website: "",
+    avatar_url: "",
     linkedin_url: "",
-    github_url: "",
+    facebook_url: "",
   });
   const [newCompany, setNewCompany] = useState({
     name: "",
@@ -62,8 +63,9 @@ const RecruiterProfile = () => {
         location: profile.location || "",
         bio: profile.bio || "",
         website: profile.website || "",
+        avatar_url: profile.avatar_url || "",
         linkedin_url: profile.linkedin_url || "",
-        github_url: (profile as any).github_url || "",
+        facebook_url: (profile as any).facebook_url || "",
       });
     }
   }, [profile]);
@@ -89,6 +91,12 @@ const RecruiterProfile = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
+    // Limit bio to 500 characters
+    if (name === 'bio' && value.length > 500) {
+      return;
+    }
+    
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -101,7 +109,7 @@ const RecruiterProfile = () => {
       const { documents } = await databases.listDocuments(
         DATABASE_ID,
         COLLECTIONS.PROFILES,
-        [`user_id=${user.id}`]
+        [Query.equal('user_id', user.id)]
       );
 
       if (documents.length > 0) {
@@ -116,8 +124,9 @@ const RecruiterProfile = () => {
             location: formData.location,
             bio: formData.bio,
             website: formData.website,
+            avatar_url: formData.avatar_url,
             linkedin_url: formData.linkedin_url,
-            github_url: formData.github_url,
+            facebook_url: formData.facebook_url,
           }
         );
       }
@@ -209,6 +218,9 @@ const RecruiterProfile = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto space-y-8">
           <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Profile Picture Section */}
+           
+
             <div className="bg-card border border-border rounded-2xl p-6 md:p-8">
               <h2 className="text-xl font-semibold text-foreground mb-6">Personal Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -262,7 +274,10 @@ const RecruiterProfile = () => {
                   </div>
                 </div>
                 <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="bio">Bio</Label>
+                    <span className="text-xs text-muted-foreground">{formData.bio.length}/500</span>
+                  </div>
                   <Textarea
                     id="bio"
                     name="bio"
@@ -270,6 +285,7 @@ const RecruiterProfile = () => {
                     onChange={handleInputChange}
                     placeholder="Tell candidates what you look for..."
                     className="min-h-[120px]"
+                    maxLength={500}
                   />
                 </div>
               </div>
@@ -308,17 +324,31 @@ const RecruiterProfile = () => {
                     placeholder="https://linkedin.com/in/username"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="github_url" className="flex items-center gap-2">
-                    <Github className="h-4 w-4" />
-                    GitHub
+                
+                {/* <div className="space-y-2">
+                  <Label htmlFor="facebook_url" className="flex items-center gap-2">
+                    <Facebook className="h-4 w-4" />
+                    Facebook
                   </Label>
                   <Input
-                    id="github_url"
-                    name="github_url"
-                    value={formData.github_url}
+                    id="facebook_url"
+                    name="facebook_url"
+                    value={formData.facebook_url}
                     onChange={handleInputChange}
-                    placeholder="https://github.com/username"
+                    placeholder="https://facebook.com/username"
+                  />
+                </div> */}
+                   <div className="space-y-2">
+                  <Label htmlFor="facebook_url" className="flex items-center gap-2">
+                    <Facebook className="h-4 w-4" />
+                    Facebook
+                  </Label>
+                  <Input
+                    id="facebook_url"
+                    name="facebook_url"
+                    value={formData.facebook_url}
+                    onChange={handleInputChange}
+                    placeholder="https://facebook.com/username"
                   />
                 </div>
               </div>

@@ -88,7 +88,7 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
 
     try {
       const result = await createCompany.mutateAsync(newCompany);
-      setFormData((prev) => ({ ...prev, company_id: result.id }));
+      setFormData((prev) => ({ ...prev, company_id: result.$id }));
       setShowCompanyForm(false);
       setNewCompany({ name: "", location: "", industry: "", website: "", description: "" });
       toast({
@@ -117,7 +117,7 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
     }
 
     try {
-      await createJob.mutateAsync({
+      const payload: any = {
         title: formData.title,
         company_id: formData.company_id,
         location: formData.location,
@@ -128,12 +128,19 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
         experience_level: formData.experience_level || null,
         category: formData.category || null,
         description: formData.description,
-        requirements: formData.requirements.length > 0 ? formData.requirements : null,
-        responsibilities: formData.responsibilities.length > 0 ? formData.responsibilities : null,
-        benefits: formData.benefits.length > 0 ? formData.benefits : null,
+        requirements: formData.requirements.length > 0 ? JSON.stringify(formData.requirements) : null,
+        responsibilities: formData.responsibilities.length > 0 ? JSON.stringify(formData.responsibilities) : null,
+        benefits: formData.benefits.length > 0 ? JSON.stringify(formData.benefits) : null,
         status: formData.status,
-        expiry_date: formData.expiry_date || null,
-      });
+        posted_date: new Date().toISOString(),
+      };
+
+      // Only include expiry_date when the user provided a value
+      if (formData.expiry_date) {
+        payload.expiry_date = formData.expiry_date;
+      }
+
+      await createJob.mutateAsync(payload);
 
       toast({
         title: "Job posted!",
@@ -166,7 +173,7 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border">
                   {companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
+                    <SelectItem key={company.$id} value={company.$id}>
                       {company.name}
                     </SelectItem>
                   ))}
@@ -345,11 +352,13 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
               <SelectContent className="bg-background border border-border">
                 <SelectItem value="engineering">Engineering</SelectItem>
                 <SelectItem value="design">Design</SelectItem>
+                <SelectItem value="technology">Technology & IT</SelectItem>
                 <SelectItem value="marketing">Marketing</SelectItem>
                 <SelectItem value="sales">Sales</SelectItem>
                 <SelectItem value="finance">Finance</SelectItem>
                 <SelectItem value="hr">Human Resources</SelectItem>
                 <SelectItem value="operations">Operations</SelectItem>
+                <SelectItem value="customer_support">Customer Support</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>

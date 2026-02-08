@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { databases, DATABASE_ID, COLLECTIONS, ID } from "@/lib/appwrite";
+import { databases, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface SavedJob {
   id: string;
-  job_id: string;
-  user_id: string;
-  saved_at: string;
+  jobid: string;   // Changed to match schema: jobid (no underscore)
+  userid: string;  // Changed to match schema: userid (no underscore)
+  savedAt: string; // Changed to match schema: savedAt
   jobs?: {
     id: string;
     title: string;
@@ -34,7 +34,7 @@ export const useSavedJobs = () => {
         const { documents: savedJobs } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.SAVED_JOBS,
-          [`user_id=${user.id}`, `orderDesc=saved_at`]
+          [Query.equal('userid', user.id), Query.orderDesc('saved_at')]  // Changed to userid
         );
 
         // Fetch job and company data for each saved job
@@ -48,7 +48,7 @@ export const useSavedJobs = () => {
               const { documents: companies } = await databases.listDocuments(
                 DATABASE_ID,
                 COLLECTIONS.COMPANIES,
-                [`$id=${job.company_id}`]
+                [Query.equal('$id', job.company_id)]
               );
 
               return {
@@ -100,7 +100,7 @@ export const useSaveJob = () => {
           ID.unique(),
           {
             job_id: jobId,
-            user_id: user.id,
+            userid: user.id,  // Changed to userid
             saved_at: new Date().toISOString(),
           }
         );
@@ -133,7 +133,7 @@ export const useUnsaveJob = () => {
         const { documents } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.SAVED_JOBS,
-          [`user_id=${user.id}`, `job_id=${jobId}`]
+          [Query.equal('userid', user.id), Query.equal('job_id', jobId)]  // Changed to userid
         );
 
         if (documents.length > 0) {
@@ -162,7 +162,7 @@ export const useIsJobSaved = (jobId: string) => {
         const { documents } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.SAVED_JOBS,
-          [`user_id=${user.id}`, `job_id=${jobId}`]
+          [Query.equal('userid', user.id), Query.equal('job_id', jobId)]  // Changed to userid
         );
         return documents.length > 0;
       } catch (error) {

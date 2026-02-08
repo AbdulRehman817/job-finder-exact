@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { storage, databases, DATABASE_ID, COLLECTIONS, BUCKETS, ID } from "@/lib/appwrite";
+import { storage, databases, DATABASE_ID, COLLECTIONS, BUCKETS, ID, Query } from "@/lib/appwrite";
 
 export const useResumeUpload = () => {
   const { user, profile, refreshProfile } = useAuth();
@@ -65,7 +65,7 @@ export const useResumeUpload = () => {
       const { documents } = await databases.listDocuments(
         DATABASE_ID,
         COLLECTIONS.PROFILES,
-        [`user_id=${user.id}`]
+        [Query.equal('user_id', user.id)]
       );
 
       if (documents.length > 0) {
@@ -122,7 +122,7 @@ export const useResumeUpload = () => {
       const { documents } = await databases.listDocuments(
         DATABASE_ID,
         COLLECTIONS.PROFILES,
-        [`user_id=${user.id}`]
+        [Query.equal('user_id', user.id)]
       );
 
       if (documents.length > 0) {

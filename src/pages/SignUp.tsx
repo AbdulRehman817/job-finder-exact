@@ -18,6 +18,7 @@ const SignUp = () => {
     email: "",
     password: "",
     confirmPassword: "",
+    avatarUrl: "",
     agreeTerms: false,
   });
   const navigate = useNavigate();
@@ -60,8 +61,9 @@ const SignUp = () => {
     }
 
     setLoading(true);
+    console.log('🔄 SignUp: handleSubmit - formData:', formData);
 
-    const { error } = await signUp(formData.email, formData.password, formData.fullName, accountType);
+    const { error } = await signUp(formData.email, formData.password, formData.fullName, accountType, formData.avatarUrl);
     
     if (error) {
       toast({
@@ -137,6 +139,27 @@ const SignUp = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Profile Picture Section */}
+            <div className="flex flex-col items-center gap-3 pb-4 border-b">
+              <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden ring-2 ring-primary/20">
+                {formData.avatarUrl ? (
+                  <img src={formData.avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+                ) : (
+                  <User className="h-8 w-8 text-primary/50" />
+                )}
+              </div>
+              <div className="w-full space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Profile Picture (Optional)</label>
+                <Input
+                  type="text"
+                  placeholder="https://example.com/photo.jpg"
+                  value={formData.avatarUrl}
+                  onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
+                  className="h-10 text-sm"
+                />
+              </div>
+            </div>
+
             <Input
               type="text"
               placeholder="Full Name"

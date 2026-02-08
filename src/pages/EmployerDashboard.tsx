@@ -76,7 +76,7 @@ const EmployerDashboard = () => {
   // Auto-select first job with applications
   useEffect(() => {
     if (!selectedJobForApps && jobs.length > 0) {
-      setSelectedJobForApps(jobs[0].id);
+      setSelectedJobForApps(jobs[0].$id);
     }
   }, [jobs, selectedJobForApps]);
 
@@ -126,7 +126,7 @@ const EmployerDashboard = () => {
     type: "shortlist" | "reject" | "hire",
     application: any
   ) => {
-    const job = jobs.find(j => j.id === application.job_id);
+    const job = jobs.find(j => j.$id === application.job_id);
     const company = companies[0];
     
     const applicantEmail = application.profiles?.email || "";
@@ -134,7 +134,7 @@ const EmployerDashboard = () => {
     setConfirmDialog({
       open: true,
       type,
-      applicationId: application.id,
+      applicationId: application.$id,
       userId: application.user_id,
       jobId: application.job_id,
       jobTitle: job?.title || "Job",
@@ -261,7 +261,7 @@ const EmployerDashboard = () => {
     }
   };
 
-  const selectedJob = jobs.find(j => j.id === selectedJobForApps);
+  const selectedJob = jobs.find(j => j.$id === selectedJobForApps);
   const isActionDisabled = (status: string) => status === "hired" || status === "rejected";
 
   const dialogConfig = {
@@ -643,10 +643,10 @@ const EmployerDashboard = () => {
                     {jobs.slice(0, 4).map((job) => {
                       const statusConfig = getStatusConfig(job.status || "active");
                       return (
-                        <div key={job.id} className="p-4 hover:bg-muted/50 transition-colors">
+                        <div key={job.$id} className="p-4 hover:bg-muted/50 transition-colors">
                           <div className="flex items-center justify-between gap-3">
                             <div className="min-w-0 flex-1">
-                              <Link to={`/job/${job.id}`} className="font-medium text-foreground hover:text-primary text-sm truncate block">
+                              <Link to={`/job/${job.$id}`} className="font-medium text-foreground hover:text-primary text-sm truncate block">
                                 {job.title}
                               </Link>
                               <p className="text-xs text-muted-foreground">
@@ -685,7 +685,7 @@ const EmployerDashboard = () => {
                       const statusConfig = getAppStatusConfig(app.status || "pending");
                       return (
                         <div
-                          key={app.id}
+                          key={app.$id}
                           className="p-4 hover:bg-muted/50 transition-colors cursor-pointer"
                           onClick={() => viewApplicantDetails(app)}
                         >
@@ -740,14 +740,14 @@ const EmployerDashboard = () => {
                   {jobs.map((job) => {
                     const statusConfig = getStatusConfig(job.status || "active");
                     return (
-                      <div key={job.id} className="p-4 hover:bg-muted/50 transition-colors">
+                      <div key={job.$id} className="p-4 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-4 min-w-0 flex-1">
                             <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-xl shrink-0">
                               💼
                             </div>
                             <div className="min-w-0 flex-1">
-                              <Link to={`/job/${job.id}`} className="font-medium text-foreground hover:text-primary">
+                              <Link to={`/job/${job.$id}`} className="font-medium text-foreground hover:text-primary">
                                 {job.title}
                               </Link>
                               <p className="text-sm text-muted-foreground">
@@ -766,7 +766,7 @@ const EmployerDashboard = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                setSelectedJobForApps(job.id);
+                                setSelectedJobForApps(job.$id);
                                 setSearchParams({ tab: "applications" });
                               }}
                             >
@@ -776,7 +776,7 @@ const EmployerDashboard = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDeleteJob(job.id)}
+                              onClick={() => handleDeleteJob(job.$id)}
                               className="text-destructive hover:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -806,11 +806,11 @@ const EmployerDashboard = () => {
                     ) : (
                       jobs.filter(j => j.status === "active").map((job) => (
                         <button
-                          key={job.id}
-                          onClick={() => setSelectedJobForApps(job.id)}
+                          key={job.$id}
+                          onClick={() => setSelectedJobForApps(job.$id)}
                           className={cn(
                             "w-full p-3 text-left hover:bg-muted/50 transition-colors",
-                            selectedJobForApps === job.id && "bg-primary/10"
+                            selectedJobForApps === job.$id && "bg-primary/10"
                           )}
                         >
                           <p className="font-medium text-sm truncate">{job.title}</p>
@@ -846,7 +846,7 @@ const EmployerDashboard = () => {
                         const statusConfig = getAppStatusConfig(app.status || "pending");
                         const disabled = isActionDisabled(app.status || "pending");
                         return (
-                          <div key={app.id} className="p-4 hover:bg-muted/50 transition-colors">
+                          <div key={app.$id} className="p-4 hover:bg-muted/50 transition-colors">
                             <div className="flex items-center justify-between gap-4">
                               <div
                                 className="flex items-center gap-4 min-w-0 flex-1 cursor-pointer"

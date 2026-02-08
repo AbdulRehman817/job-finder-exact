@@ -23,18 +23,24 @@ export const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'jobfind
 
 // Collection IDs
 export const COLLECTIONS = {
-  PROFILES: 'profiles',
-  COMPANIES: 'companies',
-  JOBS: 'jobs',
-  JOB_APPLICATIONS: 'job_applications',
-  SAVED_JOBS: 'saved_jobs',
-  NOTIFICATIONS: 'notifications'
+  PROFILES: import.meta.env.VITE_APPWRITE_PROFILES_COLLECTION_ID || 'profiles',
+  COMPANIES: import.meta.env.VITE_APPWRITE_COMPANIES_COLLECTION_ID || 'companies',
+  JOBS: import.meta.env.VITE_APPWRITE_JOBS_COLLECTION_ID || 'jobs',
+  JOB_APPLICATIONS: import.meta.env.VITE_APPWRITE_JOB_APPLICATIONS_COLLECTION_ID || 'job_applications',
+  SAVED_JOBS: import.meta.env.VITE_APPWRITE_SAVED_JOBS_COLLECTION_ID || 'saved_jobs',
+  NOTIFICATIONS: import.meta.env.VITE_APPWRITE_NOTIFICATIONS_COLLECTION_ID || 'notifications'
 };
 
 // Storage Bucket IDs
+// Storage Bucket IDs
 export const BUCKETS = {
-  RESUMES: 'resumes'
+  RESUMES: import.meta.env.VITE_APPWRITE_RESUMES_BUCKET_ID as string,
 };
+
+if (!BUCKETS.RESUMES) {
+  throw new Error("Missing VITE_APPWRITE_RESUMES_BUCKET_ID");
+}
+
 
 export { ID };
 export default client;

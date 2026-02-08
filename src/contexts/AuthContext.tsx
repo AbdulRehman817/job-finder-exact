@@ -21,6 +21,7 @@ export interface Profile {
   github_url: string | null;
   website: string | null;
   resume_url: string | null;
+  facebook_url: string | null;
 }
 
 interface AuthContextType {
@@ -28,7 +29,7 @@ interface AuthContextType {
   userRole: UserRole;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, role: "candidate" | "employer") => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string, role: "candidate" | "employer", avatarUrl?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -59,6 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     github_url: document.github_url || null,
     website: document.website || null,
     resume_url: document.resume_url || null,
+    facebook_url: document.facebook_url || null,
   });
 
   const ensureProfile = async (appwriteUser: Models.User<Models.Preferences>, overrides?: Partial<Profile>) => {
@@ -77,7 +79,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       experience_years: overrides?.experience_years ?? null,
       phone: overrides?.phone || null,
       linkedin_url: overrides?.linkedin_url || null,
-      github_url: overrides?.github_url || null,
       website: overrides?.website || null,
       resume_url: overrides?.resume_url || null,
     };
@@ -101,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('✅ AuthContext: Profile updated successfully');
         return result;
       } else {
-        // Create new profile
+        // Create new profile with proper permissions
         console.log('🆕 AuthContext: Creating new profile document');
         const document = await databases.createDocument(
           DATABASE_ID,
@@ -188,8 +189,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, role: "candidate" | "employer") => {
-    console.log('🔄 AuthContext: signUp called with:', { email, fullName, role });
+  const signUp = async (email: string, password: string, fullName: string, role: "candidate" | "employer", avatarUrl?: string) => {
+    console.log('🔄 AuthContext: signUp called with:', { email, fullName, role, avatarUrl });
     try {
       // Sign out any existing session first
       try {
@@ -204,9 +205,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userAccount = await account.create(ID.unique(), email, password, fullName);
       console.log('✅ AuthContext: Account created:', userAccount.$id);
 
-      // Create profile
+      // Verify session exists
+      try {
+        const session = await account.getSession('current');
+        console.log('✅ AuthContext: Session verified:', session.$id);
+      } catch (error) {
+        console.log('⚠️ AuthContext: No active session after account creation, creating one');
+        await account.createEmailPasswordSession(email, password);
+        console.log('✅ AuthContext: Session created via email/password');
+      }
+
+      // Create profile with proper permissions
       console.log('📡 AuthContext: Creating profile');
-      await ensureProfile(userAccount, { full_name: fullName, role });
+      try {
+        await ensureProfile(userAccount, { full_name: fullName, role, avatar_url: avatarUrl || null });
+        console.log('✅ AuthContext: Profile created successfully');
+      } catch (profileError) {
+        console.error('❌ AuthContext: Profile creation failed:', profileError);
+        // Try creating with different permissions approach
+        throw profileError;
+      }
 
       // Load profile
       console.log('📡 AuthContext: Loading profile after signup');
@@ -222,6 +240,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     console.log('🔄 AuthContext: signIn called with email:', email);
+    console.log(user, 'Current user before signIn');
     try {
       // Sign out any existing session first
       try {
@@ -278,6 +297,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
+  console.log("🔎 useAuth: Context snapshot", {
+    user: context?.user,
+    userRole: context?.userRole,
+    profile: context?.profile,
+    loading: context?.loading,
+  });
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }

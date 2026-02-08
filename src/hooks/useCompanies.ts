@@ -104,9 +104,10 @@ export const useCreateCompany = () => {
             featured: false,
           }
         );
+        console.log('✅ Company created:', document.$id);
         return document as unknown as Company;
-      } catch (error) {
-        console.error('Error creating company:', error);
+      } catch (error: any) {
+        console.error('❌ Error creating company:', error);
         throw error;
       }
     },

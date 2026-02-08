@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
+
 import {
   User,
   Mail,
@@ -28,7 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useResumeUpload } from "@/hooks/useResumeUpload";
 import { useCandidateProfileCompletion } from "@/hooks/useProfileCompletion";
-import { databases, DATABASE_ID, COLLECTIONS } from "@/lib/appwrite";
+import { databases, DATABASE_ID, COLLECTIONS,Query  } from "@/lib/appwrite";
 
 const Profile = () => {
   const { user, profile, loading, refreshProfile, userRole } = useAuth();
@@ -119,59 +120,59 @@ const Profile = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setSaving(true);
 
-    try {
-      const skillsArray = formData.skills
-        .split(",")
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
+  try {
+    const skillsArray = formData.skills
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
 
-      // Find the user's profile document
-      const { documents } = await databases.listDocuments(
+    // Find the user's profile document - FIXED QUERY
+    const { documents } = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.PROFILES,
+      [Query.equal('user_id', user.id)]  // ✅ Correct syntax
+    );
+
+    if (documents.length > 0) {
+      await databases.updateDocument(
         DATABASE_ID,
         COLLECTIONS.PROFILES,
-        [`user_id=${user.id}`]
+        documents[0].$id,
+        {
+          full_name: formData.full_name,
+          title: formData.title,
+          phone: formData.phone,
+          location: formData.location,
+          bio: formData.bio,
+          skills: skillsArray,
+          education: formData.education,
+          experience_years: Number(formData.experience_years),
+          website: formData.website,
+          linkedin_url: formData.linkedin_url,
+          github_url: formData.github_url,
+        }
       );
-
-      if (documents.length > 0) {
-        await databases.updateDocument(
-          DATABASE_ID,
-          COLLECTIONS.PROFILES,
-          documents[0].$id,
-          {
-            full_name: formData.full_name,
-            title: formData.title,
-            phone: formData.phone,
-            location: formData.location,
-            bio: formData.bio,
-            skills: skillsArray,
-            education: formData.education,
-            experience_years: Number(formData.experience_years),
-            website: formData.website,
-            linkedin_url: formData.linkedin_url,
-            github_url: formData.github_url,
-          }
-        );
-      }
-
-      await refreshProfile();
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Update failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
     }
-  };
+
+    await refreshProfile();
+    toast({
+      title: "Profile updated",
+      description: "Your profile has been successfully updated.",
+    });
+  } catch (error: any) {
+    toast({
+      title: "Update failed",
+      description: error.message,
+      variant: "destructive",
+    });
+  } finally {
+    setSaving(false);
+  }
+};
 
   return (
     <Layout>

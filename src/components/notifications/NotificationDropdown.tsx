@@ -90,14 +90,14 @@ const NotificationDropdown = () => {
           ) : (
             notifications.slice(0, 5).map((notification) => (
               <DropdownMenuItem
-                key={notification.id}
+                key={notification.$id}
                 className={cn(
                   "flex items-start gap-3 p-3 cursor-pointer",
                   !notification.is_read && "bg-primary/5"
                 )}
                 onClick={() => {
                   if (!notification.is_read) {
-                    markRead.mutate(notification.id);
+                    markRead.mutate(notification.$id);
                   }
                 }}
               >
@@ -108,7 +108,7 @@ const NotificationDropdown = () => {
                   </p>
                   <p className="text-xs text-muted-foreground truncate">{notification.message}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(notification.$createdAt), { addSuffix: true })}
                   </p>
                 </div>
                 {!notification.is_read && (
