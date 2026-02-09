@@ -115,43 +115,43 @@ const Header = () => {
   };
 
   return (
-    <header className="w-full bg-background border-b border-border sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between gap-4">  
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-2 shrink-0">
-           <div className="bg-primary p-2 rounded-lg flex items-center justify-center">
-       <img
-        src={logo}
-       alt="Hirely Logo"
-     className="h-6 w-6 object-contain"
-      />
-        </div>
-              <span className="text-xl font-bold text-foreground">Hirely</span>
-            </Link>
+<header className="w-full bg-background border-b border-border sticky top-0 z-50">
+  <div className="container mx-auto px-4 h-16 flex items-center">
+    <div className="flex items-center justify-between w-full">
+      {/* LEFT: Logo Only */}
+      <Link to="/" className="flex items-center gap-3 shrink-0">
+        <img
+          src={logo}
+          alt="Hirely Logo"
+          className="h-20 w-auto object-contain" 
+        />
+        <span className="text-xl ml-[-70px] font-bold text-foreground">
+          Hirely
+        </span>
+      </Link>
 
-            {/* Desktop Navigation - Right after logo */}
-            <nav className="hidden md:flex items-center gap-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                    isActive(link.path)
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  )}
-                >
-                  <link.icon className="h-4 w-4" />
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
+      {/* CENTER: Desktop Navigation */}
+      <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+        {navLinks.map((link) => (
+          <Link
+            key={link.path}
+            to={link.path}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+              isActive(link.path)
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            )}
+          >
+            <link.icon className="h-4 w-4" />
+            {link.label}
+          </Link>
+        ))}
+      </nav>
 
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
+      {/* RIGHT: Actions */}
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
             
             {user ? (
               <>
