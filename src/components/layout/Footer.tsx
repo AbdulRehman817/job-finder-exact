@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Briefcase, Phone, MapPin, Facebook, Youtube, Instagram, Twitter } from "lucide-react";
+import logo from "@/../public/logo.png";
 
 const Footer = () => {
   return (
@@ -7,22 +8,20 @@ const Footer = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 relative bottom-[25px]">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="bg-primary p-2 rounded-lg">
-                <Briefcase className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold">Jobpilot</span>
+             <img
+          src={logo}
+          alt="Hirely Logo"
+          className="h-20 w-auto object-contain" 
+        />
+        <span className="text-xl ml-[-70px] font-bold text-foreground">
+          Hirely
+        </span>
             </Link>
             <div className="space-y-3 text-sm text-primary-foreground/70">
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4" />
-                <span>Call now: (319) 555-0115</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 mt-1" />
-                <span>6391 Elgin St. Celina, Delaware 10299, New York, United States of America</span>
-              </div>
+          
+              
             </div>
           </div>
 
@@ -75,22 +74,9 @@ const Footer = () => {
       <div className="border-t border-primary-foreground/10">
         <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-primary-foreground/70">
-            (c) 2024 Jobpilot - Job Portal. All rights Reserved
+            (c) 2026 Hirely - Job Portal. All rights Reserved
           </p>
-          <div className="flex items-center gap-4">
-            <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-              <Facebook className="h-5 w-5" />
-            </a>
-            <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-              <Youtube className="h-5 w-5" />
-            </a>
-            <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-              <Instagram className="h-5 w-5" />
-            </a>
-            <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-              <Twitter className="h-5 w-5" />
-            </a>
-          </div>
+         
         </div>
       </div>
     </footer>
