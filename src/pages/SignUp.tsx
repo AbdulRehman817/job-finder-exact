@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { storage, BUCKETS, ID } from "@/lib/appwrite";
 
 const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,12 +19,26 @@ const SignUp = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    avatarUrl: "",
+  avatarFile: null as File | null,
+avatarPreview: "",
     agreeTerms: false,
   });
   const navigate = useNavigate();
   const { signUp } = useAuth();
   const { toast } = useToast();
+
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      avatarFile: file,
+      avatarPreview: URL.createObjectURL(file),
+    }));
+  };
+
 
   const getSignupErrorMessage = (error: any) => {
     if (!error?.message) {
@@ -39,48 +54,54 @@ const SignUp = () => {
     return error.message;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure your passwords match.",
-        variant: "destructive",
-      });
-      return;
-    }
+  if (formData.password !== formData.confirmPassword) {
+    toast({
+      title: "Passwords don't match",
+      description: "Please make sure your passwords match.",
+      variant: "destructive",
+    });
+    return;
+  }
 
-    if (!formData.agreeTerms) {
-      toast({
-        title: "Terms required",
-        description: "Please agree to the terms and conditions.",
-        variant: "destructive",
-      });
-      return;
-    }
+  if (!formData.agreeTerms) {
+    toast({
+      title: "Terms required",
+      description: "Please agree to the terms and conditions.",
+      variant: "destructive",
+    });
+    return;
+  }
 
-    setLoading(true);
-    console.log('🔄 SignUp: handleSubmit - formData:', formData);
+  setLoading(true);
 
-    const { error } = await signUp(formData.email, formData.password, formData.fullName, accountType, formData.avatarUrl);
-    
-    if (error) {
-      toast({
-        title: "Sign up failed",
-        description: getSignupErrorMessage(error),
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Account created!",
-        description: "Welcome to Jobpilot! You are now signed in.",
-      });
-      navigate(accountType === "employer" ? "/employer-dashboard" : "/dashboard");
-    }
-    
-    setLoading(false);
-  };
+  // Pass the avatar file to signUp - it will handle the upload
+  const { error } = await signUp(
+    formData.email,
+    formData.password,
+    formData.fullName,
+    accountType,
+    formData.avatarFile  // This is correct now
+  );
+  
+  if (error) {
+    toast({
+      title: "Sign up failed",
+      description: getSignupErrorMessage(error),
+      variant: "destructive",
+    });
+  } else {
+    toast({
+      title: "Account created!",
+      description: "Welcome to Jobpilot! You are now signed in.",
+    });
+    navigate(accountType === "employer" ? "/employer-dashboard" : "/dashboard");
+  }
+  
+  setLoading(false);
+};
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
@@ -140,24 +161,19 @@ const SignUp = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Profile Picture Section */}
-            <div className="flex flex-col items-center gap-3 pb-4 border-b">
+      <div className="flex flex-col items-center gap-3 pb-4 border-b">
               <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden ring-2 ring-primary/20">
-                {formData.avatarUrl ? (
-                  <img src={formData.avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+                {formData.avatarPreview ? (
+                  <img src={formData.avatarPreview} alt="Profile" className="h-full w-full object-cover" />
                 ) : (
                   <User className="h-8 w-8 text-primary/50" />
                 )}
               </div>
-              <div className="w-full space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Profile Picture (Optional)</label>
-                <Input
-                  type="text"
-                  placeholder="https://example.com/photo.jpg"
-                  value={formData.avatarUrl}
-                  onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
-                  className="h-10 text-sm"
-                />
-              </div>
+              <label className="cursor-pointer text-sm text-primary hover:underline">
+                Upload profile picture
+                <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+              </label>
+              <p className="text-xs text-muted-foreground">JPG, PNG up to 5MB</p>
             </div>
 
             <Input

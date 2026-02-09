@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
-
 import {
   User,
   Mail,
@@ -29,7 +28,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useResumeUpload } from "@/hooks/useResumeUpload";
 import { useCandidateProfileCompletion } from "@/hooks/useProfileCompletion";
-import { databases, DATABASE_ID, COLLECTIONS,Query  } from "@/lib/appwrite";
+import { databases, DATABASE_ID, COLLECTIONS, Query, storage, BUCKETS, ID } from "@/lib/appwrite";
+import { getAvatarUrl } from "@/lib/avatar";
+import { Permission, Role } from "appwrite";
 
 const Profile = () => {
   const { user, profile, loading, refreshProfile, userRole } = useAuth();
@@ -37,6 +38,7 @@ const Profile = () => {
   const { uploadResume, deleteResume, uploading, getResumeUrl } = useResumeUpload();
   const profileCompletion = useCandidateProfileCompletion();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -120,59 +122,108 @@ const Profile = () => {
     }
   };
 
- const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setSaving(true);
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
 
-  try {
-    const skillsArray = formData.skills
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+    try {
+      const uploaded = await storage.createFile(
+        BUCKETS.RESUMES,
+        ID.unique(),
+        file,
+        [
+          Permission.read(Role.any()),
+          Permission.update(Role.user(user.id)),
+          Permission.delete(Role.user(user.id)),
+        ]
+      );
 
-    // Find the user's profile document - FIXED QUERY
-    const { documents } = await databases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.PROFILES,
-      [Query.equal('user_id', user.id)]  // ✅ Correct syntax
-    );
-
-    if (documents.length > 0) {
-      await databases.updateDocument(
+      const { documents } = await databases.listDocuments(
         DATABASE_ID,
         COLLECTIONS.PROFILES,
-        documents[0].$id,
-        {
-          full_name: formData.full_name,
-          title: formData.title,
-          phone: formData.phone,
-          location: formData.location,
-          bio: formData.bio,
-          skills: skillsArray,
-          education: formData.education,
-          experience_years: Number(formData.experience_years),
-          website: formData.website,
-          linkedin_url: formData.linkedin_url,
-          github_url: formData.github_url,
-        }
+        [Query.equal("user_id", user.id)]
       );
-    }
 
-    await refreshProfile();
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been successfully updated.",
-    });
-  } catch (error: any) {
-    toast({
-      title: "Update failed",
-      description: error.message,
-      variant: "destructive",
-    });
-  } finally {
-    setSaving(false);
-  }
-};
+      if (documents.length > 0) {
+        await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.PROFILES,
+          documents[0].$id,
+          { avatar_url: uploaded.$id }
+        );
+      }
+
+      await refreshProfile();
+      toast({
+        title: "Profile image updated",
+        description: "Your profile picture has been updated.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Avatar upload failed",
+        description: error.message || "Failed to upload profile picture",
+        variant: "destructive",
+      });
+    } finally {
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const skillsArray = formData.skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      // Find the user's profile document
+      const { documents } = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PROFILES,
+        [Query.equal("user_id", user.id)]
+      );
+
+      if (documents.length > 0) {
+        await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.PROFILES,
+          documents[0].$id,
+          {
+            full_name: formData.full_name,
+            title: formData.title,
+            phone: formData.phone,
+            location: formData.location,
+            bio: formData.bio,
+            skills: skillsArray,
+            education: formData.education,
+            experience_years: Number(formData.experience_years),
+            website: formData.website,
+            linkedin_url: formData.linkedin_url,
+            github_url: formData.github_url,
+          }
+        );
+      }
+
+      await refreshProfile();
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Layout>
@@ -218,9 +269,9 @@ const Profile = () => {
               <div className="flex flex-col md:flex-row items-start gap-6">
                 <div className="relative">
                   <div className="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                    {profile?.avatar_url ? (
+                    {getAvatarUrl(profile?.avatar_url) ? (
                       <img
-                        src={profile.avatar_url}
+                        src={getAvatarUrl(profile?.avatar_url) ?? ""}
                         alt=""
                         className="w-32 h-32 rounded-full object-cover"
                       />
@@ -228,11 +279,19 @@ const Profile = () => {
                       <User className="h-16 w-16 text-primary" />
                     )}
                   </div>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
                   <Button
                     type="button"
                     size="icon"
                     variant="secondary"
                     className="absolute bottom-0 right-0 rounded-full h-10 w-10"
+                    onClick={() => avatarInputRef.current?.click()}
                   >
                     <Camera className="h-4 w-4" />
                   </Button>
@@ -357,7 +416,7 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Social Links - GitHub instead of Twitter */}
+            {/* Social Links */}
             <div className="bg-card border border-border rounded-xl p-6 md:p-8">
               <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
                 <Globe className="h-5 w-5 text-primary" />

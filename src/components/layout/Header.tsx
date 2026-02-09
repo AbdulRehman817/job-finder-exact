@@ -1,7 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Briefcase, ChevronDown, Menu, X, User, LogOut, Settings, Home, Search, PlusCircle, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Permission, Role } from "appwrite";
+import { getAvatarUrl } from "@/lib/avatar";
+
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,15 +14,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { databases, DATABASE_ID, COLLECTIONS, Query, storage, BUCKETS, ID } from "@/lib/appwrite";
 import {  useAuth } from "@/contexts/AuthContext";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
 import ThemeToggle from "@/components/theme/ThemeToggle";
+import { useToast } from "@/hooks/use-toast";
+
 
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, userRole, profile, signOut, loading } = useAuth();
+  const { user, userRole, profile, signOut, loading,refreshProfile} = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   // console.log('🔄 Header: Component rendered with auth data:', { loading, user: user?.id, userRole, profile: profile });
 
@@ -32,6 +41,58 @@ const Header = () => {
     { label: "Home", path: "/", icon: Home },
     { label: "Find Jobs", path: "/find-jobs", icon: Search },
   ];
+
+
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    try {
+      const uploaded = await storage.createFile(
+        BUCKETS.RESUMES,
+        ID.unique(),
+        file,
+        [
+          Permission.read(Role.any()),
+          Permission.update(Role.user(user.id)),
+          Permission.delete(Role.user(user.id)),
+        ]
+      );
+
+      const { documents } = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PROFILES,
+        [Query.equal("user_id", user.id)]
+      );
+
+      if (documents.length > 0) {
+        await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.PROFILES,
+          documents[0].$id,
+          { avatar_url: uploaded.$id }
+        );
+      }
+
+      await refreshProfile();
+      toast({
+        title: "Profile image updated",
+        description: "Your profile picture has been updated.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Avatar upload failed",
+        description: error.message || "Failed to upload profile picture",
+        variant: "destructive",
+      });
+    } finally {
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = "";
+      }
+    }
+  };
+
 
   const dashboardPath = userRole === "employer" ? "/employer-dashboard" : "/dashboard";
   const navLinks = [
@@ -98,11 +159,15 @@ const Header = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center gap-2 px-2">
                       <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20">
-                        {profile?.avatar_url ? (
-                          <img src={profile.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover" />
-                        ) : (
-                          <User className="h-4 w-4 text-primary" />
-                        )}
+                        {getAvatarUrl(profile?.avatar_url) ? (
+                                             <img
+                                               src={getAvatarUrl(profile?.avatar_url) ?? ""}
+                                               alt=""
+                                               className="w-32 h-[2.5rem] rounded-full object-cover"
+                                             />
+                                           ) : (
+                                             <User className="h-16 w-16 text-primary" />
+                                           )}
                       </div>
                       <div className="hidden md:block text-left">
                         <span className="text-sm font-medium block leading-tight">

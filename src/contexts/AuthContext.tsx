@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { Models, Account as AppwriteAccount, Query } from "appwrite";
-import { account, databases, DATABASE_ID, COLLECTIONS, ID } from "@/lib/appwrite";
+import { Models, Account as AppwriteAccount, Query, Permission, Role } from "appwrite";
+import { account, databases, DATABASE_ID, COLLECTIONS, ID, storage, BUCKETS } from "@/lib/appwrite";
 
 type UserRole = "candidate" | "employer" | null;
 
@@ -21,7 +21,6 @@ export interface Profile {
   github_url: string | null;
   website: string | null;
   resume_url: string | null;
-  facebook_url: string | null;
 }
 
 interface AuthContextType {
@@ -29,7 +28,13 @@ interface AuthContextType {
   userRole: UserRole;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, role: "candidate" | "employer", avatarUrl?: string) => Promise<{ error: any }>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    role: "candidate" | "employer",
+    avatarFile?: File | null
+  ) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -60,7 +65,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     github_url: document.github_url || null,
     website: document.website || null,
     resume_url: document.resume_url || null,
-    facebook_url: document.facebook_url || null,
   });
 
   const ensureProfile = async (appwriteUser: Models.User<Models.Preferences>, overrides?: Partial<Profile>) => {
@@ -79,6 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       experience_years: overrides?.experience_years ?? null,
       phone: overrides?.phone || null,
       linkedin_url: overrides?.linkedin_url || null,
+      github_url: overrides?.github_url || null,
       website: overrides?.website || null,
       resume_url: overrides?.resume_url || null,
     };
@@ -102,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('✅ AuthContext: Profile updated successfully');
         return result;
       } else {
-        // Create new profile with proper permissions
+        // Create new profile
         console.log('🆕 AuthContext: Creating new profile document');
         const document = await databases.createDocument(
           DATABASE_ID,
@@ -189,58 +194,86 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, role: "candidate" | "employer", avatarUrl?: string) => {
-    console.log('🔄 AuthContext: signUp called with:', { email, fullName, role, avatarUrl });
+const signUp = async (
+  email: string,
+  password: string,
+  fullName: string,
+  role: "candidate" | "employer",
+  avatarFile?: File | null
+) => {
+  console.log('🔄 AuthContext: signUp called with:', { email, fullName, role, hasAvatar: !!avatarFile });
+  try {
+    // Sign out any existing session first
     try {
-      // Sign out any existing session first
-      try {
-        await account.deleteSession('current');
-        console.log('✅ AuthContext: Cleared existing session');
-      } catch (error) {
-        console.log('ℹ️ AuthContext: No existing session to clear');
-      }
-
-      // Create account (this automatically creates a session)
-      console.log('📡 AuthContext: Creating Appwrite account');
-      const userAccount = await account.create(ID.unique(), email, password, fullName);
-      console.log('✅ AuthContext: Account created:', userAccount.$id);
-
-      // Verify session exists
-      try {
-        const session = await account.getSession('current');
-        console.log('✅ AuthContext: Session verified:', session.$id);
-      } catch (error) {
-        console.log('⚠️ AuthContext: No active session after account creation, creating one');
-        await account.createEmailPasswordSession(email, password);
-        console.log('✅ AuthContext: Session created via email/password');
-      }
-
-      // Create profile with proper permissions
-      console.log('📡 AuthContext: Creating profile');
-      try {
-        await ensureProfile(userAccount, { full_name: fullName, role, avatar_url: avatarUrl || null });
-        console.log('✅ AuthContext: Profile created successfully');
-      } catch (profileError) {
-        console.error('❌ AuthContext: Profile creation failed:', profileError);
-        // Try creating with different permissions approach
-        throw profileError;
-      }
-
-      // Load profile
-      console.log('📡 AuthContext: Loading profile after signup');
-      await loadProfile(userAccount);
-
-      console.log('✅ AuthContext: SignUp completed successfully');
-      return { error: null };
-    } catch (error: any) {
-      console.error('❌ AuthContext: SignUp failed:', error);
-      return { error };
+      await account.deleteSession('current');
+      console.log('✅ AuthContext: Cleared existing session');
+    } catch (error) {
+      console.log('ℹ️ AuthContext: No existing session to clear');
     }
-  };
 
+    // Create account
+    console.log('📡 AuthContext: Creating Appwrite account');
+    const userAccount = await account.create(ID.unique(), email, password, fullName);
+    console.log('✅ AuthContext: Account created:', userAccount.$id);
+
+    // Create session immediately after account creation
+    console.log('📡 AuthContext: Creating session for new user');
+    await account.createEmailPasswordSession(email, password);
+    console.log('✅ AuthContext: Session created');
+
+    // NOW upload avatar with correct permissions (session exists)
+// NOW upload avatar with correct permissions (session exists)
+let avatarUrl: string | null = null;
+if (avatarFile) {
+  try {
+    console.log('📡 AuthContext: Uploading avatar file, type:', avatarFile.type, 'size:', avatarFile.size);
+    
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(avatarFile.type)) {
+      throw new Error(`File type ${avatarFile.type} not allowed. Please use JPG, PNG, GIF, or WEBP.`);
+    }
+    
+    // Validate file size (5MB max)
+    if (avatarFile.size > 5 * 1024 * 1024) {
+      throw new Error('File size too large. Maximum 5MB allowed.');
+    }
+    
+    const uploaded = await storage.createFile(
+      BUCKETS.RESUMES,
+      ID.unique(),
+      avatarFile
+    );
+    avatarUrl = uploaded.$id;
+    console.log('✅ AuthContext: Avatar uploaded:', avatarUrl);
+  } catch (uploadError: any) {
+    console.error("❌ Failed to upload avatar:", uploadError);
+    console.error("❌ Error details:", uploadError.message, uploadError.code);
+    // Continue without avatar - don't fail signup
+  }
+}
+
+    // Create profile with avatar URL
+    console.log('📡 AuthContext: Creating profile with avatar:', avatarUrl);
+    await ensureProfile(userAccount, { 
+      full_name: fullName, 
+      role, 
+      avatar_url: avatarUrl 
+    });
+
+    // Load profile
+    console.log('📡 AuthContext: Loading profile after signup');
+    await loadProfile(userAccount);
+
+    console.log('✅ AuthContext: SignUp completed successfully');
+    return { error: null };
+  } catch (error: any) {
+    console.error('❌ AuthContext: SignUp failed:', error);
+    return { error };
+  }
+};
   const signIn = async (email: string, password: string) => {
     console.log('🔄 AuthContext: signIn called with email:', email);
-    console.log(user, 'Current user before signIn');
     try {
       // Sign out any existing session first
       try {
@@ -271,10 +304,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       await account.deleteSession('current');
+      clearState();
     } catch (error) {
       console.error('Error signing out:', error);
     }
-    clearState();
   };
 
   return (
@@ -297,12 +330,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  console.log("🔎 useAuth: Context snapshot", {
-    user: context?.user,
-    userRole: context?.userRole,
-    profile: context?.profile,
-    loading: context?.loading,
-  });
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }

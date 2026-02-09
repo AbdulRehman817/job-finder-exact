@@ -289,7 +289,7 @@ const EmployerDashboard = () => {
   };
 
   return (
-    <Layout>
+    <Layout hideFooter>
       {/* Confirmation Dialog */}
       <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ ...confirmDialog, open: false })}>
         <DialogContent>

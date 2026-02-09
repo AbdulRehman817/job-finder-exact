@@ -115,29 +115,29 @@ const CandidateDashboard = () => {
   };
 
   return (
-    <Layout>
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent py-10">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-card border border-border flex items-center justify-center shadow-sm">
+    <Layout hideFooter>
+      {/* Professional Header */}
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b">
+        <div className="container mx-auto px-6 py-12">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <div className="w-20 h-20 rounded-2xl bg-card border-2 border-border flex items-center justify-center shadow-md">
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="w-16 h-16 rounded-2xl object-cover" />
+                  <img src={profile.avatar_url} alt="" className="w-20 h-20 rounded-2xl object-cover" />
                 ) : (
-                  <User className="h-8 w-8 text-primary" />
+                  <User className="h-10 w-10 text-primary" />
                 )}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">
+                <h1 className="text-3xl font-bold text-foreground mb-2">
                   Welcome back, {profile?.full_name?.split(" ")[0] || "there"}!
                 </h1>
-                <p className="text-muted-foreground flex items-center gap-2">
+                <p className="text-base text-muted-foreground flex items-center gap-2">
                   {profile?.title || "Job Seeker"}
                   {profile?.location && (
                     <>
-                      <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-                      <MapPin className="h-3 w-3" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
+                      <MapPin className="h-4 w-4" />
                       {profile.location}
                     </>
                   )}
@@ -146,13 +146,13 @@ const CandidateDashboard = () => {
             </div>
             <div className="flex gap-3">
               <Link to="/profile">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="default" className="h-11 px-5">
                   <User className="h-4 w-4 mr-2" />
                   Edit Profile
                 </Button>
               </Link>
               <Link to="/find-jobs">
-                <Button className="btn-primary" size="sm">
+                <Button className="btn-primary h-11 px-5" size="default">
                   <Briefcase className="h-4 w-4 mr-2" />
                   Find Jobs
                 </Button>
@@ -162,68 +162,68 @@ const CandidateDashboard = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-10">
+      <div className="container mx-auto px-6 py-10">
         {/* Profile Completion Banner */}
-        <ProfileCompletionBanner
-          isComplete={profileCompletion.isComplete}
-          missingFields={profileCompletion.missingFields}
-          completionPercentage={profileCompletion.completionPercentage}
-          type="candidate"
-        />
+        <div className="mb-10">
+          <ProfileCompletionBanner
+            isComplete={profileCompletion.isComplete}
+            missingFields={profileCompletion.missingFields}
+            completionPercentage={profileCompletion.completionPercentage}
+            type="candidate"
+          />
+        </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="bg-card/80 border border-border/60 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow backdrop-blur"
+              className="bg-card border border-border rounded-2xl p-7 shadow-sm hover:shadow-md transition-all"
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-3xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-sm font-medium text-foreground mt-1">{stat.label}</p>
-                  <p className="text-xs text-muted-foreground">{stat.subtext}</p>
-                </div>
-                <div className={cn("p-3 rounded-xl", stat.color)}>
-                  <stat.icon className="h-5 w-5" />
+              <div className="flex items-start justify-between mb-4">
+                <div className={cn("p-3.5 rounded-xl", stat.color)}>
+                  <stat.icon className="h-6 w-6" />
                 </div>
               </div>
+              <p className="text-4xl font-bold text-foreground mb-2">{stat.value}</p>
+              <p className="text-base font-semibold text-foreground mb-1">{stat.label}</p>
+              <p className="text-sm text-muted-foreground">{stat.subtext}</p>
             </div>
           ))}
         </div>
 
         {/* Main Content Tabs */}
         <Tabs value={defaultTab} onValueChange={(v) => setSearchParams({ tab: v })} className="w-full">
-          <div className="bg-card/80 border border-border/60 rounded-2xl mb-6 backdrop-blur">
-            <TabsList className="w-full justify-start p-1 bg-transparent">
+          <div className="bg-card border border-border rounded-2xl mb-8 p-1.5">
+            <TabsList className="w-full justify-start gap-1 bg-transparent">
               <TabsTrigger
                 value="overview"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl px-5 py-2.5 text-base font-medium"
               >
                 Overview
               </TabsTrigger>
               <TabsTrigger
                 value="applications"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl px-5 py-2.5 text-base font-medium"
               >
                 <FileText className="h-4 w-4 mr-2" />
                 Applications ({applications.length})
               </TabsTrigger>
               <TabsTrigger
                 value="saved"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl px-5 py-2.5 text-base font-medium"
               >
                 <Bookmark className="h-4 w-4 mr-2" />
                 Saved ({savedJobs.length})
               </TabsTrigger>
               <TabsTrigger
                 value="notifications"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg relative"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl px-5 py-2.5 text-base font-medium relative"
               >
                 <Bell className="h-4 w-4 mr-2" />
                 Notifications
                 {unreadNotifications > 0 && (
-                  <span className="ml-2 bg-destructive text-destructive-foreground text-xs rounded-full h-5 min-w-[20px] flex items-center justify-center px-1">
+                  <span className="ml-2 bg-destructive text-destructive-foreground text-xs font-semibold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1.5">
                     {unreadNotifications}
                   </span>
                 )}
@@ -235,21 +235,21 @@ const CandidateDashboard = () => {
           <TabsContent value="overview" className="mt-0 space-y-6">
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Recent Applications */}
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <div className="p-4 border-b border-border flex items-center justify-between">
-                  <h3 className="font-semibold text-foreground">Recent Applications</h3>
-                  <Button variant="ghost" size="sm" onClick={() => setSearchParams({ tab: "applications" })}>
+              <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                <div className="p-5 border-b border-border flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-foreground">Recent Applications</h3>
+                  <Button variant="ghost" size="sm" onClick={() => setSearchParams({ tab: "applications" })} className="text-sm">
                     View All <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
                 {applications.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Briefcase className="h-6 w-6 text-primary" />
+                  <div className="p-12 text-center">
+                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Briefcase className="h-8 w-8 text-primary" />
                     </div>
-                    <p className="text-sm text-muted-foreground mb-4">No applications yet</p>
+                    <p className="text-base text-muted-foreground mb-5">No applications yet</p>
                     <Link to="/find-jobs">
-                      <Button size="sm" className="btn-primary">Browse Jobs</Button>
+                      <Button size="default" className="btn-primary h-10">Browse Jobs</Button>
                     </Link>
                   </div>
                 ) : (
@@ -257,21 +257,21 @@ const CandidateDashboard = () => {
                     {applications.slice(0, 4).map((application) => {
                       const statusConfig = getStatusConfig(application.status || "pending");
                       return (
-                        <div key={application.$id} className="p-4 hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center justify-between gap-3">
+                        <div key={application.$id} className="p-5 hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center justify-between gap-4">
                             <div className="min-w-0 flex-1">
                               <Link
                                 to={`/job/${application.job_id}`}
-                                className="font-medium text-foreground hover:text-primary text-sm truncate block"
+                                className="font-semibold text-foreground hover:text-primary text-base truncate block mb-1"
                               >
                                 {application.jobs?.title || "Job Title"}
                               </Link>
-                              <p className="text-xs text-muted-foreground truncate">
+                              <p className="text-sm text-muted-foreground truncate">
                                 {application.jobs?.companies?.name}
                               </p>
                             </div>
-                            <div className={cn("flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border shrink-0", statusConfig.bg, statusConfig.text, statusConfig.border)}>
-                              <statusConfig.icon className="h-3 w-3" />
+                            <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border shrink-0", statusConfig.bg, statusConfig.text, statusConfig.border)}>
+                              <statusConfig.icon className="h-3.5 w-3.5" />
                               {statusConfig.label}
                             </div>
                           </div>
@@ -283,19 +283,19 @@ const CandidateDashboard = () => {
               </div>
 
               {/* Recent Notifications */}
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <div className="p-4 border-b border-border flex items-center justify-between">
-                  <h3 className="font-semibold text-foreground">Recent Notifications</h3>
-                  <Button variant="ghost" size="sm" onClick={() => setSearchParams({ tab: "notifications" })}>
+              <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                <div className="p-5 border-b border-border flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-foreground">Recent Notifications</h3>
+                  <Button variant="ghost" size="sm" onClick={() => setSearchParams({ tab: "notifications" })} className="text-sm">
                     View All <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
                 {notifications.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Bell className="h-6 w-6 text-primary" />
+                  <div className="p-12 text-center">
+                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Bell className="h-8 w-8 text-primary" />
                     </div>
-                    <p className="text-sm text-muted-foreground">No notifications yet</p>
+                    <p className="text-base text-muted-foreground">No notifications yet</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-border">
@@ -303,15 +303,15 @@ const CandidateDashboard = () => {
                       <div
                         key={notification.$id}
                         onClick={() => !notification.is_read && markRead.mutate(notification.$id)}
-                        className={cn("p-4 cursor-pointer hover:bg-muted/50 transition-colors", !notification.is_read && "bg-primary/5")}
+                        className={cn("p-5 cursor-pointer hover:bg-muted/50 transition-colors", !notification.is_read && "bg-primary/5")}
                       >
-                        <div className="flex items-start gap-3">
-                          <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-lg border shrink-0", getNotificationColor(notification.type))}>
+                        <div className="flex items-start gap-4">
+                          <div className={cn("w-12 h-12 rounded-full flex items-center justify-center text-2xl border shrink-0", getNotificationColor(notification.type))}>
                             {getNotificationIcon(notification.type)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className={cn("text-sm truncate", !notification.is_read && "font-medium")}>{notification.title}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
+                            <p className={cn("text-base truncate", !notification.is_read && "font-semibold")}>{notification.title}</p>
+                            <p className="text-sm text-muted-foreground mt-1">
                               {formatDistanceToNow(new Date(notification.$createdAt), { addSuffix: true })}
                             </p>
                           </div>
@@ -326,19 +326,19 @@ const CandidateDashboard = () => {
 
           {/* Applications Tab */}
           <TabsContent value="applications" className="mt-0">
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-border">
-                <h3 className="font-semibold text-foreground">All Applications ({applications.length})</h3>
+            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="p-6 border-b border-border">
+                <h3 className="text-xl font-bold text-foreground">All Applications ({applications.length})</h3>
               </div>
               {applications.length === 0 ? (
-                <div className="p-12 text-center">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <FileText className="h-8 w-8 text-primary" />
+                <div className="p-16 text-center">
+                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <FileText className="h-10 w-10 text-primary" />
                   </div>
-                  <h4 className="font-semibold text-foreground mb-2">No applications yet</h4>
-                  <p className="text-sm text-muted-foreground mb-6">Start applying to jobs to see them here</p>
+                  <h4 className="text-xl font-bold text-foreground mb-3">No applications yet</h4>
+                  <p className="text-base text-muted-foreground mb-6">Start applying to jobs to see them here</p>
                   <Link to="/find-jobs">
-                    <Button className="btn-primary">Browse Jobs</Button>
+                    <Button className="btn-primary h-11 px-6">Browse Jobs</Button>
                   </Link>
                 </div>
               ) : (
@@ -346,25 +346,25 @@ const CandidateDashboard = () => {
                   {applications.map((application) => {
                     const statusConfig = getStatusConfig(application.status || "pending");
                     return (
-                      <div key={application.$id} className="p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-4 min-w-0 flex-1">
-                            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-xl shrink-0">
+                      <div key={application.$id} className="p-6 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center justify-between gap-5">
+                          <div className="flex items-center gap-5 min-w-0 flex-1">
+                            <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center text-2xl shrink-0">
                               💼
                             </div>
                             <div className="min-w-0 flex-1">
                               <Link
                                 to={`/job/${application.job_id}`}
-                                className="font-medium text-foreground hover:text-primary"
+                                className="text-lg font-bold text-foreground hover:text-primary block mb-1"
                               >
                                 {application.jobs?.title || "Job Title"}
                               </Link>
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-base text-muted-foreground mb-2">
                                 {application.jobs?.companies?.name}
                               </p>
-                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1.5">
+                                  <MapPin className="h-4 w-4" />
                                   {application.jobs?.location}
                                 </span>
                                 <span className="capitalize">{application.jobs?.type}</span>
@@ -372,11 +372,11 @@ const CandidateDashboard = () => {
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-2 shrink-0">
-                            <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border", statusConfig.bg, statusConfig.text, statusConfig.border)}>
-                              <statusConfig.icon className="h-3 w-3" />
+                            <div className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border", statusConfig.bg, statusConfig.text, statusConfig.border)}>
+                              <statusConfig.icon className="h-4 w-4" />
                               {statusConfig.label}
                             </div>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-sm text-muted-foreground">
                               {formatDistanceToNow(new Date(application.applied_at), { addSuffix: true })}
                             </span>
                           </div>
@@ -391,54 +391,54 @@ const CandidateDashboard = () => {
 
           {/* Saved Jobs Tab */}
           <TabsContent value="saved" className="mt-0">
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-border">
-                <h3 className="font-semibold text-foreground">Saved Jobs ({savedJobs.length})</h3>
+            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="p-6 border-b border-border">
+                <h3 className="text-xl font-bold text-foreground">Saved Jobs ({savedJobs.length})</h3>
               </div>
               {savedJobs.length === 0 ? (
-                <div className="p-12 text-center">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Heart className="h-8 w-8 text-primary" />
+                <div className="p-16 text-center">
+                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <Heart className="h-10 w-10 text-primary" />
                   </div>
-                  <h4 className="font-semibold text-foreground mb-2">No saved jobs</h4>
-                  <p className="text-sm text-muted-foreground mb-6">Save jobs to apply later</p>
+                  <h4 className="text-xl font-bold text-foreground mb-3">No saved jobs</h4>
+                  <p className="text-base text-muted-foreground mb-6">Save jobs to apply later</p>
                   <Link to="/find-jobs">
-                    <Button className="btn-primary">Browse Jobs</Button>
+                    <Button className="btn-primary h-11 px-6">Browse Jobs</Button>
                   </Link>
                 </div>
               ) : (
                 <div className="divide-y divide-border">
                   {savedJobs.map((savedJob) => (
-                    <div key={savedJob.id} className="p-4 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4 min-w-0 flex-1">
-                          <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-xl shrink-0">
+                    <div key={savedJob.id} className="p-6 hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center justify-between gap-5">
+                        <div className="flex items-center gap-5 min-w-0 flex-1">
+                          <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center text-2xl shrink-0">
                             💼
                           </div>
                           <div className="min-w-0 flex-1">
                             <Link
                               to={`/job/${savedJob.job_id}`}
-                              className="font-medium text-foreground hover:text-primary"
+                              className="text-lg font-bold text-foreground hover:text-primary block mb-1"
                             >
                               {savedJob.jobs?.title || "Job Title"}
                             </Link>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-base text-muted-foreground">
                               {savedJob.jobs?.companies?.name}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-3 shrink-0">
                           <Link to={`/job/${savedJob.job_id}`}>
-                            <Button variant="outline" size="sm">
-                              <ExternalLink className="h-4 w-4 mr-1" />
+                            <Button variant="outline" size="default" className="h-10">
+                              <ExternalLink className="h-4 w-4 mr-2" />
                               View
                             </Button>
                           </Link>
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="default"
                             onClick={() => unsaveJob.mutate(savedJob.job_id)}
-                            className="text-destructive hover:text-destructive"
+                            className="text-destructive hover:text-destructive h-10"
                           >
                             Remove
                           </Button>
@@ -453,29 +453,30 @@ const CandidateDashboard = () => {
 
           {/* Notifications Tab */}
           <TabsContent value="notifications" className="mt-0">
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-border flex items-center justify-between">
-                <h3 className="font-semibold text-foreground">
+            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="p-6 border-b border-border flex items-center justify-between">
+                <h3 className="text-xl font-bold text-foreground">
                   Notifications {unreadNotifications > 0 && `(${unreadNotifications} unread)`}
                 </h3>
                 {unreadNotifications > 0 && (
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="default"
                     onClick={() => markAllRead.mutate()}
                     disabled={markAllRead.isPending}
+                    className="h-10"
                   >
                     Mark all as read
                   </Button>
                 )}
               </div>
               {notifications.length === 0 ? (
-                <div className="p-12 text-center">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Bell className="h-8 w-8 text-primary" />
+                <div className="p-16 text-center">
+                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <Bell className="h-10 w-10 text-primary" />
                   </div>
-                  <h4 className="font-semibold text-foreground mb-2">No notifications</h4>
-                  <p className="text-sm text-muted-foreground">
+                  <h4 className="text-xl font-bold text-foreground mb-3">No notifications</h4>
+                  <p className="text-base text-muted-foreground">
                     You'll receive notifications when employers update your applications
                   </p>
                 </div>
@@ -485,24 +486,24 @@ const CandidateDashboard = () => {
                     <div
                       key={notification.$id}
                       onClick={() => !notification.is_read && markRead.mutate(notification.$id)}
-                      className={cn("p-4 cursor-pointer hover:bg-muted/50 transition-colors", !notification.is_read && "bg-primary/5")}
+                      className={cn("p-6 cursor-pointer hover:bg-muted/50 transition-colors", !notification.is_read && "bg-primary/5")}
                     >
-                      <div className="flex items-start gap-4">
-                        <div className={cn("w-12 h-12 rounded-full flex items-center justify-center text-2xl border shrink-0", getNotificationColor(notification.type))}>
+                      <div className="flex items-start gap-5">
+                        <div className={cn("w-14 h-14 rounded-full flex items-center justify-center text-2xl border shrink-0", getNotificationColor(notification.type))}>
                           {getNotificationIcon(notification.type)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={cn("font-medium text-foreground", !notification.is_read && "font-semibold")}>
+                          <p className={cn("text-base text-foreground mb-2", !notification.is_read && "font-bold")}>
                             {notification.title}
                           </p>
-                          <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
-                          <p className="text-xs text-muted-foreground mt-2">
+                          <p className="text-base text-muted-foreground mb-2">{notification.message}</p>
+                          <p className="text-sm text-muted-foreground">
                             {formatDistanceToNow(new Date(notification.$createdAt), { addSuffix: true })}
                           </p>
                           {notification.job_id && (
                             <Link
                               to={`/job/${notification.job_id}`}
-                              className="inline-block mt-2 text-sm text-primary hover:underline"
+                              className="inline-block mt-3 text-base font-medium text-primary hover:underline"
                             >
                               View Job Details →
                             </Link>

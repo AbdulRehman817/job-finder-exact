@@ -89,7 +89,7 @@ export const useJobs = (filters?: { type?: string; location?: string; search?: s
               const result = {
                 ...parsedJob,
                 companies: companies.length > 0 ? {
-                  id: companies[0].$id,
+                  $id: companies[0].$id,
                   name: companies[0].name,
                   logo_url: companies[0].logo_url,
                   location: companies[0].location

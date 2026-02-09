@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
 const Notifications = () => {
-  const { user, loading } = useAuth();
+  const { user, loading,userRole } = useAuth();
   const { data: notifications = [], isLoading } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
@@ -67,11 +67,11 @@ const Notifications = () => {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <Layout>
-      <div className="bg-secondary py-6">
+    <Layout hideFooter>
+      <div className="bg-secondary py-8">
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Notifications</h1>
-          <div className="text-sm text-muted-foreground">
+          <h1 className="text-3xl font-bold text-foreground mb-3">Notifications</h1>
+          <div className="text-base text-muted-foreground">
             <Link to="/" className="hover:text-primary">
               Home
             </Link>
@@ -81,47 +81,53 @@ const Notifications = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-3xl mx-auto">
+      <div className="container mx-auto px-4 py-10">
+        <div className="max-w-4xl mx-auto">
           {/* Header Actions */}
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-muted-foreground">
+          <div className="flex items-center justify-between mb-8">
+            <p className="text-lg text-muted-foreground">
               {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}` : "All caught up!"}
             </p>
             {unreadCount > 0 && (
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={() => markAllRead.mutate()}
                 disabled={markAllRead.isPending}
+                className="h-11 px-6"
               >
-                <CheckCheck className="h-4 w-4 mr-2" />
+                <CheckCheck className="h-5 w-5 mr-2" />
                 Mark all as read
               </Button>
             )}
           </div>
 
           {/* Notifications List */}
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
             {notifications.length === 0 ? (
-              <div className="p-12 text-center">
-                <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">No notifications</h3>
-                <p className="text-sm text-muted-foreground">
+              <div className="p-20 text-center">
+                <Bell className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
+                <h3 className="text-xl font-semibold text-foreground mb-3">No notifications</h3>
+                <p className="text-base text-muted-foreground">
                   You'll receive notifications when something important happens
                 </p>
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.$id}
-                    className={cn(
-                      "p-4 flex items-start gap-4 transition-colors",
-                      !notification.is_read && "bg-primary/5"
-                    )}
-                  >
-                    <div
+               {notifications.map((notification) => {
+  const isRecruiterNotification =
+    userRole === "employer" && notification.type === "application_received";
+
+  return (
+    <div
+      key={notification.$id}
+      className={cn(
+        "p-6 sm:p-8 flex flex-col gap-6 sm:flex-row sm:items-start transition-colors",
+        !notification.is_read && "bg-primary/5"
+      )}
+    >
+    
+ <div
                       className={cn(
                         "w-12 h-12 rounded-full flex items-center justify-center text-2xl shrink-0 border",
                         getNotificationColor(notification.type)
@@ -163,18 +169,23 @@ const Notifications = () => {
                           </Button>
                         </div>
                       </div>
+</div>
 
-                      {notification.job_id && (
-                        <Link
-                          to={`/employer-dashboard`}
-                          className="inline-block mt-3 text-sm text-primary hover:underline"
-                        >
-                          View User Details →
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                ))}
+
+
+
+
+      {isRecruiterNotification && (
+        <Link
+          to="/employer-dashboard"
+          className="inline-flex items-center mt-4 text-sm font-medium text-primary hover:underline"
+        >
+          View User Details →
+        </Link>
+      )}
+    </div>
+  );
+})}
               </div>
             )}
           </div>
