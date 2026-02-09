@@ -4,6 +4,7 @@ import { Briefcase, ChevronDown, Menu, X, User, LogOut, Settings, Home, Search, 
 import { Button } from "@/components/ui/button";
 import { Permission, Role } from "appwrite";
 import { getAvatarUrl } from "@/lib/avatar";
+import logo from "@/../public/logo.png";
 
 
 import {
@@ -123,9 +124,14 @@ const Header = () => {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 shrink-0">
               <div className="bg-primary p-2 rounded-lg">
-                <Briefcase className="h-5 w-5 text-primary-foreground" />
+                <img
+    src={logo}
+    alt="Hirely Logo"
+    className="h-6 w-6 object-contain"
+  />
+          
               </div>
-              <span className="text-xl font-bold text-foreground">Jobpilot</span>
+              <span className="text-xl font-bold text-foreground">Hirely</span>
             </Link>
 
             {/* Desktop Navigation - Right after logo */}
