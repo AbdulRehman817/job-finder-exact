@@ -116,21 +116,17 @@ const Header = () => {
 
   return (
     <header className="w-full bg-background border-b border-border sticky top-0 z-50">
-      {/* Main header */}
       <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between gap-4">
-          {/* Logo and Main Nav */}
+        <div className="flex items-center justify-between gap-4">  
           <div className="flex items-center gap-8">
-            {/* Logo */}
             <Link to="/" className="flex items-center gap-2 shrink-0">
-              <div className="bg-primary p-2 rounded-lg">
-                <img
-    src={logo}
-    alt="Hirely Logo"
-    className="h-6 w-6 object-contain"
-  />
-          
-              </div>
+           <div className="bg-primary p-2 rounded-lg flex items-center justify-center">
+       <img
+        src={logo}
+       alt="Hirely Logo"
+     className="h-6 w-6 object-contain"
+      />
+        </div>
               <span className="text-xl font-bold text-foreground">Hirely</span>
             </Link>
 
