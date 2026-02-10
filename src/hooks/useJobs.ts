@@ -2,19 +2,38 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { databases, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
 
+
+const parseStringArrayField = (value: unknown): string[] | null => {
+  if (!value) return null;
+  if (Array.isArray(value)) return value as string[];
+  if (typeof value !== "string") return null;
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch (error) {
+    console.warn("Invalid JSON stored for job field:", value, error);
+    return null;
+  }
+};
+
+
 // Helper function to parse JSON strings stored in Appwrite
 const parseJobData = (job: any): Job => {
   return {
     ...job,
-    requirements: job.requirements ? (typeof job.requirements === 'string' ? JSON.parse(job.requirements) : job.requirements) : null,
-    responsibilities: job.responsibilities ? (typeof job.responsibilities === 'string' ? JSON.parse(job.responsibilities) : job.responsibilities) : null,
-    benefits: job.benefits ? (typeof job.benefits === 'string' ? JSON.parse(job.benefits) : job.benefits) : null,
+   requirements: parseStringArrayField(job.requirements),
+    responsibilities: parseStringArrayField(job.responsibilities),
+    benefits: parseStringArrayField(job.benefits),
   };
 };
 
 export interface Job {
   $id: string;
   company_id: string;
+   apply_link?: string | null;
+  apply_url?: string | null;
+  application_url?: string | null;
   user_id: string;
   title: string;
   description: string;
@@ -80,6 +99,9 @@ export const useJobs = (filters?: { type?: string; location?: string; search?: s
         const jobsWithCompanies = await Promise.all(
           jobs.map(async (job) => {
             try {
+               if (!job.company_id) {
+                return parseJobData(job);
+              }
               const { documents: companies } = await databases.listDocuments(
                 DATABASE_ID,
                 COLLECTIONS.COMPANIES,
@@ -128,6 +150,10 @@ export const useJob = (id: string) => {
 
         // Fetch company data
         console.log('📡 useJob: Fetching company data for job');
+          const parsedJob = parseJobData(job);
+        if (!job.company_id) {
+          return parsedJob;
+        }
         const { documents: companies } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.COMPANIES,
@@ -135,15 +161,14 @@ export const useJob = (id: string) => {
         );
         console.log('📥 useJob: Received company data:', companies.length > 0 ? companies[0].name : 'none');
 
-        const parsedJob = parseJobData(job);
         const result = {
           ...parsedJob,
           companies: companies.length > 0 ? {
             id: companies[0].$id,
             name: companies[0].name,
             logo_url: companies[0].logo_url,
-            location: companies[0].location,
-                email: companies[0].email ?? null,
+  location: companies[0].location,
+                  email: companies[0].email ?? null,
           } : undefined
         };
         console.log('✅ useJob: Job with company data ready');
@@ -165,6 +190,7 @@ export const useMyJobs = () => {
     queryFn: async () => {
       if (!user) return [];
       try {
+        
         const { documents } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.JOBS,
@@ -175,6 +201,9 @@ export const useMyJobs = () => {
         const jobsWithCompanies = await Promise.all(
           documents.map(async (job) => {
             try {
+                 if (!job.company_id) {
+                return parseJobData(job);
+              }
               const { documents: companies } = await databases.listDocuments(
                 DATABASE_ID,
                 COLLECTIONS.COMPANIES,
@@ -233,6 +262,12 @@ export const useCreateJob = () => {
         );
 
         // Fetch company data
+          if (!document.company_id) {
+          return {
+            ...document,
+            companies: undefined,
+          };
+        }
         const { documents: companies } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.COMPANIES,
@@ -275,6 +310,12 @@ export const useUpdateJob = () => {
         );
 
         // Fetch company data
+        if (!document.company_id) {
+          return {
+            ...document,
+            companies: undefined,
+          };
+        }
         const { documents: companies } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.COMPANIES,

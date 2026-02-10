@@ -83,27 +83,24 @@ const JobDetails = () => {
   //   setShowApplyModal(true);
   // };
 
-const handleEmailApply = () => {
-  const companyEmail = job?.companies?.email || "company@gmail.com";
-
-  const subject = encodeURIComponent(`Job Application - ${job?.title}`);
-  const body = encodeURIComponent(`
-Hello,
-
-I would like to apply for the position of ${job?.title}.
-
-Name: ${profile?.full_name}
-Profile: ${window.location.origin}/profile
-
-Thank you.
-  `);
-
-  window.location.href = `mailto:${companyEmail}?subject=${subject}&body=${body}`;
-};
 
 
 
-  const handleApply = async () => {
+
+  const handleApplyRedirect = () => {
+    const jobApplyLink = job?.apply_link || job?.apply_url || job?.application_url;
+     if (jobApplyLink) {
+      window.open(jobApplyLink, "_blank", "noopener,noreferrer");
+      return;
+    }
+    toast({
+      title: "Application link unavailable",
+      description: "This job does not have an apply link yet.",
+      variant: "destructive",
+    });
+  }
+
+     const handleApply = async () => {
     try {
       await applyForJob.mutateAsync({
         jobId: id!,
@@ -348,7 +345,7 @@ Thank you.
                     <Button 
                       className="btn-primary h-11 px-6"
                       // onClick={handleApplyClick}
-                      onClick={handleEmailApply}
+                                          onClick={handleApplyRedirect}
                     >
                       Apply Now <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
