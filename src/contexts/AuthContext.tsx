@@ -10,26 +10,29 @@ const createEmailPasswordSessionViaRest = async (email: string, password: string
     throw new Error("Missing Appwrite environment variables. Set VITE_APPWRITE_ENDPOINT and VITE_APPWRITE_PROJECT_ID.");
   }
 
-  const response = await fetch(`${endpoint}/account/sessions/email`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Appwrite-Project": projectId,
-    },
-    body: JSON.stringify({ email, password }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${endpoint}/account/sessions/email`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Appwrite-Project": projectId,
+      },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch (error) {
+    const origin = typeof window !== "undefined" ? window.location.origin : "your app URL";
+    throw new Error(
+      `Network/CORS error while creating Appwrite session. Add ${origin} in Appwrite Console → Project Settings → Platforms (Web), then retry.`
+    );
+  }
 
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const error = new Error(data?.message || "Failed to create email/password session") as Error & {
-      code?: number;
-      type?: string;
-    };
-    error.code = data?.code || response.status;
-    error.type = data?.type;
-    throw error;
+    const message = data?.message || "Failed to create email/password session";
+    throw new Error(message);
   }
 
   return data;
@@ -236,12 +239,7 @@ const signUp = async (
   console.log('🔄 AuthContext: signUp called with:', { email, fullName, role, hasAvatar: !!avatarFile });
   try {
     // Sign out any existing session first
-    try {
-      await account.deleteSession('current');
-      console.log('✅ AuthContext: Cleared existing session');
-    } catch (error) {
-      console.log('ℹ️ AuthContext: No existing session to clear');
-    }
+   
 
     // Create account
     console.log('📡 AuthContext: Creating Appwrite account');
@@ -308,12 +306,7 @@ if (avatarFile) {
     console.log('🔄 AuthContext: signIn called with email:', email);
     try {
       // Sign out any existing session first
-      try {
-        await account.deleteSession('current');
-        console.log('✅ AuthContext: Cleared existing session');
-      } catch (error) {
-        console.log('ℹ️ AuthContext: No existing session to clear');
-      }
+     
 
       console.log('📡 AuthContext: Creating email/password session');
       await createEmailPasswordSessionViaRest(email, password);
