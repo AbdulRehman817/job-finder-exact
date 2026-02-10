@@ -54,53 +54,33 @@ const JobDetails = () => {
   const saveJob = useSaveJob();
   const unsaveJob = useUnsaveJob();
 
-  // const handleApplyClick = () => {
-  //   if (!user) {
-  //     toast({
-  //       title: "Sign in required",
-  //       description: "Please sign in to apply for this job",
-  //       variant: "destructive",
-  //     });
-  //     navigate("/signin");
-  //     return;
-  //   }
-
-  //   if (userRole === "employer") {
-  //     toast({
-  //       title: "Cannot apply",
-  //       description: "Employers cannot apply for jobs",
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
-
-  //   // Check profile completion
-  //   if (!profileCompletion.isComplete) {
-  //     setShowProfileModal(true);
-  //     return;
-  //   }
-
-  //   setShowApplyModal(true);
-  // };
-
-
-
-
-
   const handleApplyRedirect = () => {
-    const jobApplyLink = job?.apply_link || job?.apply_url || job?.application_url;
-     if (jobApplyLink) {
-      window.open(jobApplyLink, "_blank", "noopener,noreferrer");
+    const rawApplyLink = [
+      job?.apply_link,
+      job?.apply_url,
+      job?.application_url,
+      (job as any)?.applyLink,
+      (job as any)?.applicationUrl,
+      (job as any)?.applyURL,
+    ].find((value) => typeof value === "string" && value.trim().length > 0) as string | undefined;
+
+    if (rawApplyLink) {
+      const normalizedApplyLink = /^https?:\/\//i.test(rawApplyLink)
+        ? rawApplyLink
+        : `https://${rawApplyLink}`;
+
+      window.open(normalizedApplyLink, "_blank", "noopener,noreferrer");
       return;
     }
+
     toast({
       title: "Application link unavailable",
       description: "This job does not have an apply link yet.",
       variant: "destructive",
     });
-  }
+  };
 
-     const handleApply = async () => {
+  const handleApply = async () => {
     try {
       await applyForJob.mutateAsync({
         jobId: id!,
@@ -251,7 +231,6 @@ const JobDetails = () => {
           </div>
         </DialogContent>
       </Dialog>
-
       {/* Breadcrumb */}
       <div className="bg-secondary py-6">
         <div className="container mx-auto px-4">
@@ -344,8 +323,7 @@ const JobDetails = () => {
                   ) : (
                     <Button 
                       className="btn-primary h-11 px-6"
-                      // onClick={handleApplyClick}
-                                          onClick={handleApplyRedirect}
+                      onClick={handleApplyRedirect}
                     >
                       Apply Now <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -462,7 +440,6 @@ const JobDetails = () => {
                 </div>
               </div>
             </div>
-
             {/* Job Benefits */}
             {job.benefits && job.benefits.length > 0 && (
               <div className="bg-card border border-border rounded-xl p-6">

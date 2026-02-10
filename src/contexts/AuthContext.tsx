@@ -2,6 +2,38 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { Models, Account as AppwriteAccount, Query, Permission, Role } from "appwrite";
 import { account, databases, DATABASE_ID, COLLECTIONS, ID, storage, BUCKETS } from "@/lib/appwrite";
 
+const createEmailPasswordSessionViaRest = async (email: string, password: string) => {
+  const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT;
+  const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID;
+
+  if (!endpoint || !projectId) {
+    throw new Error("Missing Appwrite environment variables. Set VITE_APPWRITE_ENDPOINT and VITE_APPWRITE_PROJECT_ID.");
+  }
+
+  const response = await fetch(`${endpoint}/account/sessions/email`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Appwrite-Project": projectId,
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const error = new Error(data?.message || "Failed to create email/password session") as Error & {
+      code?: number;
+      type?: string;
+    };
+    error.code = data?.code || response.status;
+    error.type = data?.type;
+    throw error;
+  }
+
+  return data;
+};
 type UserRole = "candidate" | "employer" | null;
 
 export interface Profile {
@@ -218,7 +250,7 @@ const signUp = async (
 
     // Create session immediately after account creation
     console.log('📡 AuthContext: Creating session for new user');
-    await account.createEmailPasswordSession(email, password);
+    await createEmailPasswordSessionViaRest(email, password);
     console.log('✅ AuthContext: Session created');
 
     // NOW upload avatar with correct permissions (session exists)
@@ -284,7 +316,7 @@ if (avatarFile) {
       }
 
       console.log('📡 AuthContext: Creating email/password session');
-      await account.createEmailPasswordSession(email, password);
+      await createEmailPasswordSessionViaRest(email, password);
       console.log('✅ AuthContext: Session created');
 
       const currentUser = await account.get();
