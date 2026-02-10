@@ -74,6 +74,8 @@ if (!BUCKETS.RESUMES) {
 
 
 export { ID };
+
+
 export const createEmailPasswordSessionViaRest = async (email: string, password: string) => {
   const response = await fetch(`${endpoint}/account/sessions/email`, {
     method: "POST",
@@ -99,5 +101,7 @@ export const createEmailPasswordSessionViaRest = async (email: string, password:
 
   return data;
 };
+
+
 
 export default client;

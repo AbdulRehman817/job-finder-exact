@@ -54,7 +54,8 @@ const JobDetails = () => {
   const saveJob = useSaveJob();
   const unsaveJob = useUnsaveJob();
 
-  const handleApplyRedirect = () => {
+
+   const handleApplyRedirect = () => {
     const rawApplyLink = [
       job?.apply_link,
       job?.apply_url,
@@ -63,22 +64,20 @@ const JobDetails = () => {
       (job as any)?.applicationUrl,
       (job as any)?.applyURL,
     ].find((value) => typeof value === "string" && value.trim().length > 0) as string | undefined;
-
-    if (rawApplyLink) {
+   if (rawApplyLink) {
       const normalizedApplyLink = /^https?:\/\//i.test(rawApplyLink)
         ? rawApplyLink
         : `https://${rawApplyLink}`;
-
-      window.open(normalizedApplyLink, "_blank", "noopener,noreferrer");
+            window.open(normalizedApplyLink, "_blank", "noopener,noreferrer");
       return;
     }
-
-    toast({
+     toast({
       title: "Application link unavailable",
       description: "This job does not have an apply link yet.",
       variant: "destructive",
     });
   };
+
 
   const handleApply = async () => {
     try {
@@ -129,6 +128,52 @@ const JobDetails = () => {
       });
     }
   };
+
+
+
+ const handleShare = async () => {
+    if (!job) return;
+
+    const jobUrl = `${window.location.origin}/job/${id || job.$id}`;
+    const companyName = job.companies?.name || "Hirely";
+    const sourceHost = window.location.host;
+    const shortDescription = (job.description || "").replace(/\s+/g, " ").trim().slice(0, 220);
+    const salaryLine = salaryDisplay && salaryDisplay !== "Competitive" ? `\nSalary: ${salaryDisplay}` : "";
+    const locationLine = job.location ? `\nLocation: ${job.location}` : "";
+    const skillsLine = job.requirements?.length
+      ? `\nSkills: ${job.requirements.slice(0, 6).join(", ")}`
+      : "";
+    const postedLine = job.posted_date
+      ? `\nPosted: ${new Date(job.posted_date).toDateString()}`
+      : "";
+
+    const shareText = `📣 Job Alert: ${job.title} @ ${companyName}${salaryLine}${locationLine}${skillsLine}${postedLine}\n\n${shortDescription}${shortDescription.length === 220 ? "..." : ""}\n\nApply now on ${sourceHost}\n${jobUrl}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${job.title} at ${companyName}`,
+          text: shareText,
+        });
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareText);
+      toast({
+        title: "Job link copied",
+        description: "Job details and link copied to clipboard.",
+      });
+    } catch (error: any) {
+      if (error?.name === "AbortError") return;
+      toast({
+        title: "Share failed",
+        description: "Unable to share job right now.",
+        variant: "destructive",
+      });
+    }
+  };
+
+
 
   if (isLoading) {
     return (
@@ -291,7 +336,7 @@ const JobDetails = () => {
                   >
                     {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
                   </Button>
-                  <Button variant="outline" size="icon">
+                 <Button variant="outline" size="icon" onClick={handleShare}>
                     <Share2 className="h-4 w-4" />
                   </Button>
                 </div>

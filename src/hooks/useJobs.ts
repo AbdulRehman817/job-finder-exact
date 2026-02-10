@@ -42,6 +42,7 @@ const parseStringArrayField = (value: unknown): string[] | null => {
   }
 };
 
+
 // Helper function to parse JSON strings stored in Appwrite
 const parseArrayField = (value: unknown): string[] | null => {
   if (!value) return null;
@@ -83,10 +84,9 @@ const parseArrayField = (value: unknown): string[] | null => {
 
 const parseJobData = (job: any): Job => ({
   ...job,
-  requirements: parseArrayField(job.requirements),
-  responsibilities: parseArrayField(job.responsibilities),
-  benefits: parseArrayField(job.benefits),
-
+  requirements: parseStringArrayField(job.requirements),
+    responsibilities: parseStringArrayField(job.responsibilities),
+    benefits: parseStringArrayField(job.benefits),
 });
 
 

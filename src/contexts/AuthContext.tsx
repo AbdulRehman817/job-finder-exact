@@ -3,6 +3,9 @@ import { Models, Account as AppwriteAccount, Permission, Role } from "appwrite";
 import { account, databases, DATABASE_ID, COLLECTIONS, ID, storage, BUCKETS } from "@/lib/appwrite";
 
 
+
+
+
 const createEmailPasswordSessionViaRest = async (email: string, password: string) => {
   const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT;
   const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID;
