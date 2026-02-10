@@ -152,7 +152,7 @@ const JobDetails = () => {
 
   if (isLoading) {
     return (
-      <Layout>
+      <Layout hideFooter>
         <div className="container mx-auto px-4 py-16 text-center">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading job details...</p>
@@ -163,7 +163,7 @@ const JobDetails = () => {
 
   if (!job) {
     return (
-      <Layout>
+      <Layout hideFooter>
         <div className="container mx-auto px-4 py-16 text-center">
           <Briefcase className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-foreground mb-2">Job not found</h2>

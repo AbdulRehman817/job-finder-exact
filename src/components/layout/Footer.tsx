@@ -30,9 +30,17 @@ const Footer = () => {
             <h4 className="font-semibold mb-4">Quick Link</h4>
             <ul className="space-y-2 text-sm text-primary-foreground/70">
               <li><Link to="/about" className="hover:text-primary-foreground transition-colors">About</Link></li>
-              <li><Link to="/contact" className="hover:text-primary-foreground transition-colors flex items-center gap-1"><span className="text-primary">→</span> Contact</Link></li>
-              <li><Link to="/pricing" className="hover:text-primary-foreground transition-colors">Pricing</Link></li>
-              <li><Link to="/blog" className="hover:text-primary-foreground transition-colors">Blog</Link></li>
+              <li>
+                {/* <Link to="/contact" className="hover:text-primary-foreground transition-colors flex items-center gap-1"> */}
+                <span className="text-primary">→</span> 
+                Contact
+                {/* </Link> */}
+                </li>
+              <li>
+                {/* <Link to="/blog" className="hover:text-primary-foreground transition-colors"> */}
+                Blog
+                {/* </Link> */}
+                </li>
             </ul>
           </div>
 
@@ -41,9 +49,21 @@ const Footer = () => {
             <h4 className="font-semibold mb-4">Candidate</h4>
             <ul className="space-y-2 text-sm text-primary-foreground/70">
               <li><Link to="/find-jobs" className="hover:text-primary-foreground transition-colors">Browse Jobs</Link></li>
-              <li><Link to="/employers" className="hover:text-primary-foreground transition-colors">Browse Employers</Link></li>
-              <li><Link to="/dashboard" className="hover:text-primary-foreground transition-colors">Candidate Dashboard</Link></li>
-              <li><Link to="/saved-jobs" className="hover:text-primary-foreground transition-colors">Saved Jobs</Link></li>
+              <li>
+                {/* <Link to="/employers" className="hover:text-primary-foreground transition-colors"> */}
+              Browse Employers
+              {/* </Link> */}
+              </li>
+              <li>
+                {/* <Link to="/dashboard" className="hover:text-primary-foreground transition-colors"> */}
+                Candidate Dashboard
+                {/* </Link> */}
+                </li>
+              <li>
+                {/* <Link to="/saved-jobs" className="hover:text-primary-foreground transition-colors"> */}
+                Saved Jobs
+                {/* </Link> */}
+                </li>
             </ul>
           </div>
 
@@ -51,10 +71,26 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Employers</h4>
             <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li><Link to="/post-job" className="hover:text-primary-foreground transition-colors">Post a Job</Link></li>
-              <li><Link to="/candidates" className="hover:text-primary-foreground transition-colors">Browse Candidates</Link></li>
-              <li><Link to="/employer-dashboard" className="hover:text-primary-foreground transition-colors">Employers Dashboard</Link></li>
-              <li><Link to="/applications" className="hover:text-primary-foreground transition-colors">Applications</Link></li>
+              <li>
+                {/* <Link to="/post-job" className="hover:text-primary-foreground transition-colors"> */}
+                Post a Job
+              {/* </Link> */}
+              </li>
+              <li>
+                {/* <Link to="/candidates" className="hover:text-primary-foreground transition-colors"> */}
+                Browse Candidates
+                {/* </Link> */}
+                </li>
+              <li>
+                {/* <Link to="/employer-dashboard" className="hover:text-primary-foreground transition-colors"> */}
+                Employers Dashboard
+                {/* </Link> */}
+                </li>
+              <li>
+                {/* <Link to="/applications" className="hover:text-primary-foreground transition-colors"> */}
+                Applications
+                {/* </Link> */}
+                </li>
             </ul>
           </div>
 
