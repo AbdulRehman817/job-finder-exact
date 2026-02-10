@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { Models, Account as AppwriteAccount, Query, Permission, Role } from "appwrite";
+import { Models, Account as AppwriteAccount, Permission, Role } from "appwrite";
 import { account, databases, DATABASE_ID, COLLECTIONS, ID, storage, BUCKETS } from "@/lib/appwrite";
+
 
 const createEmailPasswordSessionViaRest = async (email: string, password: string) => {
   const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT;
@@ -37,6 +38,16 @@ const createEmailPasswordSessionViaRest = async (email: string, password: string
 
   return data;
 };
+
+
+const clearCurrentSessionIfExists = async () => {
+  try {
+    await account.deleteSession("current");
+  } catch (_error) {
+    // Ignore when there is no active session.
+  }
+};
+
 type UserRole = "candidate" | "employer" | null;
 
 export interface Profile {
@@ -128,17 +139,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('📡 AuthContext: Checking existing profile in Appwrite');
       const { documents } = await databases.listDocuments(
         DATABASE_ID,
-        COLLECTIONS.PROFILES,
-        [Query.equal('user_id', appwriteUser.$id)]
+        COLLECTIONS.PROFILES
       );
+      const matchedProfiles = documents.filter((doc) => doc.user_id === appwriteUser.$id);
       console.log('📥 AuthContext: Found existing documents:', documents.length);
 
-      if (documents.length > 0) {
+      if (matchedProfiles.length > 0) {
         // Update existing profile
-        const { $id } = documents[0];
+        const { $id } = matchedProfiles[0];
         console.log('🔄 AuthContext: Updating existing profile:', $id);
         await databases.updateDocument(DATABASE_ID, COLLECTIONS.PROFILES, $id, payload);
-        const result = { ...documents[0], ...payload };
+        const result = { ...matchedProfiles[0], ...payload };
         console.log('✅ AuthContext: Profile updated successfully');
         return result;
       } else {
@@ -165,12 +176,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('📡 AuthContext: Fetching profile from Appwrite databases.listDocuments');
       const { documents } = await databases.listDocuments(
         DATABASE_ID,
-        COLLECTIONS.PROFILES,
-        [Query.equal('user_id', appwriteUser.$id)]
+        COLLECTIONS.PROFILES
       );
+      const matchedProfiles = documents.filter((doc) => doc.user_id === appwriteUser.$id);
       console.log('📥 AuthContext: Received documents from Appwrite:', documents);
 
-      const profileDoc = documents.length > 0 ? documents[0] : await ensureProfile(appwriteUser);
+      const profileDoc = matchedProfiles.length > 0 ? matchedProfiles[0] : await ensureProfile(appwriteUser);
       console.log('📋 AuthContext: Using profile document:', profileDoc);
       const mapped = mapProfile(profileDoc);
       console.log('🔄 AuthContext: Mapped profile data:', mapped);
@@ -238,8 +249,7 @@ const signUp = async (
 ) => {
   console.log('🔄 AuthContext: signUp called with:', { email, fullName, role, hasAvatar: !!avatarFile });
   try {
-    // Sign out any existing session first
-   
+    await clearCurrentSessionIfExists();
 
     // Create account
     console.log('📡 AuthContext: Creating Appwrite account');
@@ -305,8 +315,7 @@ if (avatarFile) {
   const signIn = async (email: string, password: string) => {
     console.log('🔄 AuthContext: signIn called with email:', email);
     try {
-      // Sign out any existing session first
-     
+      await clearCurrentSessionIfExists();
 
       console.log('📡 AuthContext: Creating email/password session');
       await createEmailPasswordSessionViaRest(email, password);

@@ -1,7 +1,32 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { databases, DATABASE_ID, COLLECTIONS, ID, Query } from "@/lib/appwrite";
+import { databases, DATABASE_ID, COLLECTIONS, ID } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
 
+const enrichJobsWithCompanies = async (jobs: any[]) => {
+  const { documents: companies } = await databases.listDocuments(
+    DATABASE_ID,
+    COLLECTIONS.COMPANIES
+  );
+  const companiesById = new Map(companies.map((company) => [company.$id, company]));
+
+  return jobs.map((job) => {
+    const parsedJob = parseJobData(job);
+    const company = job.company_id ? companiesById.get(job.company_id) : undefined;
+
+    return {
+      ...parsedJob,
+      companies: company
+        ? {
+            $id: company.$id,
+            name: company.name,
+            logo_url: company.logo_url,
+            location: company.location,
+            email: company.email ?? null,
+          }
+        : undefined,
+    };
+  });
+};
 
 const parseStringArrayField = (value: unknown): string[] | null => {
   if (!value) return null;
@@ -17,12 +42,11 @@ const parseStringArrayField = (value: unknown): string[] | null => {
   }
 };
 
-
 // Helper function to parse JSON strings stored in Appwrite
 const parseJobData = (job: any): Job => {
   return {
     ...job,
-   requirements: parseStringArrayField(job.requirements),
+    requirements: parseStringArrayField(job.requirements),
     responsibilities: parseStringArrayField(job.responsibilities),
     benefits: parseStringArrayField(job.benefits),
   };
@@ -31,7 +55,7 @@ const parseJobData = (job: any): Job => {
 export interface Job {
   $id: string;
   company_id: string;
-   apply_link?: string | null;
+  apply_link?: string | null;
   apply_url?: string | null;
   application_url?: string | null;
   user_id: string;
@@ -58,7 +82,7 @@ export interface Job {
     name: string;
     logo_url: string | null;
     location: string | null;
-        email?: string | null;
+    email?: string | null;
   };
 }
 
@@ -68,65 +92,21 @@ export const useJobs = (filters?: { type?: string; location?: string; search?: s
     queryFn: async () => {
       console.log('🔄 useJobs: Fetching jobs with filters:', filters);
       try {
-        let queries = [
-          Query.equal('status', 'active'),
-          Query.orderDesc('posted_date')
-        ];
-
-        if (filters?.type) {
-          queries.push(Query.equal('type', filters.type));
-          console.log('📋 useJobs: Added type filter:', filters.type);
-        }
-        if (filters?.location) {
-          queries.push(Query.search('location', filters.location));
-          console.log('📋 useJobs: Added location filter:', filters.location);
-        }
-        if (filters?.search) {
-          queries.push(Query.search('title', filters.search));
-          console.log('📋 useJobs: Added search filter:', filters.search);
-        }
-
-        console.log('📡 useJobs: Querying Appwrite for jobs with queries:', queries);
+        console.log('📡 useJobs: Querying Appwrite for all jobs');
         const { documents: jobs } = await databases.listDocuments(
           DATABASE_ID,
-          COLLECTIONS.JOBS,
-          queries
+          COLLECTIONS.JOBS
         );
         console.log('📥 useJobs: Received jobs from Appwrite:', jobs.length);
 
-        // Fetch company data for each job
-        console.log('📡 useJobs: Fetching company data for jobs');
-        const jobsWithCompanies = await Promise.all(
-          jobs.map(async (job) => {
-            try {
-               if (!job.company_id) {
-                return parseJobData(job);
-              }
-              const { documents: companies } = await databases.listDocuments(
-                DATABASE_ID,
-                COLLECTIONS.COMPANIES,
-                [Query.equal('$id', job.company_id)]
-              );
+        const filteredJobs = jobs
+          .filter((job) => job.status === "active")
+          .filter((job) => !filters?.type || job.type === filters.type)
+          .filter((job) => !filters?.location || String(job.location || "").toLowerCase().includes(filters.location.toLowerCase()))
+          .filter((job) => !filters?.search || String(job.title || "").toLowerCase().includes(filters.search.toLowerCase()))
+          .sort((a, b) => new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime());
 
-              const parsedJob = parseJobData(job);
-              const result = {
-                ...parsedJob,
-                companies: companies.length > 0 ? {
-                  $id: companies[0].$id,
-                  name: companies[0].name,
-                  logo_url: companies[0].logo_url,
-                  location: companies[0].location,
-                    email: companies[0].email ?? null,
-                } : undefined
-              };
-              console.log('📋 useJobs: Processed job with company:', { jobId: job.$id, companyName: result.companies?.name });
-              return result;
-            } catch (error) {
-              console.error('❌ useJobs: Error fetching company for job:', job.$id, error);
-              return parseJobData(job);
-            }
-          })
-        );
+        const jobsWithCompanies = await enrichJobsWithCompanies(filteredJobs);
 
         console.log('✅ useJobs: Jobs fetched successfully:', jobsWithCompanies.length);
         return jobsWithCompanies;
@@ -150,25 +130,23 @@ export const useJob = (id: string) => {
 
         // Fetch company data
         console.log('📡 useJob: Fetching company data for job');
-          const parsedJob = parseJobData(job);
+        const parsedJob = parseJobData(job);
         if (!job.company_id) {
           return parsedJob;
         }
-        const { documents: companies } = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.COMPANIES,
-          [Query.equal('$id', job.company_id)]
-        );
+
+        const { documents: companies } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.COMPANIES);
+        const company = companies.find((item) => item.$id === job.company_id);
         console.log('📥 useJob: Received company data:', companies.length > 0 ? companies[0].name : 'none');
 
         const result = {
           ...parsedJob,
-          companies: companies.length > 0 ? {
-            id: companies[0].$id,
-            name: companies[0].name,
-            logo_url: companies[0].logo_url,
-  location: companies[0].location,
-                  email: companies[0].email ?? null,
+          companies: company ? {
+            id: company.$id,
+            name: company.name,
+            logo_url: company.logo_url,
+            location: company.location,
+            email: company.email ?? null,
           } : undefined
         };
         console.log('✅ useJob: Job with company data ready');
@@ -190,43 +168,12 @@ export const useMyJobs = () => {
     queryFn: async () => {
       if (!user) return [];
       try {
-        
-        const { documents } = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.JOBS,
-          [Query.equal('user_id', user.id), Query.orderDesc('$createdAt')]
-        );
+        const { documents } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.JOBS);
+        const myJobs = documents
+          .filter((job) => job.user_id === user.id)
+          .sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime());
 
-        // Fetch company data for each job
-        const jobsWithCompanies = await Promise.all(
-          documents.map(async (job) => {
-            try {
-                 if (!job.company_id) {
-                return parseJobData(job);
-              }
-              const { documents: companies } = await databases.listDocuments(
-                DATABASE_ID,
-                COLLECTIONS.COMPANIES,
-                [Query.equal('$id', job.company_id)]
-              );
-
-              const parsedJob = parseJobData(job);
-              return {
-                ...parsedJob,
-                companies: companies.length > 0 ? {
-                  id: companies[0].$id,
-                  name: companies[0].name,
-                  logo_url: companies[0].logo_url,
-                  location: companies[0].location,
-                   email: companies[0].email ?? null,
-                } : undefined
-              };
-            } catch (error) {
-              console.error('Error fetching company for job:', job.$id, error);
-              return parseJobData(job);
-            }
-          })
-        );
+        const jobsWithCompanies = await enrichJobsWithCompanies(myJobs);
 
         return jobsWithCompanies;
       } catch (error) {
@@ -262,26 +209,24 @@ export const useCreateJob = () => {
         );
 
         // Fetch company data
-          if (!document.company_id) {
+        if (!document.company_id) {
           return {
             ...document,
             companies: undefined,
           };
         }
-        const { documents: companies } = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.COMPANIES,
-          [Query.equal('$id', document.company_id)]
-        );
+
+        const { documents: companies } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.COMPANIES);
+        const company = companies.find((item) => item.$id === document.company_id);
 
         return {
           ...document,
-          companies: companies.length > 0 ? {
-            id: companies[0].$id,
-            name: companies[0].name,
-            logo_url: companies[0].logo_url,
-            location: companies[0].location,
-             email: companies[0].email ?? null,
+          companies: company ? {
+            id: company.$id,
+            name: company.name,
+            logo_url: company.logo_url,
+            location: company.location,
+            email: company.email ?? null,
           } : undefined
         };
       } catch (error) {
@@ -316,20 +261,18 @@ export const useUpdateJob = () => {
             companies: undefined,
           };
         }
-        const { documents: companies } = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.COMPANIES,
-          [Query.equal('$id', document.company_id)]
-        );
+
+        const { documents: companies } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.COMPANIES);
+        const company = companies.find((item) => item.$id === document.company_id);
 
         return {
           ...document,
-          companies: companies.length > 0 ? {
-            id: companies[0].$id,
-            name: companies[0].name,
-            logo_url: companies[0].logo_url,
-            location: companies[0].location,
-             email: companies[0].email ?? null,
+          companies: company ? {
+            id: company.$id,
+            name: company.name,
+            logo_url: company.logo_url,
+            location: company.location,
+            email: company.email ?? null,
           } : undefined
         };
       } catch (error) {
