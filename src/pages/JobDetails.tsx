@@ -167,6 +167,7 @@ const JobDetails = () => {
 
   const salaryDisplay = formatSalary(job.salary_min, job.salary_max, job.currency || "USD");
   const currencyLabel = job.currency || "USD";
+  
 
   // Transform related jobs
   const transformedRelatedJobs = relatedJobs

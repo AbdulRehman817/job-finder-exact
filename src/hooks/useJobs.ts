@@ -43,14 +43,52 @@ const parseStringArrayField = (value: unknown): string[] | null => {
 };
 
 // Helper function to parse JSON strings stored in Appwrite
-const parseJobData = (job: any): Job => {
-  return {
-    ...job,
-    requirements: parseStringArrayField(job.requirements),
-    responsibilities: parseStringArrayField(job.responsibilities),
-    benefits: parseStringArrayField(job.benefits),
+const parseArrayField = (value: unknown): string[] | null => {
+  if (!value) return null;
+
+  const normalize = (items: unknown[]): string[] | null => {
+    const cleaned = items
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((item) => item.length > 0);
+
+    return cleaned.length > 0 ? cleaned : null;
   };
+
+  if (Array.isArray(value)) {
+    return normalize(value);
+  }
+
+  if (typeof value === 'string') {
+    const raw = value.trim();
+    if (!raw) return null;
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return normalize(parsed);
+      }
+    } catch {
+      // Fall back to delimiter-based parsing for legacy/plain-text formats.
+    }
+
+    const splitValues = raw.includes('\n')
+      ? raw.split(/\r?\n/)
+      : raw.split(',');
+
+    return normalize(splitValues);
+  }
+
+  return null;
 };
+
+const parseJobData = (job: any): Job => ({
+  ...job,
+  requirements: parseArrayField(job.requirements),
+  responsibilities: parseArrayField(job.responsibilities),
+  benefits: parseArrayField(job.benefits),
+
+});
+
 
 export interface Job {
   $id: string;

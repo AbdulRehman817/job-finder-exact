@@ -15,7 +15,7 @@ client
 
 
 
-  const originalPrepareRequest = (client as any).prepareRequest.bind(client);
+const originalPrepareRequest = (client as any).prepareRequest.bind(client);
 (client as any).prepareRequest = function patchedPrepareRequest(
   method: string,
   url: URL,
@@ -42,6 +42,7 @@ client
     return prepared;
   }
 };
+
 
 export const account = new Account(client);
 export const databases = new Databases(client);
