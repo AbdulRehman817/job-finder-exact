@@ -9,7 +9,7 @@ interface JobCardProps {
 }
 
 const JobCard = ({ job, variant = "default" }: JobCardProps) => {
-  const typeConfig = jobTypes[job.type];
+  const typeConfig = jobTypes[job.type] || jobTypes["full-time"];
 
   if (variant === "compact") {
     return (
