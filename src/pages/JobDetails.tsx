@@ -54,34 +54,54 @@ const JobDetails = () => {
   const saveJob = useSaveJob();
   const unsaveJob = useUnsaveJob();
 
-  const handleApplyClick = () => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to apply for this job",
-        variant: "destructive",
-      });
-      navigate("/signin");
-      return;
-    }
+  // const handleApplyClick = () => {
+  //   if (!user) {
+  //     toast({
+  //       title: "Sign in required",
+  //       description: "Please sign in to apply for this job",
+  //       variant: "destructive",
+  //     });
+  //     navigate("/signin");
+  //     return;
+  //   }
 
-    if (userRole === "employer") {
-      toast({
-        title: "Cannot apply",
-        description: "Employers cannot apply for jobs",
-        variant: "destructive",
-      });
-      return;
-    }
+  //   if (userRole === "employer") {
+  //     toast({
+  //       title: "Cannot apply",
+  //       description: "Employers cannot apply for jobs",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
 
-    // Check profile completion
-    if (!profileCompletion.isComplete) {
-      setShowProfileModal(true);
-      return;
-    }
+  //   // Check profile completion
+  //   if (!profileCompletion.isComplete) {
+  //     setShowProfileModal(true);
+  //     return;
+  //   }
 
-    setShowApplyModal(true);
-  };
+  //   setShowApplyModal(true);
+  // };
+
+const handleEmailApply = () => {
+  const companyEmail = job?.companies?.email || "company@gmail.com";
+
+  const subject = encodeURIComponent(`Job Application - ${job?.title}`);
+  const body = encodeURIComponent(`
+Hello,
+
+I would like to apply for the position of ${job?.title}.
+
+Name: ${profile?.full_name}
+Profile: ${window.location.origin}/profile
+
+Thank you.
+  `);
+
+  window.location.href = `mailto:${companyEmail}?subject=${subject}&body=${body}`;
+};
+
+
 
   const handleApply = async () => {
     try {
@@ -173,10 +193,10 @@ const JobDetails = () => {
 
   // Transform related jobs
   const transformedRelatedJobs = relatedJobs
-    .filter((j) => j.id !== job.id)
+    .filter((j) => j.$id !== job.$id)
     .slice(0, 4)
       .map((j) => ({
-      id: j.id,
+      id: j.$id,
       title: j.title,
       company: j.companies?.name || "Company",
       companyLogo: j.companies?.logo_url || "",
@@ -327,7 +347,8 @@ const JobDetails = () => {
                   ) : (
                     <Button 
                       className="btn-primary h-11 px-6"
-                      onClick={handleApplyClick}
+                      // onClick={handleApplyClick}
+                      onClick={handleEmailApply}
                     >
                       Apply Now <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>

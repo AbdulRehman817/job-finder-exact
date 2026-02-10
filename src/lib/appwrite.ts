@@ -13,6 +13,36 @@ client
   .setEndpoint(endpoint)
   .setProject(projectId);
 
+
+
+  const originalPrepareRequest = (client as any).prepareRequest.bind(client);
+(client as any).prepareRequest = function patchedPrepareRequest(
+  method: string,
+  url: URL,
+  headers: Record<string, string> = {},
+  params: Record<string, unknown> = {}
+) {
+  try {
+    return originalPrepareRequest(method, url, headers, params);
+  } catch (error) {
+    const isJsonRequest = method.toUpperCase() !== 'GET' && headers['content-type'] === 'application/json';
+    const hasBigNumberSerializerError =
+      error instanceof TypeError && String(error.message).includes('isBigNumber is not a function');
+
+    if (!isJsonRequest || !hasBigNumberSerializerError) {
+      throw error;
+    }
+
+    const prepared = originalPrepareRequest(method, url, { ...headers, 'content-type': 'multipart/form-data' }, params);
+    prepared.options.body = JSON.stringify(params, (_key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    );
+    (prepared.options.headers as Record<string, string>)['content-type'] = 'application/json';
+
+    return prepared;
+  }
+};
+
 export const account = new Account(client);
 export const databases = new Databases(client);
 export const storage = new Storage(client);

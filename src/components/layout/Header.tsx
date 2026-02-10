@@ -98,7 +98,7 @@ const Header = () => {
   const dashboardPath = userRole === "employer" ? "/employer-dashboard" : "/dashboard";
   const navLinks = [
     ...mainNavLinks,
-    ...(user ? [{ label: "Dashboard", path: dashboardPath, icon: LayoutDashboard }] : []),
+    // ...(user ? [{ label: "Dashboard", path: dashboardPath, icon: LayoutDashboard }] : []),
     ...(userRole === "employer" ? [{ label: "Post a Job", path: "/post-job", icon: PlusCircle }] : []),
   ];
 

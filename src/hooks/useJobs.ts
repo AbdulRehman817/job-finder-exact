@@ -39,6 +39,7 @@ export interface Job {
     name: string;
     logo_url: string | null;
     location: string | null;
+        email?: string | null;
   };
 }
 
@@ -92,7 +93,8 @@ export const useJobs = (filters?: { type?: string; location?: string; search?: s
                   $id: companies[0].$id,
                   name: companies[0].name,
                   logo_url: companies[0].logo_url,
-                  location: companies[0].location
+                  location: companies[0].location,
+                    email: companies[0].email ?? null,
                 } : undefined
               };
               console.log('📋 useJobs: Processed job with company:', { jobId: job.$id, companyName: result.companies?.name });
@@ -140,7 +142,8 @@ export const useJob = (id: string) => {
             id: companies[0].$id,
             name: companies[0].name,
             logo_url: companies[0].logo_url,
-            location: companies[0].location
+            location: companies[0].location,
+                email: companies[0].email ?? null,
           } : undefined
         };
         console.log('✅ useJob: Job with company data ready');
@@ -185,7 +188,8 @@ export const useMyJobs = () => {
                   id: companies[0].$id,
                   name: companies[0].name,
                   logo_url: companies[0].logo_url,
-                  location: companies[0].location
+                  location: companies[0].location,
+                   email: companies[0].email ?? null,
                 } : undefined
               };
             } catch (error) {
@@ -241,7 +245,8 @@ export const useCreateJob = () => {
             id: companies[0].$id,
             name: companies[0].name,
             logo_url: companies[0].logo_url,
-            location: companies[0].location
+            location: companies[0].location,
+             email: companies[0].email ?? null,
           } : undefined
         };
       } catch (error) {
@@ -282,7 +287,8 @@ export const useUpdateJob = () => {
             id: companies[0].$id,
             name: companies[0].name,
             logo_url: companies[0].logo_url,
-            location: companies[0].location
+            location: companies[0].location,
+             email: companies[0].email ?? null,
           } : undefined
         };
       } catch (error) {
