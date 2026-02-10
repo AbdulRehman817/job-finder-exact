@@ -205,7 +205,7 @@ const JobDetails = () => {
     }));
 
   return (
-    <Layout>
+    <Layout hideFooter>
       {/* Profile Incomplete Modal */}
       <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
         <DialogContent>
