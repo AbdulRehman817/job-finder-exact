@@ -111,7 +111,7 @@ const Header = () => {
     console.log('🔄 Header: Sign out initiated');
     await signOut();
     console.log('✅ Header: Sign out completed, navigating to home');
-    navigate("/");
+    navigate("/signin");
   };
 
   return (
@@ -187,8 +187,8 @@ const Header = () => {
                       <p className="text-sm font-medium text-foreground">{profile?.full_name || "User"}</p>
                       <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
+                    {/* <DropdownMenuSeparator /> */}
+                    {/* <DropdownMenuItem asChild>
                       <Link to={userRole === "employer" ? "/recruiter-profile" : "/profile"}>
                         <User className="mr-2 h-4 w-4" />
                         My Profile
@@ -199,11 +199,13 @@ const Header = () => {
                         <Settings className="mr-2 h-4 w-4" />
                         Settings
                       </Link>
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                   
                       <LogOut className="mr-2 h-4 w-4" />
                       Sign Out
+                      
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

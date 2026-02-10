@@ -109,10 +109,7 @@ avatarPreview: "",
       <div className="flex flex-col justify-center px-8 lg:px-16 py-12">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 mb-12">
-          <div className="bg-primary p-2 rounded-lg">
-            <Briefcase className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold text-foreground">Jobpilot</span>
+          
         </Link>
 
         <div className="max-w-md">
