@@ -91,6 +91,7 @@ const parseJobData = (job: any): Job => ({
 });
 
 
+
 export interface Job {
   $id: string;
   company_id: string;

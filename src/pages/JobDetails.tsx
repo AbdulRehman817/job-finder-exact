@@ -33,7 +33,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCandidateProfileCompletion } from "@/hooks/useProfileCompletion";
 import { useToast } from "@/hooks/use-toast";
 import { jobTypes } from "@/types";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 
 const JobDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -103,13 +103,13 @@ const JobDetails = () => {
 
 
 
-const copyShareUrl = async (shareUrl: string) => {
+const copyShareMessage = async (shareMessage: string) => {
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareUrl);
+        await navigator.clipboard.writeText(shareMessage);
         toast({
-          title: "Link copied",
-          description: "Job link copied to clipboard.",
+          title: "Share text copied",
+          description: "Job details copied to clipboard.",
         });
         return true;
       }
@@ -117,22 +117,37 @@ const copyShareUrl = async (shareUrl: string) => {
       // Fall through to manual copy prompt.
     }
 
-    window.prompt("Copy this job link:", shareUrl);
+    window.prompt("Copy and share this job message:", shareMessage);
     toast({
-      title: "Share link ready",
-      description: "Copy the link from the prompt and share it.",
+      title: "Share message ready",
+      description: "Copy the message from the prompt and share it.",
     });
     return true;
   };
 
   const handleShareJob = async () => {
     const shareUrl = `${window.location.origin}/job/${job.$id}`;
+    const postedOn = format(new Date(job.posted_date), "EEE MMM dd yyyy");
+    const descriptionPreview = job.description.length > 180
+      ? `${job.description.slice(0, 180).trim()}...`
+      : job.description;
+
+    const shareMessage = [
+      `📣 Job Alert: ${job.title} @ Hirely`,
+      `Location: ${job.location}`,
+      `Posted: ${postedOn}`,
+      "",
+      descriptionPreview,
+      "",
+      `Apply now on ${window.location.host}`,
+      shareUrl,
+    ].join("\n");
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: job.title,
-          text: `Check out this job: ${job.title}`,
+          title: `${job.title} @ Hirely`,
+          text: shareMessage,
           url: shareUrl,
         });
         return;
@@ -141,13 +156,14 @@ const copyShareUrl = async (shareUrl: string) => {
           return;
         }
 
-        await copyShareUrl(shareUrl);
+        await copyShareMessage(shareMessage);
         return;
       }
     }
 
-    await copyShareUrl(shareUrl);
+    await copyShareMessage(shareMessage);
   };
+
 
 
 
