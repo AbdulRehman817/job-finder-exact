@@ -126,7 +126,7 @@ const copyShareMessage = async (shareMessage: string) => {
   };
 
   const handleShareJob = async () => {
-    const shareUrl = `${window.location.origin}/job/${job.$id}`;
+    const shareUrl = `${window.location.origin}/#/job/${job.$id}`;
     const postedOn = format(new Date(job.posted_date), "EEE MMM dd yyyy");
     const descriptionPreview = job.description.length > 180
       ? `${job.description.slice(0, 180).trim()}...`
