@@ -131,48 +131,36 @@ const JobDetails = () => {
 
 
 
- const handleShare = async () => {
-    if (!job) return;
-
-    const jobUrl = `${window.location.origin}/job/${id || job.$id}`;
-    const companyName = job.companies?.name || "Hirely";
-    const sourceHost = window.location.host;
-    const shortDescription = (job.description || "").replace(/\s+/g, " ").trim().slice(0, 220);
-    const salaryLine = salaryDisplay && salaryDisplay !== "Competitive" ? `\nSalary: ${salaryDisplay}` : "";
-    const locationLine = job.location ? `\nLocation: ${job.location}` : "";
-    const skillsLine = job.requirements?.length
-      ? `\nSkills: ${job.requirements.slice(0, 6).join(", ")}`
-      : "";
-    const postedLine = job.posted_date
-      ? `\nPosted: ${new Date(job.posted_date).toDateString()}`
-      : "";
-
-    const shareText = `📣 Job Alert: ${job.title} @ ${companyName}${salaryLine}${locationLine}${skillsLine}${postedLine}\n\n${shortDescription}${shortDescription.length === 220 ? "..." : ""}\n\nApply now on ${sourceHost}\n${jobUrl}`;
+ const handleShareJob = async () => {
+    const sharePath = `/job/${job.$id}`;
+    const shareUrl = `${window.location.origin}/#${sharePath}`;
 
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${job.title} at ${companyName}`,
-          text: shareText,
+          title: job.title,
+          text: `Check out this job: ${job.title}`,
+          url: shareUrl,
         });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Link copied",
+          description: "Job link copied to clipboard.",
+        });
+      }
+    } catch (error) {
+      if ((error as Error).name === "AbortError") {
         return;
       }
 
-      await navigator.clipboard.writeText(shareText);
       toast({
-        title: "Job link copied",
-        description: "Job details and link copied to clipboard.",
-      });
-    } catch (error: any) {
-      if (error?.name === "AbortError") return;
-      toast({
-        title: "Share failed",
-        description: "Unable to share job right now.",
+        title: "Unable to share",
+        description: "Please try again.",
         variant: "destructive",
       });
     }
   };
-
 
 
   if (isLoading) {
@@ -336,7 +324,7 @@ const JobDetails = () => {
                   >
                     {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
                   </Button>
-                 <Button variant="outline" size="icon" onClick={handleShare}>
+                 <Button variant="outline" size="icon" onClick={handleShareJob}>
                     <Share2 className="h-4 w-4" />
                   </Button>
                 </div>

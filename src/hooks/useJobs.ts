@@ -84,9 +84,10 @@ const parseArrayField = (value: unknown): string[] | null => {
 
 const parseJobData = (job: any): Job => ({
   ...job,
-  requirements: parseStringArrayField(job.requirements),
-    responsibilities: parseStringArrayField(job.responsibilities),
-    benefits: parseStringArrayField(job.benefits),
+  requirements: parseArrayField(job.requirements),
+  responsibilities: parseArrayField(job.responsibilities),
+  benefits: parseArrayField(job.benefits),
+  skills_required: parseArrayField(job.skills_required),
 });
 
 
