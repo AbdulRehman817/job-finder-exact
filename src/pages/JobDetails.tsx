@@ -101,6 +101,59 @@ const JobDetails = () => {
     }
   };
 
+
+
+const copyShareUrl = async (shareUrl: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Link copied",
+          description: "Job link copied to clipboard.",
+        });
+        return true;
+      }
+    } catch {
+      // Fall through to manual copy prompt.
+    }
+
+    window.prompt("Copy this job link:", shareUrl);
+    toast({
+      title: "Share link ready",
+      description: "Copy the link from the prompt and share it.",
+    });
+    return true;
+  };
+
+  const handleShareJob = async () => {
+    const shareUrl = `${window.location.origin}/job/${job.$id}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: job.title,
+          text: `Check out this job: ${job.title}`,
+          url: shareUrl,
+        });
+        return;
+      } catch (error) {
+        if ((error as Error).name === "AbortError") {
+          return;
+        }
+
+        await copyShareUrl(shareUrl);
+        return;
+      }
+    }
+
+    await copyShareUrl(shareUrl);
+  };
+
+
+
+
+
+
   const handleSave = async () => {
     if (!user) {
       toast({
@@ -131,36 +184,6 @@ const JobDetails = () => {
 
 
 
- const handleShareJob = async () => {
-    const sharePath = `/job/${job.$id}`;
-    const shareUrl = `${window.location.origin}/#${sharePath}`;
-
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: job.title,
-          text: `Check out this job: ${job.title}`,
-          url: shareUrl,
-        });
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        toast({
-          title: "Link copied",
-          description: "Job link copied to clipboard.",
-        });
-      }
-    } catch (error) {
-      if ((error as Error).name === "AbortError") {
-        return;
-      }
-
-      toast({
-        title: "Unable to share",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
 
   if (isLoading) {
