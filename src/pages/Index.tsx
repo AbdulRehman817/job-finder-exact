@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import Layout from "@/components/layout/Layout";
 import JobCard from "@/components/jobs/JobCard";
 import { useJobs } from "@/hooks/useJobs";
+import { useSeo } from "@/hooks/useSeo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -15,6 +16,28 @@ const Index = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [locationTerm, setLocationTerm] = useState("");
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const structuredData = origin
+    ? {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "Hirely",
+        url: origin,
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${origin}/find-jobs?q={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
+      }
+    : undefined;
+
+  useSeo({
+    title: "Find Your Next Dream Job",
+    description:
+      "Browse thousands of jobs from top companies. Apply quickly and get redirected to complete your application.",
+    structuredData,
+  });
 
   // Transform database jobs to match the Job interface used by JobCard
   const formatSalary = (min: number | null, max: number | null, currency: string | null) => {
@@ -65,11 +88,11 @@ const Index = () => {
 
             {/* Main Heading */}
             <div className="text-center mb-8">
-              <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground mb-6 leading-tight">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground mb-6 leading-tight">
                 Find Your Next
                 <span className="text-primary"> Dream Job</span>
               </h1>
-              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              <p className="text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto">
                 Browse thousands of jobs from top companies. Sign in, apply with one click, and get redirected to complete your application.
               </p>
             </div>

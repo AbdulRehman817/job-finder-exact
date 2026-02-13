@@ -1,31 +1,37 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { databases, DATABASE_ID, COLLECTIONS, ID } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
+import { Permission, Role } from "appwrite";
 
 const enrichJobsWithCompanies = async (jobs: any[]) => {
-  const { documents: companies } = await databases.listDocuments(
-    DATABASE_ID,
-    COLLECTIONS.COMPANIES
-  );
-  const companiesById = new Map(companies.map((company) => [company.$id, company]));
+  try {
+    const { documents: companies } = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.COMPANIES
+    );
+    const companiesById = new Map(companies.map((company) => [company.$id, company]));
 
-  return jobs.map((job) => {
-    const parsedJob = parseJobData(job);
-    const company = job.company_id ? companiesById.get(job.company_id) : undefined;
+    return jobs.map((job) => {
+      const parsedJob = parseJobData(job);
+      const company = job.company_id ? companiesById.get(job.company_id) : undefined;
 
-    return {
-      ...parsedJob,
-      companies: company
-        ? {
-            $id: company.$id,
-            name: company.name,
-            logo_url: company.logo_url,
-            location: company.location,
-            email: company.email ?? null,
-          }
-        : undefined,
-    };
-  });
+      return {
+        ...parsedJob,
+        companies: company
+          ? {
+              $id: company.$id,
+              name: company.name,
+              logo_url: company.logo_url,
+              location: company.location,
+              email: company.email ?? null,
+            }
+          : undefined,
+      };
+    });
+  } catch (error) {
+    console.warn("Unable to load company data for jobs. Falling back to job-only data.", error);
+    return jobs.map((job) => parseJobData(job));
+  }
 };
 
 const parseStringArrayField = (value: unknown): string[] | null => {
@@ -169,29 +175,34 @@ export const useJob = (id: string) => {
         const job = await databases.getDocument(DATABASE_ID, COLLECTIONS.JOBS, id);
         console.log('📥 useJob: Received job:', job.$id);
 
-        // Fetch company data
-        console.log('📡 useJob: Fetching company data for job');
         const parsedJob = parseJobData(job);
         if (!job.company_id) {
           return parsedJob;
         }
 
-        const { documents: companies } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.COMPANIES);
-        const company = companies.find((item) => item.$id === job.company_id);
-        console.log('📥 useJob: Received company data:', companies.length > 0 ? companies[0].name : 'none');
+        // Fetch company data, but don't fail the job page if company permissions are restricted.
+        try {
+          console.log('📡 useJob: Fetching company data for job');
+          const { documents: companies } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.COMPANIES);
+          const company = companies.find((item) => item.$id === job.company_id);
+          console.log('📥 useJob: Received company data:', companies.length > 0 ? companies[0].name : 'none');
 
-        const result = {
-          ...parsedJob,
-          companies: company ? {
-            id: company.$id,
-            name: company.name,
-            logo_url: company.logo_url,
-            location: company.location,
-            email: company.email ?? null,
-          } : undefined
-        };
-        console.log('✅ useJob: Job with company data ready');
-        return result;
+          const result = {
+            ...parsedJob,
+            companies: company ? {
+              $id: company.$id,
+              name: company.name,
+              logo_url: company.logo_url,
+              location: company.location,
+              email: company.email ?? null,
+            } : undefined
+          };
+          console.log('✅ useJob: Job with company data ready');
+          return result;
+        } catch (companyError) {
+          console.warn("Unable to load company data for this job. Showing job details only.", companyError);
+          return parsedJob;
+        }
       } catch (error) {
         console.error('❌ useJob: Error fetching job:', error);
         throw error;
@@ -246,7 +257,12 @@ export const useCreateJob = () => {
           DATABASE_ID,
           COLLECTIONS.JOBS,
           ID.unique(),
-          payload
+          payload,
+          [
+            Permission.read(Role.any()),
+            Permission.update(Role.user(user.id)),
+            Permission.delete(Role.user(user.id)),
+          ]
         );
 
         // Fetch company data

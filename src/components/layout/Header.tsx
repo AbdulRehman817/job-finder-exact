@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Briefcase, ChevronDown, Menu, X, User, LogOut, Settings, Home, Search, PlusCircle, LayoutDashboard } from "lucide-react";
+import { ChevronDown, Menu, X, User, LogOut, Home, Search, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Permission, Role } from "appwrite";
 import { getAvatarUrl } from "@/lib/avatar";
@@ -25,9 +25,10 @@ import { useToast } from "@/hooks/use-toast";
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, userRole, profile, signOut, loading,refreshProfile} = useAuth();
+  const { user, userRole, profile, signOut, refreshProfile } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
   const { toast } = useToast();
 
   // console.log('🔄 Header: Component rendered with auth data:', { loading, user: user?.id, userRole, profile: profile });
@@ -94,8 +95,6 @@ const Header = () => {
     }
   };
 
-
-  const dashboardPath = userRole === "employer" ? "/employer-dashboard" : "/dashboard";
   const navLinks = [
     ...mainNavLinks,
     // ...(user ? [{ label: "Dashboard", path: dashboardPath, icon: LayoutDashboard }] : []),
@@ -107,7 +106,37 @@ const Header = () => {
     return location.pathname.startsWith(path.split("?")[0]);
   };
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!headerRef.current) return;
+      if (!headerRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    document.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [mobileMenuOpen]);
+
   const handleSignOut = async () => {
+    setMobileMenuOpen(false);
     console.log('🔄 Header: Sign out initiated');
     await signOut();
     console.log('✅ Header: Sign out completed, navigating to home');
@@ -115,63 +144,63 @@ const Header = () => {
   };
 
   return (
-<header className="w-full bg-background border-b border-border sticky top-0 z-50">
-  <div className="container mx-auto px-4 h-16 flex items-center">
-    <div className="flex items-center justify-between w-full">
-      {/* LEFT: Logo Only */}
-      <Link to="/" className="flex items-center gap-3 shrink-0">
-        <img
-          src={logo}
-          alt="Hirely Logo"
-          className="h-20 w-auto object-contain" 
-        />
-        <span className="text-xl ml-[-70px] font-bold text-foreground">
-          Hirely
-        </span>
-      </Link>
-
-      {/* CENTER: Desktop Navigation */}
-      <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
-        {navLinks.map((link) => (
-          <Link
-            key={link.path}
-            to={link.path}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-              isActive(link.path)
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            )}
-          >
-            <link.icon className="h-4 w-4" />
-            {link.label}
+    <header
+      ref={headerRef}
+      className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+    >
+      <div className="container mx-auto h-16 px-4">
+        <div className="flex h-full items-center justify-between gap-3">
+          <Link to="/" className="flex items-center gap-2 shrink-0">
+            <img
+              src={logo}
+              alt="Hirely Logo"
+              className="h-20 sm:h-20 w-auto object-contain"
+            />
+            <span className="text-lg sm:text-xl ml-[-65px] font-bold text-foreground">
+              Hirely
+            </span>
           </Link>
-        ))}
-      </nav>
 
-      {/* RIGHT: Actions */}
-      <div className="flex items-center gap-2">
-        <ThemeToggle />
-            
+          <nav className="hidden md:flex flex-1 items-center justify-center gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                  isActive(link.path)
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                <link.icon className="h-4 w-4" />
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+
             {user ? (
               <>
                 <NotificationDropdown />
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="flex items-center gap-2 px-2">
+                    <Button variant="ghost" className="hidden md:flex items-center gap-2 px-2">
                       <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20">
                         {getAvatarUrl(profile?.avatar_url) ? (
-                                             <img
-                                               src={getAvatarUrl(profile?.avatar_url) ?? ""}
-                                               alt=""
-                                               className="w-32 h-[2.5rem] rounded-full object-cover"
-                                             />
-                                           ) : (
-                                             <User className="h-16 w-16 text-primary" />
-                                           )}
+                          <img
+                            src={getAvatarUrl(profile?.avatar_url) ?? ""}
+                            alt=""
+                            className="h-9 w-9 rounded-full object-cover"
+                          />
+                        ) : (
+                          <User className="h-5 w-5 text-primary" />
+                        )}
                       </div>
-                      <div className="hidden md:block text-left">
+                      <div className="text-left">
                         <span className="text-sm font-medium block leading-tight">
                           {profile?.full_name || "User"}
                         </span>
@@ -187,85 +216,101 @@ const Header = () => {
                       <p className="text-sm font-medium text-foreground">{profile?.full_name || "User"}</p>
                       <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
-                    {/* <DropdownMenuSeparator /> */}
-                    {/* <DropdownMenuItem asChild>
-                      <Link to={userRole === "employer" ? "/recruiter-profile" : "/profile"}>
-                        <User className="mr-2 h-4 w-4" />
-                        My Profile
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/settings">
-                        <Settings className="mr-2 h-4 w-4" />
-                        Settings
-                      </Link>
-                    </DropdownMenuItem> */}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
-                   
                       <LogOut className="mr-2 h-4 w-4" />
                       Sign Out
-                      
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
             ) : (
               <>
-                <Link to="/signin">
-                  <Button variant="ghost" className="hidden sm:flex">Sign In</Button>
+                <Link to="/signin" className="hidden md:block">
+                  <Button variant="ghost">Sign In</Button>
                 </Link>
-                <Link to="/signup">
+                <Link to="/signup" className="hidden md:block">
                   <Button className="btn-primary">Get Started</Button>
                 </Link>
               </>
             )}
 
-            {/* Mobile menu button */}
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden border border-border bg-card/70 hover:bg-muted"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              aria-expanded={mobileMenuOpen}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Mobile menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 border-t border-border pt-4 animate-fade-in">
-            <nav className="flex flex-col gap-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                    isActive(link.path)
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  <link.icon className="h-5 w-5" />
-                  {link.label}
-                </Link>
-              ))}
-              {user && (
+      <div
+        className={cn(
+          "md:hidden absolute left-0 right-0 top-full border-b border-border bg-background/95 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-background/85 transition-all duration-200",
+          mobileMenuOpen ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0 pointer-events-none"
+        )}
+      >
+        <div className="container mx-auto px-4 py-4">
+          <nav className="flex flex-col gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                  isActive(link.path)
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <link.icon className="h-5 w-5" />
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="mt-4 pt-4 border-t border-border">
+            {user ? (
+              <div className="space-y-2">
+                <div className="rounded-lg bg-muted/60 px-4 py-3">
+                  <p className="text-sm font-medium text-foreground">{profile?.full_name || "User"}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                </div>
                 <Link
                   to={userRole === "employer" ? "/recruiter-profile" : "/profile"}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
                 >
                   <User className="h-5 w-5" />
                   My Profile
                 </Link>
-              )}
-            </nav>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-destructive border-destructive/30 hover:text-destructive"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <Link to="/signin" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="outline" className="w-full">Sign In</Button>
+                </Link>
+                <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="btn-primary w-full">Sign Up</Button>
+                </Link>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </header>
   );

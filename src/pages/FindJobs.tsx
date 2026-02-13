@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useJobs } from "@/hooks/useJobs";
+import { useSeo } from "@/hooks/useSeo";
 import Header from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -107,6 +108,12 @@ const FindJobs = () => {
 
   const hasActiveFilters = selectedTypes.length > 0 || locationTerm || searchTerm;
 
+  useSeo({
+    title: "Find Jobs",
+    description: "Search and filter jobs by title, location, and type on Hirely.",
+    noIndex: hasActiveFilters,
+  });
+
   const formatSalary = (min: number | null, max: number | null, currency: string) => {
     if (!min && !max) return "Competitive";
     const unit = currency || "USD";
@@ -125,7 +132,7 @@ const FindJobs = () => {
         <div className="absolute -bottom-24 left-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-3">
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
               Find Your Perfect Job
             </h1>
             <p className="text-muted-foreground text-lg">
@@ -155,7 +162,7 @@ const FindJobs = () => {
                   onChange={(e) => setLocationTerm(e.target.value)}
                 />
               </div>
-              <Button className="h-14 px-8 rounded-xl" onClick={handleSearch}>
+              <Button className="h-14 px-8 rounded-xl w-full lg:w-auto" onClick={handleSearch}>
                 <Search className="h-5 w-5 mr-2" />
                 Search
               </Button>
@@ -172,7 +179,7 @@ const FindJobs = () => {
             showFilters ? "block" : "hidden lg:block"
           )}>
             <div className="bg-card/80 border border-border/60 rounded-2xl p-6 sticky top-24 backdrop-blur">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
                   <SlidersHorizontal className="h-4 w-4" />
                   Filters
@@ -238,7 +245,7 @@ const FindJobs = () => {
             </div>
 
             {/* Results Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
               <div>
                 <p className="text-foreground">
                   <span className="font-semibold">{filteredJobs.length}</span> jobs found

@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
 import { useCompany, useCompanyJobs } from "@/hooks/useCompanies";
+import { useSeo } from "@/hooks/useSeo";
 import { useAuth } from "@/contexts/AuthContext";
 import { jobTypes } from "@/types";
 
@@ -20,6 +21,21 @@ const CompanyProfile = () => {
   const { data: company, isLoading: companyLoading } = useCompany(id || "");
   const { data: jobs = [], isLoading: jobsLoading } = useCompanyJobs(id || "");
   const { user, userRole } = useAuth();
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const companyName = company?.name || "Company Profile";
+  const companyDescription = company?.description
+    ? company.description.replace(/\s+/g, " ").slice(0, 160).trim()
+    : "Explore company details and open roles on Hirely.";
+
+  useSeo({
+    title: companyName,
+    description: companyDescription,
+    canonical: company && origin ? `${origin}/company/${company.$id}` : undefined,
+    image: company?.logo_url || undefined,
+    type: "profile",
+  });
+
 
   // Check if the current user is the owner of this company
   const isOwner = user && company && company.user_id === user.id;

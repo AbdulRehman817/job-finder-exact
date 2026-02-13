@@ -4,10 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Layout from "@/components/layout/Layout";
 import { useCompanies } from "@/hooks/useCompanies";
+import { useSeo } from "@/hooks/useSeo";
 import { topCompanies as mockCompanies } from "@/data/mockData";
 
 const Employers = () => {
   const { data: dbCompanies = [], isLoading } = useCompanies();
+
+  useSeo({
+    title: "Hire Top Talent",
+    description: "Discover employers and explore open roles on Hirely.",
+  });
 
   // Transform database companies
   const transformedCompanies = dbCompanies.map((company) => ({
@@ -83,7 +89,7 @@ const Employers = () => {
             <p className="text-muted-foreground">Check back later for new companies</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {companies.map((company) => (
               <Link
                 key={company.id}

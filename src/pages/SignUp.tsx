@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useSeo } from "@/hooks/useSeo";
 import { cn } from "@/lib/utils";
 import { storage, BUCKETS, ID } from "@/lib/appwrite";
 
@@ -26,6 +27,13 @@ avatarPreview: "",
   const navigate = useNavigate();
   const { signUp } = useAuth();
   const { toast } = useToast();
+
+  useSeo({
+    title: "Create Account",
+    description: "Create a Hirely account to apply for jobs or hire top talent.",
+    noIndex: true,
+  });
+
 
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,7 +103,7 @@ avatarPreview: "",
   } else {
     toast({
       title: "Account created!",
-      description: "Welcome to Jobpilot! You are now signed in.",
+      description: "Welcome to Hirely! You are now signed in.",
     });
     navigate(accountType === "employer" ? "/employer-dashboard" : "/dashboard");
   }
@@ -106,14 +114,14 @@ avatarPreview: "",
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left side - Form */}
-      <div className="flex flex-col justify-center px-8 lg:px-16 py-12">
+      <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-16 py-12">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 mb-12">
           
         </Link>
 
         <div className="max-w-md">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Create account.</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">Create account.</h1>
           <p className="text-muted-foreground mb-8">
             Already have account?{" "}
             <Link to="/signin" className="text-primary hover:underline">
@@ -269,11 +277,11 @@ avatarPreview: "",
             backgroundImage: "url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1200&h=1600&fit=crop')"
           }}
         />
-        <div className="relative bottom-[150pxsi] z-10 h-full flex flex-col justify-end p-12 text-primary-foreground">
+        <div className="relative z-10 h-full flex flex-col justify-end p-12 text-primary-foreground">
           <h2 className="text-4xl font-bold mb-6">
             {accountType === "candidate" 
-              ? "Find your dream job with Jobpilot"
-              : "Hire the best talent with Jobpilot"}
+              ? "Find your dream job with Hirely"
+              : "Hire the best talent with Hirely"}
           </h2>
           <div className="grid grid-cols-3 gap-8">
             <div>

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useSeo } from "@/hooks/useSeo";
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -17,6 +18,13 @@ const SignIn = () => {
   const navigate = useNavigate();
   const { signIn, userRole, loading: authLoading } = useAuth();
   const { toast } = useToast();
+
+  useSeo({
+    title: "Sign In",
+    description: "Sign in to Hirely to manage your job search and applications.",
+    noIndex: true,
+  });
+
 
   useEffect(() => {
     // if (shouldNavigate && !authLoading && userRole) {
@@ -56,14 +64,14 @@ const SignIn = () => {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left side - Form */}
-      <div className="flex flex-col justify-center px-8 lg:px-16 py-12">
+      <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-16 py-12">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 mb-12">
          
         </Link>
 
         <div className="max-w-md">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Sign in</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">Sign in</h1>
           <p className="text-muted-foreground mb-8">
             Don't have account{" "}
             <Link to="/signup" className="text-primary hover:underline">

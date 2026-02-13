@@ -32,6 +32,7 @@ import { useSaveJob, useUnsaveJob, useIsJobSaved } from "@/hooks/useSavedJobs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCandidateProfileCompletion } from "@/hooks/useProfileCompletion";
 import { useToast } from "@/hooks/use-toast";
+import { useSeo } from "@/hooks/useSeo";
 import { jobTypes } from "@/types";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -42,6 +43,7 @@ const JobDetails = () => {
   const { toast } = useToast();
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showAuthPromptModal, setShowAuthPromptModal] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
 
   const { data: job, isLoading } = useJob(id || "");
@@ -54,8 +56,76 @@ const JobDetails = () => {
   const saveJob = useSaveJob();
   const unsaveJob = useUnsaveJob();
 
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const companyName = job?.companies?.name || "Company";
+  const jobTitle = job?.title ? `${job.title} at ${companyName}` : "Job Details";
+  const descriptionSnippet = job?.description
+    ? job.description.replace(/\s+/g, " ").slice(0, 160).trim()
+    : "View job details and apply on Hirely.";
+  const jobUrl = job && origin ? `${origin}/job/${job.$id}` : "";
+  const employmentTypeMap: Record<string, string> = {
+    "full-time": "FULL_TIME",
+    "part-time": "PART_TIME",
+    "internship": "INTERN",
+    "remote": "TELECOMMUTE",
+    "contract": "CONTRACTOR",
+  };
+  const hasSalary = job?.salary_min || job?.salary_max;
+  const structuredData = job && origin
+    ? {
+        "@context": "https://schema.org",
+        "@type": "JobPosting",
+        title: job.title,
+        description: job.description,
+        datePosted: new Date(job.posted_date).toISOString(),
+        employmentType: employmentTypeMap[job.type] || "FULL_TIME",
+        hiringOrganization: {
+          "@type": "Organization",
+          name: companyName,
+          ...(job.companies?.logo_url ? { logo: job.companies.logo_url } : {}),
+        },
+        jobLocation: {
+          "@type": "Place",
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: job.location,
+          },
+        },
+        ...(job.type === "remote" ? { jobLocationType: "TELECOMMUTE" } : {}),
+        ...(hasSalary
+          ? {
+              baseSalary: {
+                "@type": "MonetaryAmount",
+                currency: job.currency || "USD",
+                value: {
+                  "@type": "QuantitativeValue",
+                  ...(job.salary_min ? { minValue: job.salary_min } : {}),
+                  ...(job.salary_max ? { maxValue: job.salary_max } : {}),
+                  unitText: "YEAR",
+                },
+              },
+            }
+          : {}),
+      }
+    : undefined;
+
+  useSeo({
+    title: jobTitle,
+    description: descriptionSnippet,
+    canonical: jobUrl || undefined,
+    image: job?.companies?.logo_url || undefined,
+    type: "article",
+    structuredData,
+  });
+
+
 
    const handleApplyRedirect = () => {
+    if (!user) {
+      setShowAuthPromptModal(true);
+      return;
+    }
+
     const rawApplyLink = [
       job?.apply_link,
       job?.apply_url,
@@ -304,10 +374,38 @@ const copyShareMessage = async (shareMessage: string) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showAuthPromptModal} onOpenChange={setShowAuthPromptModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create an account to apply</DialogTitle>
+            <DialogDescription>
+              You can browse jobs without signing in. To apply, please sign up or sign in first.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <Link
+              to="/signup"
+              className="flex-1"
+              onClick={() => setShowAuthPromptModal(false)}
+            >
+              <Button className="btn-primary w-full">Create Account</Button>
+            </Link>
+            <Link
+              to="/signin"
+              className="flex-1"
+              onClick={() => setShowAuthPromptModal(false)}
+            >
+              <Button variant="outline" className="w-full">Sign In</Button>
+            </Link>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Breadcrumb */}
-      <div className="bg-secondary py-6">
+      <div className="bg-secondary py-4 sm:py-6">
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Job Details</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Job Details</h1>
           <div className="text-sm text-muted-foreground">
             <Link to="/" className="hover:text-primary">Home</Link>
             <span className="mx-2">/</span>
@@ -337,7 +435,7 @@ const copyShareMessage = async (shareMessage: string) => {
                   )}
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-2xl font-bold text-foreground mb-2">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
                     {job.title}
                   </h1>
                   <div className="flex flex-wrap items-center gap-3 mb-3">
