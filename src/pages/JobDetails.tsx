@@ -378,9 +378,9 @@ const copyShareMessage = async (shareMessage: string) => {
       <Dialog open={showAuthPromptModal} onOpenChange={setShowAuthPromptModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Create an account to apply</DialogTitle>
+            <DialogTitle>Please sign up first</DialogTitle>
             <DialogDescription>
-              You can browse jobs without signing in. To apply, please sign up or sign in first.
+              You can browse jobs and view job details without signing in. To apply, please sign up first.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
