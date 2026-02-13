@@ -48,6 +48,46 @@ export const databases = new Databases(client);
 export const storage = new Storage(client);
 export { Query };
 
+let anonymousSessionPromise: Promise<void> | null = null;
+
+export const ensureAnonymousSession = async () => {
+  if (anonymousSessionPromise) {
+    return anonymousSessionPromise;
+  }
+
+  anonymousSessionPromise = (async () => {
+    try {
+      await account.get();
+      return;
+    } catch {
+      // No active session, continue with anonymous session creation.
+    }
+
+    try {
+      await account.createAnonymousSession();
+    } catch (error: any) {
+      const message = String(error?.message || "").toLowerCase();
+      const type = String(error?.type || "").toLowerCase();
+      const alreadyHasSession =
+        message.includes("session is active") ||
+        message.includes("session already") ||
+        type.includes("session_already_exists");
+
+      if (alreadyHasSession) {
+        return;
+      }
+
+      throw error;
+    }
+  })();
+
+  try {
+    await anonymousSessionPromise;
+  } finally {
+    anonymousSessionPromise = null;
+  }
+};
+
 // Database and Collection IDs
 export const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'jobfinder-db';
 

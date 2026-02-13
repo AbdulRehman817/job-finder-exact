@@ -53,6 +53,10 @@ const clearCurrentSessionIfExists = async () => {
 
 type UserRole = "candidate" | "employer" | null;
 
+const isAnonymousAppwriteUser = (appwriteUser: Models.User<Models.Preferences>) => {
+  return !appwriteUser.email || appwriteUser.email.trim().length === 0;
+};
+
 export interface Profile {
   id: string;
   email: string;
@@ -208,7 +212,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshProfile = async () => {
     try {
       const currentUser = await account.get();
-      if (currentUser) {
+      if (currentUser && !isAnonymousAppwriteUser(currentUser)) {
         await loadProfile(currentUser);
       } else {
         clearState();
@@ -225,7 +229,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const currentUser = await account.get();
         if (!active) return;
-        if (currentUser) {
+        if (currentUser && !isAnonymousAppwriteUser(currentUser)) {
           await loadProfile(currentUser);
         } else {
           clearState();

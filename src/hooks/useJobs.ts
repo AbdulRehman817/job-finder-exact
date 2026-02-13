@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { databases, DATABASE_ID, COLLECTIONS, ID } from "@/lib/appwrite";
+import { databases, DATABASE_ID, COLLECTIONS, ID, ensureAnonymousSession } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
 import { Permission, Role } from "appwrite";
 
@@ -96,6 +96,29 @@ const parseJobData = (job: any): Job => ({
   skills_required: parseArrayField(job.skills_required),
 });
 
+const isUnauthorizedError = (error: any) => {
+  const code = Number(error?.code);
+  const message = String(error?.message || "").toLowerCase();
+  const type = String(error?.type || "").toLowerCase();
+
+  return (
+    code === 401 ||
+    message.includes("isbignumber is not a function") ||
+    message.includes("unauthorized") ||
+    message.includes("missing scope") ||
+    type.includes("unauthorized")
+  );
+};
+
+const guestAccessGuidanceError = (error: any) => {
+  const guidance = new Error(
+    "Guest access is blocked. In Appwrite, allow anonymous sessions or set Jobs collection read permission to Role.any()."
+  ) as Error & { code?: number; cause?: unknown };
+  guidance.code = Number(error?.code) || 401;
+  guidance.cause = error;
+  return guidance;
+};
+
 
 
 
@@ -133,33 +156,78 @@ export interface Job {
   };
 }
 
+const fetchPublicJobs = async (filters?: { type?: string; location?: string; search?: string }) => {
+  const { documents: jobs } = await databases.listDocuments(
+    DATABASE_ID,
+    COLLECTIONS.JOBS
+  );
+
+  const filteredJobs = jobs
+    .filter((job) => job.status === "active")
+    .filter((job) => !filters?.type || job.type === filters.type)
+    .filter((job) => !filters?.location || String(job.location || "").toLowerCase().includes(filters.location.toLowerCase()))
+    .filter((job) => !filters?.search || String(job.title || "").toLowerCase().includes(filters.search.toLowerCase()))
+    .sort((a, b) => new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime());
+
+  return enrichJobsWithCompanies(filteredJobs);
+};
+
+const fetchJobById = async (id: string) => {
+  const job = await databases.getDocument(DATABASE_ID, COLLECTIONS.JOBS, id);
+  const parsedJob = parseJobData(job);
+
+  if (!job.company_id) {
+    return parsedJob;
+  }
+
+  try {
+    const { documents: companies } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.COMPANIES);
+    const company = companies.find((item) => item.$id === job.company_id);
+
+    return {
+      ...parsedJob,
+      companies: company
+        ? {
+            $id: company.$id,
+            name: company.name,
+            logo_url: company.logo_url,
+            location: company.location,
+            email: company.email ?? null,
+          }
+        : undefined,
+    };
+  } catch (companyError) {
+    console.warn("Unable to load company data for this job. Showing job details only.", companyError);
+    return parsedJob;
+  }
+};
+
 export const useJobs = (filters?: { type?: string; location?: string; search?: string }) => {
   return useQuery({
     queryKey: ["jobs", filters],
     queryFn: async () => {
-      console.log('🔄 useJobs: Fetching jobs with filters:', filters);
+      console.log("useJobs: Fetching jobs with filters:", filters);
       try {
-        console.log('📡 useJobs: Querying Appwrite for all jobs');
-        const { documents: jobs } = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.JOBS
-        );
-        console.log('📥 useJobs: Received jobs from Appwrite:', jobs.length);
-
-        const filteredJobs = jobs
-          .filter((job) => job.status === "active")
-          .filter((job) => !filters?.type || job.type === filters.type)
-          .filter((job) => !filters?.location || String(job.location || "").toLowerCase().includes(filters.location.toLowerCase()))
-          .filter((job) => !filters?.search || String(job.title || "").toLowerCase().includes(filters.search.toLowerCase()))
-          .sort((a, b) => new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime());
-
-        const jobsWithCompanies = await enrichJobsWithCompanies(filteredJobs);
-
-        console.log('✅ useJobs: Jobs fetched successfully:', jobsWithCompanies.length);
+        console.log("useJobs: Querying Appwrite for all jobs");
+        const jobsWithCompanies = await fetchPublicJobs(filters);
+        console.log("useJobs: Jobs fetched successfully:", jobsWithCompanies.length);
         return jobsWithCompanies;
-      } catch (error) {
-        console.error('❌ useJobs: Error fetching jobs:', error);
-        throw error;
+      } catch (error: any) {
+        if (!isUnauthorizedError(error)) {
+          console.error("useJobs: Error fetching jobs:", error);
+          throw error;
+        }
+
+        console.warn("useJobs: Guest access unauthorized. Trying anonymous session fallback.");
+        try {
+          await ensureAnonymousSession();
+          const jobsWithCompanies = await fetchPublicJobs(filters);
+          console.log("useJobs: Jobs fetched successfully after anonymous session:", jobsWithCompanies.length);
+          return jobsWithCompanies;
+        } catch (retryError: any) {
+          console.error("useJobs: Guest session fallback failed:", retryError);
+          throw guestAccessGuidanceError(retryError);
+        }
       }
     },
   });
@@ -169,43 +237,28 @@ export const useJob = (id: string) => {
   return useQuery({
     queryKey: ["job", id],
     queryFn: async () => {
-      console.log('🔄 useJob: Fetching single job:', id);
+      console.log("useJob: Fetching single job:", id);
       try {
-        console.log('📡 useJob: Getting job document from Appwrite');
-        const job = await databases.getDocument(DATABASE_ID, COLLECTIONS.JOBS, id);
-        console.log('📥 useJob: Received job:', job.$id);
-
-        const parsedJob = parseJobData(job);
-        if (!job.company_id) {
-          return parsedJob;
+        console.log("useJob: Getting job document from Appwrite");
+        const job = await fetchJobById(id);
+        console.log("useJob: Job fetched successfully:", job.$id);
+        return job;
+      } catch (error: any) {
+        if (!isUnauthorizedError(error)) {
+          console.error("useJob: Error fetching job:", error);
+          throw error;
         }
 
-        // Fetch company data, but don't fail the job page if company permissions are restricted.
+        console.warn("useJob: Guest access unauthorized. Trying anonymous session fallback.");
         try {
-          console.log('📡 useJob: Fetching company data for job');
-          const { documents: companies } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.COMPANIES);
-          const company = companies.find((item) => item.$id === job.company_id);
-          console.log('📥 useJob: Received company data:', companies.length > 0 ? companies[0].name : 'none');
-
-          const result = {
-            ...parsedJob,
-            companies: company ? {
-              $id: company.$id,
-              name: company.name,
-              logo_url: company.logo_url,
-              location: company.location,
-              email: company.email ?? null,
-            } : undefined
-          };
-          console.log('✅ useJob: Job with company data ready');
-          return result;
-        } catch (companyError) {
-          console.warn("Unable to load company data for this job. Showing job details only.", companyError);
-          return parsedJob;
+          await ensureAnonymousSession();
+          const job = await fetchJobById(id);
+          console.log("useJob: Job fetched successfully after anonymous session:", job.$id);
+          return job;
+        } catch (retryError: any) {
+          console.error("useJob: Guest session fallback failed:", retryError);
+          throw guestAccessGuidanceError(retryError);
         }
-      } catch (error) {
-        console.error('❌ useJob: Error fetching job:', error);
-        throw error;
       }
     },
     enabled: !!id,
