@@ -11,7 +11,8 @@ import {
   Building2,
   DollarSign,
   Clock,
-  Sparkles
+  Sparkles,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +42,11 @@ const FindJobs = () => {
   const [locationTerm, setLocationTerm] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
-  const { data: dbJobs = [], isLoading } = useJobs({ search: searchTerm });
+  const { data: dbJobs = [], isLoading, error: jobsError, refetch } = useJobs({ search: searchTerm });
+  const jobsErrorMessage =
+    jobsError instanceof Error
+      ? jobsError.message
+      : "Unable to load jobs right now. Please try again.";
 
   // Transform database jobs
   const transformedJobs = dbJobs.map((job) => ({
@@ -274,6 +279,22 @@ const FindJobs = () => {
               <div className="text-center py-16">
                 <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
                 <p className="mt-4 text-muted-foreground">Loading jobs...</p>
+              </div>
+            ) : jobsError ? (
+              <div className="text-center py-16 bg-card/80 border border-destructive/30 rounded-2xl backdrop-blur">
+                <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="h-8 w-8 text-destructive" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Guest jobs could not be loaded</h3>
+                <p className="text-muted-foreground mb-6 max-w-2xl mx-auto px-4">{jobsErrorMessage}</p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Button variant="outline" onClick={() => refetch()}>
+                    Try Again
+                  </Button>
+                  <Link to="/signin">
+                    <Button className="btn-primary">Sign In</Button>
+                  </Link>
+                </div>
               </div>
             ) : paginatedJobs.length === 0 ? (
               <div className="text-center py-16 bg-card/80 border border-border/60 rounded-2xl backdrop-blur">

@@ -96,6 +96,16 @@ const parseJobData = (job: any): Job => ({
   skills_required: parseArrayField(job.skills_required),
 });
 
+const normalizeJobStatus = (value: unknown): string => {
+  if (typeof value !== "string") return "active";
+  return value.trim().toLowerCase();
+};
+
+const isPublicJobStatus = (value: unknown) => {
+  const status = normalizeJobStatus(value);
+  return status === "active" || status === "open" || status === "published";
+};
+
 const isUnauthorizedError = (error: any) => {
   const code = Number(error?.code);
   const message = String(error?.message || "").toLowerCase();
@@ -112,7 +122,7 @@ const isUnauthorizedError = (error: any) => {
 
 const guestAccessGuidanceError = (error: any) => {
   const guidance = new Error(
-    "Guest access is blocked. In Appwrite, allow anonymous sessions or set Jobs collection read permission to Role.any()."
+    "Guest access is blocked. In Appwrite, enable Anonymous Sessions and give Jobs read permission to Role.any() or Role.users() (including existing job documents)."
   ) as Error & { code?: number; cause?: unknown };
   guidance.code = Number(error?.code) || 401;
   guidance.cause = error;
@@ -162,12 +172,24 @@ const fetchPublicJobs = async (filters?: { type?: string; location?: string; sea
     COLLECTIONS.JOBS
   );
 
+  const normalizedTypeFilter = String(filters?.type || "").trim().toLowerCase();
+  const normalizedLocationFilter = String(filters?.location || "").trim().toLowerCase();
+  const normalizedSearchFilter = String(filters?.search || "").trim().toLowerCase();
+
   const filteredJobs = jobs
-    .filter((job) => job.status === "active")
-    .filter((job) => !filters?.type || job.type === filters.type)
-    .filter((job) => !filters?.location || String(job.location || "").toLowerCase().includes(filters.location.toLowerCase()))
-    .filter((job) => !filters?.search || String(job.title || "").toLowerCase().includes(filters.search.toLowerCase()))
-    .sort((a, b) => new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime());
+    .filter((job) => isPublicJobStatus(job.status))
+    .filter((job) => !normalizedTypeFilter || String(job.type || "").toLowerCase() === normalizedTypeFilter)
+    .filter((job) => !normalizedLocationFilter || String(job.location || "").toLowerCase().includes(normalizedLocationFilter))
+    .filter((job) => {
+      if (!normalizedSearchFilter) return true;
+      const searchableText = `${job.title || ""} ${job.description || ""}`.toLowerCase();
+      return searchableText.includes(normalizedSearchFilter);
+    })
+    .sort((a, b) => {
+      const bDate = new Date(b.posted_date || b.$createdAt || 0).getTime();
+      const aDate = new Date(a.posted_date || a.$createdAt || 0).getTime();
+      return bDate - aDate;
+    });
 
   return enrichJobsWithCompanies(filteredJobs);
 };
@@ -203,6 +225,8 @@ const fetchJobById = async (id: string) => {
 };
 
 export const useJobs = (filters?: { type?: string; location?: string; search?: string }) => {
+  const { user } = useAuth();
+
   return useQuery({
     queryKey: ["jobs", filters],
     queryFn: async () => {
@@ -211,7 +235,21 @@ export const useJobs = (filters?: { type?: string; location?: string; search?: s
         console.log("useJobs: Querying Appwrite for all jobs");
         const jobsWithCompanies = await fetchPublicJobs(filters);
         console.log("useJobs: Jobs fetched successfully:", jobsWithCompanies.length);
-        return jobsWithCompanies;
+
+        if (user || jobsWithCompanies.length > 0) {
+          return jobsWithCompanies;
+        }
+
+        console.log("useJobs: Guest user received 0 jobs. Trying anonymous session fallback.");
+        try {
+          await ensureAnonymousSession();
+          const retryJobs = await fetchPublicJobs(filters);
+          console.log("useJobs: Jobs fetched successfully after anonymous session empty-result retry:", retryJobs.length);
+          return retryJobs;
+        } catch (retryError: any) {
+          console.error("useJobs: Empty-result retry failed:", retryError);
+          throw guestAccessGuidanceError(retryError);
+        }
       } catch (error: any) {
         if (!isUnauthorizedError(error)) {
           console.error("useJobs: Error fetching jobs:", error);

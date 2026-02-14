@@ -46,11 +46,15 @@ const JobDetails = () => {
   const [showAuthPromptModal, setShowAuthPromptModal] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
 
-  const { data: job, isLoading } = useJob(id || "");
+  const { data: job, isLoading, error: jobError, refetch: refetchJob } = useJob(id || "");
   const { data: relatedJobs = [] } = useJobs();
   const { data: hasApplied = false } = useHasApplied(id || "");
   const { data: isSaved = false } = useIsJobSaved(id || "");
   const profileCompletion = useCandidateProfileCompletion();
+  const jobErrorMessage =
+    jobError instanceof Error
+      ? jobError.message
+      : "We could not load this job right now.";
   
   const applyForJob = useApplyForJob();
   const saveJob = useSaveJob();
@@ -283,6 +287,26 @@ const copyShareMessage = async (shareMessage: string) => {
     );
   }
 
+  if (jobError) {
+    return (
+      <Layout hideFooter>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-foreground mb-2">Unable to load this job</h2>
+          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">{jobErrorMessage}</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button variant="outline" onClick={() => refetchJob()}>
+              Try Again
+            </Button>
+            <Link to="/find-jobs">
+              <Button className="btn-primary">Browse Jobs</Button>
+            </Link>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   if (!job) {
     return (
       <Layout hideFooter>
@@ -378,9 +402,9 @@ const copyShareMessage = async (shareMessage: string) => {
       <Dialog open={showAuthPromptModal} onOpenChange={setShowAuthPromptModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Please sign up first</DialogTitle>
+            <DialogTitle>Sign up required before applying</DialogTitle>
             <DialogDescription>
-              You can browse jobs and view job details without signing in. To apply, please sign up first.
+              You can browse jobs and view details as a guest. To apply, you have to sign up first.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col sm:flex-row gap-3 pt-2">

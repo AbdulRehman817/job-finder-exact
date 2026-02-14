@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { databases, ID, COLLECTIONS, DATABASE_ID, Query } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
+import { Permission, Role } from "appwrite";
 
 export interface Company {
   $id: string;
@@ -102,7 +103,12 @@ export const useCreateCompany = () => {
             twitter_url: company.twitter_url || null,
             user_id: user.id,
             featured: false,
-          }
+          },
+          [
+            Permission.read(Role.any()),
+            Permission.update(Role.user(user.id)),
+            Permission.delete(Role.user(user.id)),
+          ]
         );
         console.log('✅ Company created:', document.$id);
         return document as unknown as Company;

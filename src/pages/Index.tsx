@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Search, MapPin, ArrowRight, ExternalLink, Zap, Clock, Shield, Target, CheckCircle } from "lucide-react";
+import { Search, MapPin, ArrowRight, ExternalLink, Zap, Clock, Shield, Target, CheckCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Layout from "@/components/layout/Layout";
@@ -11,11 +11,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
-  const { data: dbJobs = [], isLoading: jobsLoading } = useJobs();
+  const { data: dbJobs = [], isLoading: jobsLoading, error: jobsError, refetch } = useJobs();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [locationTerm, setLocationTerm] = useState("");
+  const jobsErrorMessage =
+    jobsError instanceof Error
+      ? jobsError.message
+      : "Unable to load jobs right now. Please try again.";
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const structuredData = origin
@@ -227,7 +231,7 @@ const Index = () => {
       )}
 
       {/* Empty State - When no jobs */}
-      {!hasJobs && !jobsLoading && (
+      {!hasJobs && !jobsLoading && !jobsError && (
         <section className="py-16 bg-secondary/40">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto text-center bg-card/80 border border-border/60 rounded-2xl p-12 shadow-lg backdrop-blur">
@@ -247,6 +251,32 @@ const Index = () => {
                   </Link>
                 </div>
               )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {jobsError && !jobsLoading && (
+        <section className="py-16 bg-secondary/40">
+          <div className="container mx-auto px-4">
+            <div className="max-w-2xl mx-auto text-center bg-card/80 border border-destructive/30 rounded-2xl p-12 shadow-lg backdrop-blur">
+              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertTriangle className="h-8 w-8 text-destructive" />
+              </div>
+              <h3 className="text-3xl font-bold text-foreground mb-4">
+                Unable To Load Guest Jobs
+              </h3>
+              <p className="text-lg text-muted-foreground mb-8">
+                {jobsErrorMessage}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button variant="outline" onClick={() => refetch()}>
+                  Try Again
+                </Button>
+                <Link to="/find-jobs">
+                  <Button className="btn-primary">Open Job Search</Button>
+                </Link>
+              </div>
             </div>
           </div>
         </section>
