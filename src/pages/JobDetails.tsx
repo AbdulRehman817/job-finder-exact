@@ -208,9 +208,8 @@ const copyShareMessage = async (shareMessage: string) => {
       : cleanedDescription;
 
     const shareMessage = [
-      shareUrl,
       "",
-      `Job Alert: ${job.title} @ Hirely`,
+      `📣 Job Alert: ${job.title} `,
       `Location: ${job.location}`,
       `Posted: ${postedOn}`,
       "",
