@@ -202,12 +202,15 @@ const copyShareMessage = async (shareMessage: string) => {
   const handleShareJob = async () => {
     const shareUrl = `${window.location.origin}/#/job/${job.$id}`;
     const postedOn = format(new Date(job.posted_date), "EEE MMM dd yyyy");
-    const descriptionPreview = job.description.length > 180
-      ? `${job.description.slice(0, 180).trim()}...`
-      : job.description;
+    const cleanedDescription = job.description.replace(/\s+/g, " ").trim();
+    const descriptionPreview = cleanedDescription.length > 220
+      ? `${cleanedDescription.slice(0, 220).trim()}...`
+      : cleanedDescription;
 
     const shareMessage = [
-      `📣 Job Alert: ${job.title} @ Hirely`,
+      shareUrl,
+      "",
+      `Job Alert: ${job.title} @ Hirely`,
       `Location: ${job.location}`,
       `Posted: ${postedOn}`,
       "",
@@ -220,9 +223,7 @@ const copyShareMessage = async (shareMessage: string) => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${job.title} @ Hirely`,
           text: shareMessage,
-          url: shareUrl,
         });
         return;
       } catch (error) {
@@ -752,3 +753,4 @@ const copyShareMessage = async (shareMessage: string) => {
 };
 
 export default JobDetails;
+
