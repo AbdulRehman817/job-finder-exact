@@ -61,7 +61,7 @@ const JobDetails = () => {
   const unsaveJob = useUnsaveJob();
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const companyName = job?.companies?.name || "Company";
+  const companyName = job?.companies?.name || job?.company || "Company";
   const jobTitle = job?.title ? `${job.title} at ${companyName}` : "Job Details";
   const descriptionSnippet = job?.description
     ? job.description.replace(/\s+/g, " ").slice(0, 160).trim()
@@ -342,7 +342,7 @@ const copyShareMessage = async (shareMessage: string) => {
       .map((j) => ({
       id: j.$id,
       title: j.title,
-      company: j.companies?.name || "Company",
+      company: j.companies?.name || j.company || "Company",
       companyLogo: j.companies?.logo_url || "",
       location: j.location,
       salary: formatSalary(j.salary_min, j.salary_max, j.currency || "USD"),
@@ -466,7 +466,7 @@ const copyShareMessage = async (shareMessage: string) => {
                     {job.featured && <span className="badge-featured">Featured</span>}
                     <span className={typeConfig.className}>{typeConfig.label}</span>
                   </div>
-                  {job.companies && (
+                  {job.companies ? (
                     <Link 
                       to={`/company/${job.company_id}`}
                       className="flex items-center gap-2 text-sm text-primary hover:underline"
@@ -474,6 +474,11 @@ const copyShareMessage = async (shareMessage: string) => {
                       <Globe className="h-4 w-4" />
                       {job.companies.name}
                     </Link>
+                  ) : (
+                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Globe className="h-4 w-4" />
+                      {companyName}
+                    </p>
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

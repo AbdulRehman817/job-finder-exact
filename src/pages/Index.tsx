@@ -55,7 +55,7 @@ const Index = () => {
   const transformedJobs = dbJobs.map((job) => ({
     id: job.$id,
     title: job.title,
-    company: job.companies?.name || "Company",
+    company: job.companies?.name || job.company || "Company",
     companyLogo: job.companies?.logo_url || "",
     location: job.location,
     salary: formatSalary(job.salary_min, job.salary_max, job.currency || "USD"),

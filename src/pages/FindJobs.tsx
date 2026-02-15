@@ -52,7 +52,7 @@ const FindJobs = () => {
   const transformedJobs = dbJobs.map((job) => ({
     id: job.$id,
     title: job.title,
-    company: job.companies?.name || "Company",
+    company: job.companies?.name || job.company || "Company",
     companyLogo: job.companies?.logo_url || "",
     companyId: job.companies?.$id || "",
     location: job.location,

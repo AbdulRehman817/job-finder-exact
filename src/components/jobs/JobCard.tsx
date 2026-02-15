@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { MapPin, Bookmark } from "lucide-react";
 import { Job, jobTypes } from "@/types";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
 
 interface JobCardProps {
   job: Job;
@@ -10,6 +11,12 @@ interface JobCardProps {
 
 const JobCard = ({ job, variant = "default" }: JobCardProps) => {
   const typeConfig = jobTypes[job.type] || jobTypes["full-time"];
+
+useEffect(() => {
+  console.log("JobCard rendered with job:", job);
+}, []);
+
+
 
   if (variant === "compact") {
     return (

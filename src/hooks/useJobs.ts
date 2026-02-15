@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { databases, DATABASE_ID, COLLECTIONS, ID, ensureAnonymousSession } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
 import { Permission, Role } from "appwrite";
+import { S } from "vitest/dist/chunks/config.d.D2ROskhv.js";
 
 const enrichJobsWithCompanies = async (jobs: any[]) => {
   try {
@@ -154,6 +155,7 @@ export interface Job {
   featured: boolean;
   status: "active" | "closed" | "draft";
   posted_date: string;
+  company: string | null;
   expiry_date: string | null;
   $createdAt: string;
   $updatedAt: string;
