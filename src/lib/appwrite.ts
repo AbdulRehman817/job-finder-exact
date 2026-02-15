@@ -1,4 +1,4 @@
-import { Client, Account, Databases, Storage, ID, Query } from 'appwrite';
+import { Client, Account, Databases, Storage, ID } from 'appwrite';
 
 const client = new Client();
 
@@ -22,12 +22,15 @@ const originalPrepareRequest = (client as any).prepareRequest.bind(client);
   headers: Record<string, string> = {},
   params: Record<string, unknown> = {}
 ) {
+  const contentType = headers['content-type'] || headers['Content-Type'];
+  const isJsonRequest = method.toUpperCase() !== 'GET' && contentType === 'application/json';
+
   try {
     return originalPrepareRequest(method, url, headers, params);
   } catch (error) {
-    const isJsonRequest = method.toUpperCase() !== 'GET' && headers['content-type'] === 'application/json';
-    const hasBigNumberSerializerError =
-      error instanceof TypeError && String(error.message).includes('isBigNumber is not a function');
+    const hasBigNumberSerializerError = String((error as any)?.message || '').includes(
+      'isBigNumber is not a function'
+    );
 
     if (!isJsonRequest || !hasBigNumberSerializerError) {
       throw error;
@@ -46,7 +49,26 @@ const originalPrepareRequest = (client as any).prepareRequest.bind(client);
 export const account = new Account(client);
 export const databases = new Databases(client);
 export const storage = new Storage(client);
-export { Query };
+
+const makeQuery = (method: string, attribute?: string, values?: unknown | unknown[]) => {
+  const query: Record<string, unknown> = { method };
+
+  if (attribute !== undefined) {
+    query.attribute = attribute;
+  }
+
+  if (values !== undefined) {
+    query.values = Array.isArray(values) ? values : [values];
+  }
+
+  return JSON.stringify(query, (_key, value) => (typeof value === 'bigint' ? value.toString() : value));
+};
+
+export const Query = {
+  equal: (attribute: string, value: unknown | unknown[]) => makeQuery('equal', attribute, value),
+  orderDesc: (attribute: string) => makeQuery('orderDesc', attribute),
+  orderAsc: (attribute: string) => makeQuery('orderAsc', attribute),
+};
 
 let anonymousSessionPromise: Promise<void> | null = null;
 
