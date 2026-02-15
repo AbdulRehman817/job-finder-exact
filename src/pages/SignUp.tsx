@@ -105,7 +105,7 @@ avatarPreview: "",
       title: "Account created!",
       description: "Welcome to Hirely! You are now signed in.",
     });
-    navigate(accountType === "employer" ? "/employer-dashboard" : "/dashboard");
+    navigate(accountType === "employer" ? "/employer-dashboard" : "/profile");
   }
   
   setLoading(false);

@@ -9,16 +9,16 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="lg:col-span-1 relative sm:bottom-[25px]">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-             <img
-          src={logo}
-          alt="Hirely Logo"
-          className="h-10 sm:h-12 w-auto object-contain"
-        />
-        <span className="text-lg sm:text-xl font-bold text-slate-50">
-          Hirely
-        </span>
-            </Link>
+             <Link to="/" className="flex items-center gap-2 shrink-0">
+            <img
+              src={logo}
+              alt="Hirely Logo"
+              className="h-20 sm:h-20 w-auto object-contain"
+            />
+            <span className="text-lg sm:text-xl ml-[-65px] font-bold text-foreground">
+              Hirely
+            </span>
+          </Link>
             <div className="space-y-3 text-sm text-primary-foreground/70">
           
               

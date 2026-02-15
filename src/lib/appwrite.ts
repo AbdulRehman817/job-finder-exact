@@ -98,7 +98,8 @@ export const COLLECTIONS = {
   JOBS: import.meta.env.VITE_APPWRITE_JOBS_COLLECTION_ID || 'jobs',
   JOB_APPLICATIONS: import.meta.env.VITE_APPWRITE_JOB_APPLICATIONS_COLLECTION_ID || 'job_applications',
   SAVED_JOBS: import.meta.env.VITE_APPWRITE_SAVED_JOBS_COLLECTION_ID || 'saved_jobs',
-  NOTIFICATIONS: import.meta.env.VITE_APPWRITE_NOTIFICATIONS_COLLECTION_ID || 'notifications'
+  NOTIFICATIONS: import.meta.env.VITE_APPWRITE_NOTIFICATIONS_COLLECTION_ID || 'notifications',
+  FEEDBACK: import.meta.env.VITE_APPWRITE_FEEDBACK_COLLECTION_ID || 'feedback'
 };
 
 // Storage Bucket IDs
