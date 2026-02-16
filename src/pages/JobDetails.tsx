@@ -146,8 +146,8 @@ const JobDetails = () => {
       return;
     }
      toast({
-      title: "Application link unavailable",
-      description: "This job does not have an apply link yet.",
+      title: "Apply link unavailable",
+      description: "Check the job description for application instructions.",
       variant: "destructive",
     });
   };
