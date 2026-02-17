@@ -12,7 +12,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { COLLECTIONS, DATABASE_ID, ID, databases, ensureAnonymousSession } from "@/lib/appwrite";
+import {
+  COLLECTIONS,
+  DATABASE_ID,
+  ID,
+  databases,
+  ensureAnonymousSession,
+} from "@/lib/appwrite";
 
 type FeedbackPayload = {
   rating: number;
@@ -29,6 +35,7 @@ const FEEDBACK_POPUP_PAGE_VIEWS_KEY = "hirely:feedback-popup-page-views:v1";
 const FEEDBACK_CACHE_KEY = "hirely:feedback-cache:v1";
 const MIN_PAGE_VIEWS_BEFORE_PROMPT = 3;
 const EXCLUDED_PATHS = new Set(["/signin", "/signup"]);
+const AUTO_PROMPT_DELAY_MS = 1200;
 
 const parseCachedFeedback = (): FeedbackPayload[] => {
   if (typeof window === "undefined") {
@@ -56,6 +63,7 @@ const UserReviewPopup = () => {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+   const [hasShownAutoPrompt, setHasShownAutoPrompt] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -66,23 +74,29 @@ const UserReviewPopup = () => {
       return;
     }
 
-    const popupCompleted = localStorage.getItem(FEEDBACK_POPUP_COMPLETED_KEY) === "true";
+   const popupCompleted =
+      localStorage.getItem(FEEDBACK_POPUP_COMPLETED_KEY) === "true";
     if (popupCompleted) {
       return;
     }
 
-    const currentPageViews = Number(sessionStorage.getItem(FEEDBACK_POPUP_PAGE_VIEWS_KEY) || "0") + 1;
-    sessionStorage.setItem(FEEDBACK_POPUP_PAGE_VIEWS_KEY, String(currentPageViews));
+    const currentPageViews =
+      Number(sessionStorage.getItem(FEEDBACK_POPUP_PAGE_VIEWS_KEY) || "0") + 1;
+    sessionStorage.setItem(
+      FEEDBACK_POPUP_PAGE_VIEWS_KEY,
+      String(currentPageViews),
+    );
 
     if (currentPageViews < MIN_PAGE_VIEWS_BEFORE_PROMPT) {
       return;
     }
 
     const timeoutId = window.setTimeout(() => {
+          setHasShownAutoPrompt(true);
       setIsOpen(true);
-    }, 1200);
+    }, AUTO_PROMPT_DELAY_MS);
 
-    return () => window.clearTimeout(timeoutId);
+     return () => window.clearTimeout(timeoutId);
   }, [location.pathname]);
 
   const markPopupCompleted = () => {
@@ -134,14 +148,23 @@ const UserReviewPopup = () => {
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
 
-    if (!open) {
+    if (!open && hasShownAutoPrompt) {
       markPopupCompleted();
+      setHasShownAutoPrompt(false);
     }
   };
 
   const handleDismiss = () => {
-    markPopupCompleted();
+     if (hasShownAutoPrompt) {
+      markPopupCompleted();
+      setHasShownAutoPrompt(false);
+    }
     setIsOpen(false);
+  };
+
+    const handleManualOpen = () => {
+    setHasShownAutoPrompt(false);
+    setIsOpen(true);
   };
 
   const handleSubmit = async () => {
@@ -171,6 +194,7 @@ const UserReviewPopup = () => {
 
     markPopupCompleted();
     setIsOpen(false);
+      setHasShownAutoPrompt(false);
     setRating(0);
     setFeedback("");
     setIsSubmitting(false);
@@ -184,56 +208,85 @@ const UserReviewPopup = () => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Quick website review</DialogTitle>
-          <DialogDescription>
-            Tell us what you think about your experience on Hirely. This popup appears only once.
-          </DialogDescription>
-        </DialogHeader>
+     <>
+      <Button
+        type="button"
+        size="sm"
+        className="fixed bottom-6 right-6 z-40 btn-primary shadow-lg"
+        onClick={handleManualOpen}
+      >
+        Give feedback
+      </Button>
 
-        <div className="space-y-4">
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Quick website review</DialogTitle>
+            <DialogDescription>
+              Tell us what you think about your experience on Hirely. This popup
+              appears only once.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium text-foreground mb-2">
+                How would you rate your experience?
+              </p>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setRating(value)}
+                    className={`rounded-md p-1 transition-colors ${
+                      value <= rating
+                        ? "text-amber-500"
+                        : "text-muted-foreground hover:text-amber-400"
+                    }`}
+                    aria-label={`Rate ${value} star${value > 1 ? "s" : ""}`}
+                  >
+                    <Star
+                      className="h-5 w-5"
+                      fill={value <= rating ? "currentColor" : "none"}
+                    />
+                  </button>
+                ))}
+              </div>
+          </div>
+
           <div>
-            <p className="text-sm font-medium text-foreground mb-2">How would you rate your experience?</p>
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setRating(value)}
-                  className={`rounded-md p-1 transition-colors ${
-                    value <= rating ? "text-amber-500" : "text-muted-foreground hover:text-amber-400"
-                  }`}
-                  aria-label={`Rate ${value} star${value > 1 ? "s" : ""}`}
-                >
-                  <Star className="h-5 w-5" fill={value <= rating ? "currentColor" : "none"} />
-                </button>
-              ))}
+              <p className="text-sm font-medium text-foreground mb-2">
+                What should we improve next?
+              </p>
+              <Textarea
+                value={feedback}
+                onChange={(event) => setFeedback(event.target.value)}
+                placeholder="Share one thing we should do better."
+                className="min-h-[110px]"
+              />
             </div>
-          </div>
 
-          <div>
-            <p className="text-sm font-medium text-foreground mb-2">What should we improve next?</p>
-            <Textarea
-              value={feedback}
-              onChange={(event) => setFeedback(event.target.value)}
-              placeholder="Share one thing we should do better."
-              className="min-h-[110px]"
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={handleDismiss}>
-              Not now
-            </Button>
-            <Button className="btn-primary flex-1" onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? "Sending..." : "Send review"}
-            </Button>
-          </div>
+         <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleDismiss}
+              >
+                Not now
+              </Button>
+              <Button
+                className="btn-primary flex-1"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Sending..." : "Send review"}
+              </Button>
+            </div>
         </div>
-      </DialogContent>
-    </Dialog>
+       </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
