@@ -23,6 +23,7 @@ import { useSeo } from "@/hooks/useSeo";
 import Header from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { normalizeJobType } from "@/lib/jobType";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -59,7 +60,7 @@ const FindJobs = () => {
     salary_min: job.salary_min,
     salary_max: job.salary_max,
     currency: job.currency || "USD",
-    type: job.type as "full-time" | "part-time" | "internship" | "remote" | "contract",
+    type: normalizeJobType(job.type),
     featured: job.featured || false,
     postedDate: job.posted_date,
     description: job.description,
@@ -111,12 +112,15 @@ const FindJobs = () => {
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = selectedTypes.length > 0 || locationTerm || searchTerm;
-
+ const hasActiveFilters =
+    selectedTypes.length > 0 ||
+    locationTerm.trim().length > 0 ||
+    searchTerm.trim().length > 0;
   useSeo({
     title: "Find Jobs",
-    description: "Search and filter jobs by title, location, and type on Hirely.",
-    noIndex: hasActiveFilters,
+   description:
+      "Search and filter jobs by title, location, and type on Hirely.",
+ noIndex: hasActiveFilters,
   });
 
   const formatSalary = (min: number | null, max: number | null, currency: string) => {

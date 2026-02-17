@@ -35,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSeo } from "@/hooks/useSeo";
 import { jobTypes } from "@/types";
 import { format, formatDistanceToNow } from "date-fns";
+import { normalizeJobType } from "@/lib/jobType";
 
 const JobDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -70,44 +71,50 @@ const JobDetails = () => {
   const employmentTypeMap: Record<string, string> = {
     "full-time": "FULL_TIME",
     "part-time": "PART_TIME",
-    "internship": "INTERN",
-    "remote": "TELECOMMUTE",
-    "contract": "CONTRACTOR",
+      internship: "INTERN",
+    remote: "TELECOMMUTE",
+    contract: "CONTRACTOR",
   };
+    const normalizedJobType = normalizeJobType(job?.type);
   const hasSalary = job?.salary_min || job?.salary_max;
-  const structuredData = job && origin
-    ? {
-        "@context": "https://schema.org",
-        "@type": "JobPosting",
-        title: job.title,
-        description: job.description,
-        datePosted: new Date(job.posted_date).toISOString(),
-        employmentType: employmentTypeMap[job.type] || "FULL_TIME",
-        hiringOrganization: {
-          "@type": "Organization",
-          name: companyName,
-          ...(job.companies?.logo_url ? { logo: job.companies.logo_url } : {}),
+ const structuredData =
+    job && origin
+      ? {
+          "@context": "https://schema.org",
+          "@type": "JobPosting",
+          title: job.title,
+          description: job.description,
+          datePosted: new Date(job.posted_date).toISOString(),
+          employmentType: employmentTypeMap[normalizedJobType] || "FULL_TIME",
+          hiringOrganization: {
+            "@type": "Organization",
+            name: companyName,
+            ...(job.companies?.logo_url
+              ? { logo: job.companies.logo_url }
+              : {}),
         },
-        jobLocation: {
-          "@type": "Place",
-          address: {
-            "@type": "PostalAddress",
-            addressLocality: job.location,
+
+         jobLocation: {
+            "@type": "Place",
+            address: {
+              "@type": "PostalAddress",
+              addressLocality: job.location,
+            },
           },
-        },
-        ...(job.type === "remote" ? { jobLocationType: "TELECOMMUTE" } : {}),
-        ...(hasSalary
-          ? {
-              baseSalary: {
-                "@type": "MonetaryAmount",
-                currency: job.currency || "USD",
-                value: {
-                  "@type": "QuantitativeValue",
-                  ...(job.salary_min ? { minValue: job.salary_min } : {}),
-                  ...(job.salary_max ? { maxValue: job.salary_max } : {}),
-                  unitText: "YEAR",
-                },
-              },
+          ...(normalizedJobType === "remote"
+            ? { jobLocationType: "TELECOMMUTE" }
+            : {}),
+          ...(hasSalary
+            ? {
+                baseSalary: {
+                  "@type": "MonetaryAmount",
+                  currency: job.currency || "USD",
+                  value: {
+                    "@type": "QuantitativeValue",
+                    ...(job.salary_min ? { minValue: job.salary_min } : {}),
+                    ...(job.salary_max ? { maxValue: job.salary_max } : {}),
+                    unitText: "YEAR",
+                  },      },
             }
           : {}),
       }
@@ -322,8 +329,12 @@ const copyShareMessage = async (shareMessage: string) => {
     );
   }
 
-  const typeConfig = jobTypes[job.type as keyof typeof jobTypes] || jobTypes["full-time"];
-  const formatSalary = (min: number | null, max: number | null, currency: string | null) => {
+    const typeConfig = jobTypes[normalizedJobType] || jobTypes["full-time"];
+  const formatSalary = (
+    min: number | null,
+    max: number | null,
+    currency: string | null,
+  ) => {
     const unit = currency || "USD";
     if (!min && !max) return "Competitive";
     if (min && max) return `${unit} ${min.toLocaleString()} - ${max.toLocaleString()}`;
@@ -331,8 +342,8 @@ const copyShareMessage = async (shareMessage: string) => {
     return `Up to ${unit} ${max!.toLocaleString()}`;
   };
 
-  const salaryDisplay = formatSalary(job.salary_min, job.salary_max, job.currency || "USD");
-  const currencyLabel = job.currency || "USD";
+  const salaryDisplay = formatSalary(job.salary_min, job.salary_max, job.currency );
+  const currencyLabel = job.currency;
   
 
   // Transform related jobs
@@ -346,8 +357,8 @@ const copyShareMessage = async (shareMessage: string) => {
       companyLogo: j.companies?.logo_url || "",
       location: j.location,
       salary: formatSalary(j.salary_min, j.salary_max, j.currency || "USD"),
-      type: j.type as "full-time" | "part-time" | "internship" | "remote" | "contract",
-      featured: j.featured || false,
+  type: normalizeJobType(j.type),
+        featured: j.featured || false,
       postedDate: j.posted_date,
     }));
 
@@ -364,7 +375,7 @@ const copyShareMessage = async (shareMessage: string) => {
               <DialogTitle>Complete Your Profile First</DialogTitle>
             </div>
             <DialogDescription className="pt-4">
-              To apply for jobs, you need to complete your profile. This helps recruiters learn more about you.
+              To apply for jobs, you need to complete your profile.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">

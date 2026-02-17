@@ -1,20 +1,31 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { databases, DATABASE_ID, COLLECTIONS, ID, ensureAnonymousSession } from "@/lib/appwrite";
+import {
+  databases,
+  DATABASE_ID,
+  COLLECTIONS,
+  ID,
+  ensureAnonymousSession,
+} from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
 import { Permission, Role } from "appwrite";
-import { S } from "vitest/dist/chunks/config.d.D2ROskhv.js";
+import { normalizeJobType, parseJobType } from "../lib/jobType";
 
 const enrichJobsWithCompanies = async (jobs: any[]) => {
   try {
     const { documents: companies } = await databases.listDocuments(
       DATABASE_ID,
-      COLLECTIONS.COMPANIES
+     COLLECTIONS.COMPANIES,
     );
-    const companiesById = new Map(companies.map((company) => [company.$id, company]));
+    const companiesById = new Map(
+      companies.map((company) => [company.$id, company]),
+    );
 
     return jobs.map((job) => {
       const parsedJob = parseJobData(job);
-      const company = job.company_id ? companiesById.get(job.company_id) : undefined;
+     const company = job.company_id
+        ? companiesById.get(job.company_id)
+        : undefined;
+
 
       return {
         ...parsedJob,
@@ -56,7 +67,7 @@ const parseArrayField = (value: unknown): string[] | null => {
 
   const normalize = (items: unknown[]): string[] | null => {
     const cleaned = items
-      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+     .map((item) => (typeof item === "string" ? item.trim() : ""))
       .filter((item) => item.length > 0);
 
     return cleaned.length > 0 ? cleaned : null;
@@ -66,7 +77,7 @@ const parseArrayField = (value: unknown): string[] | null => {
     return normalize(value);
   }
 
-  if (typeof value === 'string') {
+   if (typeof value === "string") {
     const raw = value.trim();
     if (!raw) return null;
 
@@ -79,9 +90,9 @@ const parseArrayField = (value: unknown): string[] | null => {
       // Fall back to delimiter-based parsing for legacy/plain-text formats.
     }
 
-    const splitValues = raw.includes('\n')
+   const splitValues = raw.includes("\n")
       ? raw.split(/\r?\n/)
-      : raw.split(',');
+    : raw.split(",");
 
     return normalize(splitValues);
   }
@@ -91,6 +102,7 @@ const parseArrayField = (value: unknown): string[] | null => {
 
 const parseJobData = (job: any): Job => ({
   ...job,
+    type: normalizeJobType(job.type),
   requirements: parseArrayField(job.requirements),
   responsibilities: parseArrayField(job.responsibilities),
   benefits: parseArrayField(job.benefits),
@@ -123,7 +135,7 @@ const isUnauthorizedError = (error: any) => {
 
 const guestAccessGuidanceError = (error: any) => {
   const guidance = new Error(
-    "Guest access is blocked. In Appwrite, enable Anonymous Sessions and give Jobs read permission to Role.any() or Role.users() (including existing job documents)."
+  "Guest access is blocked. In Appwrite, enable Anonymous Sessions and give Jobs read permission to Role.any() or Role.users() (including existing job documents).",
   ) as Error & { code?: number; cause?: unknown };
   guidance.code = Number(error?.code) || 401;
   guidance.cause = error;
@@ -168,23 +180,41 @@ export interface Job {
   };
 }
 
-const fetchPublicJobs = async (filters?: { type?: string; location?: string; search?: string }) => {
-  const { documents: jobs } = await databases.listDocuments(
+const fetchPublicJobs = async (filters?: {
+  type?: string;
+  location?: string;
+  search?: string;
+}) => {  const { documents: jobs } = await databases.listDocuments(
     DATABASE_ID,
-    COLLECTIONS.JOBS
+ COLLECTIONS.JOBS,
   );
 
-  const normalizedTypeFilter = String(filters?.type || "").trim().toLowerCase();
-  const normalizedLocationFilter = String(filters?.location || "").trim().toLowerCase();
-  const normalizedSearchFilter = String(filters?.search || "").trim().toLowerCase();
+  const normalizedTypeFilter = parseJobType(filters?.type);
+  const normalizedLocationFilter = String(filters?.location || "")
+    .trim()
+    .toLowerCase();
+  const normalizedSearchFilter = String(filters?.search || "")
+    .trim()
+    .toLowerCase();
 
   const filteredJobs = jobs
     .filter((job) => isPublicJobStatus(job.status))
-    .filter((job) => !normalizedTypeFilter || String(job.type || "").toLowerCase() === normalizedTypeFilter)
-    .filter((job) => !normalizedLocationFilter || String(job.location || "").toLowerCase().includes(normalizedLocationFilter))
+    .filter(
+      (job) =>
+        !normalizedTypeFilter ||
+        normalizeJobType(job.type) === normalizedTypeFilter,
+    )
+    .filter(
+      (job) =>
+        !normalizedLocationFilter ||
+        String(job.location || "")
+          .toLowerCase()
+          .includes(normalizedLocationFilter),
+    )
     .filter((job) => {
       if (!normalizedSearchFilter) return true;
-      const searchableText = `${job.title || ""} ${job.description || ""}`.toLowerCase();
+      const searchableText =
+        `${job.title || ""} ${job.description || ""}`.toLowerCase();
       return searchableText.includes(normalizedSearchFilter);
     })
     .sort((a, b) => {
@@ -205,8 +235,10 @@ const fetchJobById = async (id: string) => {
   }
 
   try {
-    const { documents: companies } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.COMPANIES);
-    const company = companies.find((item) => item.$id === job.company_id);
+ const { documents: companies } = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.COMPANIES,
+    );    const company = companies.find((item) => item.$id === job.company_id);
 
     return {
       ...parsedJob,
