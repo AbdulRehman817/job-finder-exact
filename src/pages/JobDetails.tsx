@@ -583,7 +583,7 @@ const copyShareMessage = async (shareMessage: string) => {
 
             {/* Related Jobs */}
             {transformedRelatedJobs.length > 0 && (
-              <div className="mt-12">
+              <div className="mt-12 hidden lg:block">
                 <h2 className="text-2xl font-bold text-foreground mb-6">Related Jobs</h2>
                 <div className="grid md:grid-cols-2 gap-6">
                   {transformedRelatedJobs.map((relatedJob) => (
@@ -663,6 +663,19 @@ const copyShareMessage = async (shareMessage: string) => {
                     >
                       {benefit}
                     </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+
+             {/* Related Jobs (Mobile/Tablet) */}
+            {transformedRelatedJobs.length > 0 && (
+              <div className="lg:hidden bg-transparent">
+                <h2 className="text-2xl font-bold text-foreground mb-6">Related Jobs</h2>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {transformedRelatedJobs.map((relatedJob) => (
+                    <JobCard key={relatedJob.id} job={relatedJob} />
                   ))}
                 </div>
               </div>
