@@ -44,33 +44,26 @@ export interface JobApplication {
 
 export const useMyApplications = () => {
   const { user } = useAuth();
-  console.log('🔄 useMyApplications: Hook called, user:', user);
 
   return useQuery<JobApplication[]>({
     queryKey: ["my-applications", user?.id],
     queryFn: async () => {
       if (!user) {
-        console.log('ℹ️ useMyApplications: No user, returning empty array');
         return [];
       }
-      console.log('🔄 useMyApplications: Fetching applications for user:', user.id);
       try {
-        console.log('📡 useMyApplications: Querying job applications from Appwrite');
         const { documents: applications } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.JOB_APPLICATIONS,
           [Query.equal('user_id', user.id), Query.orderDesc('applied_at')]
         );
            const typedApplications = applications as unknown as JobApplication[];
-        console.log('📥 useMyApplications: Received applications:', applications.length);
 
         // Fetch job and company data for each application
-        console.log('📡 useMyApplications: Fetching job and company data for applications');
         const applicationsWithData = await Promise.all(
          typedApplications.map(async (application) => {
             try {
               // Fetch job data
-              console.log('📋 useMyApplications: Fetching job data for application:', application.$id);
               const job = await databases.getDocument(DATABASE_ID, COLLECTIONS.JOBS, application.job_id);
 
               // Fetch company data
@@ -96,7 +89,6 @@ export const useMyApplications = () => {
                   } : undefined
                 }
               };
-              console.log('📋 useMyApplications: Processed application with job:', { appId: application.$id, jobTitle: job.title });
                 return result as JobApplication;
             } catch (error) {
               console.error('❌ useMyApplications: Error fetching job data for application:', application.$id, error);
@@ -105,7 +97,6 @@ export const useMyApplications = () => {
           })
         );
 
-        console.log('✅ useMyApplications: Applications with data fetched successfully:', applicationsWithData.length);
         return applicationsWithData;
       } catch (error) {
         console.error('❌ useMyApplications: Error fetching my applications:', error);

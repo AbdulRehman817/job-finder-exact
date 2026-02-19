@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, Menu, X, User, LogOut, Home, Search, PlusCircle } from "lucide-react";
+import { ChevronDown, Menu, X, User, LogOut, Home, Search, PlusCircle, Info, } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Permission, Role } from "appwrite";
 import { getAvatarUrl } from "@/lib/avatar";
@@ -31,12 +31,6 @@ const Header = () => {
   const headerRef = useRef<HTMLElement>(null);
   const { toast } = useToast();
 
-  // console.log('🔄 Header: Component rendered with auth data:', { loading, user: user?.id, userRole, profile: profile });
-
-  // useEffect(() => {
-  //   console.log("📊 Header: Auth state updated - loading:", loading, "userRole:", userRole, "profile:", profile?.id, "profile full_name:", profile?.full_name, "user:", user?.id);
-    
-  // }, [loading, userRole, profile, user]);
 
   // Navigation links - consistent for all users
   const mainNavLinks = [
@@ -137,9 +131,7 @@ const Header = () => {
 
   const handleSignOut = async () => {
     setMobileMenuOpen(false);
-    console.log('🔄 Header: Sign out initiated');
     await signOut();
-    console.log('✅ Header: Sign out completed, navigating to home');
     navigate("/signin");
   };
 

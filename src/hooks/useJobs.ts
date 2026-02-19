@@ -9,6 +9,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { Permission, Role } from "appwrite";
 import { normalizeJobType, parseJobType } from "../lib/jobType";
+const jobViewsEndpoint = import.meta.env.VITE_JOB_VIEWS_ENDPOINT;
 
 const enrichJobsWithCompanies = async (jobs: any[]) => {
   try {
@@ -109,6 +110,43 @@ const parseJobData = (job: any): Job => ({
   skills_required: parseArrayField(job.skills_required),
 });
 
+
+const incrementViewsViaEndpoint = async (id: string): Promise<number | null> => {
+  if (!jobViewsEndpoint) {
+    return null;
+  }
+
+  const response = await fetch(jobViewsEndpoint, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ jobId: id }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Views endpoint failed with status ${response.status}`);
+  }
+
+  const payload = (await response.json().catch(() => null)) as {
+    view_count?: number;
+    views?: number;
+    data?: { view_count?: number; views?: number };
+  } | null;
+
+  const endpointViews =
+    payload?.view_count ??
+    payload?.views ??
+    payload?.data?.view_count ??
+    payload?.data?.views;
+
+  return typeof endpointViews === "number" ? endpointViews : null;
+};
+
+
+
+
 const normalizeJobStatus = (value: unknown): string => {
   if (typeof value !== "string") return "active";
   return value.trim().toLowerCase();
@@ -146,6 +184,7 @@ const guestAccessGuidanceError = (error: any) => {
 
 
 export interface Job {
+    view_count?: number | null;
   $id: string;
   company_id: string;
   apply_link?: string | null;
@@ -264,21 +303,18 @@ export const useJobs = (filters?: { type?: string; location?: string; search?: s
   return useQuery({
     queryKey: ["jobs", filters],
     queryFn: async () => {
-      console.log("useJobs: Fetching jobs with filters:", filters);
+    
       try {
-        console.log("useJobs: Querying Appwrite for all jobs");
+     
         const jobsWithCompanies = await fetchPublicJobs(filters);
-        console.log("useJobs: Jobs fetched successfully:", jobsWithCompanies.length);
 
         if (user || jobsWithCompanies.length > 0) {
           return jobsWithCompanies;
         }
 
-        console.log("useJobs: Guest user received 0 jobs. Trying anonymous session fallback.");
         try {
           await ensureAnonymousSession();
           const retryJobs = await fetchPublicJobs(filters);
-          console.log("useJobs: Jobs fetched successfully after anonymous session empty-result retry:", retryJobs.length);
           return retryJobs;
         } catch (retryError: any) {
           console.error("useJobs: Empty-result retry failed:", retryError);
@@ -294,7 +330,6 @@ export const useJobs = (filters?: { type?: string; location?: string; search?: s
         try {
           await ensureAnonymousSession();
           const jobsWithCompanies = await fetchPublicJobs(filters);
-          console.log("useJobs: Jobs fetched successfully after anonymous session:", jobsWithCompanies.length);
           return jobsWithCompanies;
         } catch (retryError: any) {
           console.error("useJobs: Guest session fallback failed:", retryError);
@@ -309,11 +344,8 @@ export const useJob = (id: string) => {
   return useQuery({
     queryKey: ["job", id],
     queryFn: async () => {
-      console.log("useJob: Fetching single job:", id);
       try {
-        console.log("useJob: Getting job document from Appwrite");
         const job = await fetchJobById(id);
-        console.log("useJob: Job fetched successfully:", job.$id);
         return job;
       } catch (error: any) {
         if (!isUnauthorizedError(error)) {
@@ -325,7 +357,6 @@ export const useJob = (id: string) => {
         try {
           await ensureAnonymousSession();
           const job = await fetchJobById(id);
-          console.log("useJob: Job fetched successfully after anonymous session:", job.$id);
           return job;
         } catch (retryError: any) {
           console.error("useJob: Guest session fallback failed:", retryError);
@@ -336,6 +367,47 @@ export const useJob = (id: string) => {
     enabled: !!id,
   });
 };
+
+export const useIncrementJobViews = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, currentViews = 0 }: { id: string; currentViews?: number }) => {
+      const nextViews = Math.max(0, Number(currentViews) || 0) + 1;
+
+      try {
+        const updated = await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.JOBS,
+          id,
+          { view_count: nextViews },
+        );
+
+        return parseJobData(updated);
+      } catch (error: any) {
+        const message = String(error?.message || "").toLowerCase();
+        const code = Number(error?.code || 0);
+        const unsupportedField =
+          code === 400 &&
+          (message.includes("unknown") || message.includes("attribute") || message.includes("view_count"));
+
+        if (unsupportedField || isUnauthorizedError(error)) {
+          return { view_count: Math.max(0, Number(currentViews) || 0) };
+        }
+
+        throw error;
+      }
+    },
+    onSuccess: (_updated, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["job", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["my-jobs"] });
+    },
+  });
+};
+
+
+
 
 export const useMyJobs = () => {
   const { user } = useAuth();

@@ -12,9 +12,7 @@ interface JobCardProps {
 const JobCard = ({ job, variant = "default" }: JobCardProps) => {
   const typeConfig = jobTypes[job.type] || jobTypes["full-time"];
 
-useEffect(() => {
-  console.log("JobCard rendered with job:", job);
-}, []);
+
 
 
 

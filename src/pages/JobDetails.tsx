@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { 
   MapPin, 
@@ -10,6 +10,7 @@ import {
   BookmarkCheck,
   Share2,
   ArrowRight,
+    Eye,
   Building2,
   Globe,
   AlertTriangle,
@@ -26,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import Layout from "@/components/layout/Layout";
 import JobCard from "@/components/jobs/JobCard";
-import { useJob, useJobs } from "@/hooks/useJobs";
+import { useIncrementJobViews, useJob, useJobs } from "@/hooks/useJobs";
 import { useApplyForJob, useHasApplied } from "@/hooks/useApplications";
 import { useSaveJob, useUnsaveJob, useIsJobSaved } from "@/hooks/useSavedJobs";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,7 +47,7 @@ const JobDetails = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showAuthPromptModal, setShowAuthPromptModal] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
-
+ const [viewCount, setViewCount] = useState(0);
   const { data: job, isLoading, error: jobError, refetch: refetchJob } = useJob(id || "");
   const { data: relatedJobs = [] } = useJobs();
   const { data: hasApplied = false } = useHasApplied(id || "");
@@ -60,7 +61,7 @@ const JobDetails = () => {
   const applyForJob = useApplyForJob();
   const saveJob = useSaveJob();
   const unsaveJob = useUnsaveJob();
-
+ const { mutateAsync: incrementJobViews } = useIncrementJobViews();
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const companyName = job?.companies?.name || job?.company || "Company";
   const jobTitle = job?.title ? `${job.title} at ${companyName}` : "Job Details";
@@ -159,6 +160,32 @@ const JobDetails = () => {
     });
   };
 
+
+
+   useEffect(() => {
+    if (!job?.$id) return;
+
+    const currentViews = Number(job.view_count) || 0;
+    setViewCount(currentViews);
+
+    const sessionViewKey = `hirely:viewed-job:${job.$id}`;
+    if (typeof window === "undefined" || sessionStorage.getItem(sessionViewKey)) {
+      return;
+    }
+
+    sessionStorage.setItem(sessionViewKey, "1");
+
+    incrementJobViews({ id: job.$id, currentViews })
+      .then((updatedJob) => {
+        const updatedViews = Number(updatedJob?.view_count);
+        if (!Number.isNaN(updatedViews)) {
+          setViewCount(updatedViews);
+        }
+      })
+      .catch(() => {
+        // Silently ignore view tracking failures (permissions/schema differences).
+      });
+  }, [incrementJobViews, job?.$id, job?.view_count]);
 
   const handleApply = async () => {
     try {
@@ -520,6 +547,10 @@ const copyShareMessage = async (shareMessage: string) => {
                   <span className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
                     {formatDistanceToNow(new Date(job.posted_date), { addSuffix: true })}
+                  </span>
+                   <span className="flex items-center gap-1">
+                    <Eye className="h-4 w-4" />
+                    {viewCount.toLocaleString()} views
                   </span>
                 </div>
                 <div>

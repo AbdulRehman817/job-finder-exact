@@ -133,7 +133,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const ensureProfile = async (appwriteUser: Models.User<Models.Preferences>, overrides?: Partial<Profile>) => {
-    console.log('🔄 AuthContext: ensureProfile called for user:', appwriteUser.$id, 'with overrides:', overrides);
     const payload = {
       user_id: appwriteUser.$id,
       email: appwriteUser.email,
@@ -152,31 +151,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       website: overrides?.website || null,
       resume_url: overrides?.resume_url || null,
     };
-    console.log('📤 AuthContext: Profile payload to save:', payload);
 
     try {
-      console.log('📡 AuthContext: Checking existing profile in Appwrite');
       const existingProfile = await getProfileDocument(appwriteUser.$id);
-      console.log('📥 AuthContext: Found existing profile:', !!existingProfile);
 
       if (existingProfile) {
         // Update existing profile
         const { $id } = existingProfile;
-        console.log('🔄 AuthContext: Updating existing profile:', $id);
         await databases.updateDocument(DATABASE_ID, COLLECTIONS.PROFILES, $id, payload);
         const result = { ...existingProfile, ...payload };
-        console.log('✅ AuthContext: Profile updated successfully');
         return result;
       } else {
         // Create new profile
-        console.log('🆕 AuthContext: Creating new profile document');
         const document = await databases.createDocument(
           DATABASE_ID,
           COLLECTIONS.PROFILES,
           ID.unique(),
           payload
         );
-        console.log('✅ AuthContext: New profile created:', document.$id);
         return document;
       }
     } catch (error) {
@@ -186,14 +178,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const loadProfile = async (appwriteUser: Models.User<Models.Preferences>) => {
-    console.log('🔄 AuthContext: loadProfile called with user:', { id: appwriteUser.$id, email: appwriteUser.email });
     try {
-      console.log('📡 AuthContext: Fetching profile from Appwrite databases.listDocuments');
       const existingProfile = await getProfileDocument(appwriteUser.$id);
       const profileDoc = existingProfile ?? await ensureProfile(appwriteUser);
-      console.log('📋 AuthContext: Using profile document:', profileDoc);
       const mapped = mapProfile(profileDoc);
-      console.log('🔄 AuthContext: Mapped profile data:', mapped);
 
       setUser({ id: appwriteUser.$id, email: appwriteUser.email });
       setUserRole(mapped.role);
