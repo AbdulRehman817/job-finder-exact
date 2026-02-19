@@ -22,27 +22,73 @@ const originalPrepareRequest = (client as any).prepareRequest.bind(client);
   headers: Record<string, string> = {},
   params: Record<string, unknown> = {}
 ) {
-  const contentType = headers['content-type'] || headers['Content-Type'];
-  const isJsonRequest = method.toUpperCase() !== 'GET' && contentType === 'application/json';
+  const normalizedMethod = method.toUpperCase();
+  const contentType = String(headers['content-type'] || headers['Content-Type'] || '').toLowerCase();
+  const isJsonRequest = normalizedMethod !== 'GET' && contentType.startsWith('application/json');
 
-  try {
+  if (!isJsonRequest) {
     return originalPrepareRequest(method, url, headers, params);
-  } catch (error) {
-     const normalizedMessage = String((error as any)?.message || '').toLowerCase();
-    const hasBigNumberSerializerError =
+  }
+
+  const prepared = originalPrepareRequest(
+    method,
+    url,
+    { ...headers, 'content-type': 'multipart/form-data' },
+    params
+  );
+
+  prepared.options.body = JSON.stringify(params, (_key, value) =>
+    typeof value === 'bigint' ? value.toString() : value
+  );
+  (prepared.options.headers as Record<string, string>)['content-type'] = 'application/json';
+
+  return prepared;
+};
+
+
+const originalCall = (client as any).call.bind(client);
+(client as any).call = async function patchedCall(
+  method: string,
+  url: URL,
+  headers: Record<string, string> = {},
+  params: Record<string, unknown> = {},
+  responseType = 'json'
+) {
+  try {
+    return await originalCall(method, url, headers, params, responseType);
+  } catch (error: any) {
+    const normalizedMessage = String(error?.message || '').toLowerCase();
+    const isBigNumberRuntimeError =
       normalizedMessage.includes('isbignumber') && normalizedMessage.includes('not a function');
 
-    if (!isJsonRequest || !hasBigNumberSerializerError) {
+    if (!isBigNumberRuntimeError) {
       throw error;
     }
 
-    const prepared = originalPrepareRequest(method, url, { ...headers, 'content-type': 'multipart/form-data' }, params);
-    prepared.options.body = JSON.stringify(params, (_key, value) =>
-      typeof value === 'bigint' ? value.toString() : value
-    );
-    (prepared.options.headers as Record<string, string>)['content-type'] = 'application/json';
+    const { uri, options } = (client as any).prepareRequest(method, url, headers, params);
+    const response = await fetch(uri, options);
 
-    return prepared;
+    let data: any = null;
+    if (response.headers.get('content-type')?.includes('application/json')) {
+      const text = await response.text();
+      data = text ? JSON.parse(text) : null;
+    } else if (responseType === 'arrayBuffer') {
+      data = await response.arrayBuffer();
+    } else {
+      data = { message: await response.text() };
+    }
+
+    if (response.status >= 400) {
+      const fallbackError = new Error(data?.message || `Appwrite request failed with status ${response.status}`) as Error & {
+        code?: number;
+        type?: string;
+      };
+      fallbackError.code = response.status;
+      fallbackError.type = data?.type;
+      throw fallbackError;
+    }
+
+    return data;
   }
 };
 

@@ -5,6 +5,7 @@ import { account, databases, DATABASE_ID, COLLECTIONS, ID, storage, BUCKETS, Que
 
 
 
+
 const createEmailPasswordSessionViaRest = async (email: string, password: string) => {
   const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT;
   const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID;
@@ -87,7 +88,8 @@ interface AuthContextType {
     role: "candidate" | "employer",
     avatarFile?: File | null
   ) => Promise<{ error: any }>;
- signIn: (email: string, password: string) => Promise<{ error: any; role?: "candidate" | "employer" }>;  signOut: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ error: any; role?: "candidate" | "employer" }>;
+  signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -118,6 +120,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     resume_url: document.resume_url || null,
   });
 
+  const getProfileDocument = async (userId: string) => {
+    try {
+      const { documents } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
+        Query.equal("user_id", userId),
+      ]);
+      return documents[0] ?? null;
+    } catch {
+      const { documents } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES);
+      return documents.find((doc) => doc.user_id === userId) ?? null;
+    }
+  };
+
   const ensureProfile = async (appwriteUser: Models.User<Models.Preferences>, overrides?: Partial<Profile>) => {
     console.log('🔄 AuthContext: ensureProfile called for user:', appwriteUser.$id, 'with overrides:', overrides);
     const payload = {
@@ -147,7 +161,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (existingProfile) {
         // Update existing profile
-          const { $id } = existingProfile;
+        const { $id } = existingProfile;
         console.log('🔄 AuthContext: Updating existing profile:', $id);
         await databases.updateDocument(DATABASE_ID, COLLECTIONS.PROFILES, $id, payload);
         const result = { ...existingProfile, ...payload };
@@ -185,26 +199,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUserRole(mapped.role);
       setProfile(mapped);
       console.log('✅ AuthContext: Profile loaded successfully');
-       return mapped;
+      return mapped;
     } catch (error) {
       console.error('❌ AuthContext: Error loading profile:', error);
       clearState();
-       throw error;
+      throw error;
     }
   };
-
- const getProfileDocument = async (userId: string) => {
-    try {
-      const { documents } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
-        Query.equal("user_id", userId),
-      ]);
-      return documents[0] ?? null;
-    } catch {
-      const { documents } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES);
-      return documents.find((doc) => doc.user_id === userId) ?? null;
-    }
-  };
-
 
   const clearState = () => {
     setUser(null);

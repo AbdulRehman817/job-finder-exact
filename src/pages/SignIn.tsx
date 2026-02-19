@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowRight, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ const SignIn = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn, userRole, loading: authLoading } = useAuth();
+  const { signIn } = useAuth();
   const { toast } = useToast();
 
   useSeo({
@@ -24,14 +24,12 @@ const SignIn = () => {
     noIndex: true,
   });
 
-
-
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const { error, role } = await signIn(email, password);    
+    const { error, role } = await signIn(email, password);
+    
     if (error) {
       toast({
         title: "Sign in failed",
@@ -44,9 +42,8 @@ const SignIn = () => {
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
-      // Trigger navigation when profile is loaded
       navigate(role === "employer" ? "/employer-dashboard" : "/");
-            setLoading(false);
+      setLoading(false);
     }
   };
 
