@@ -543,6 +543,62 @@ const copyShareMessage = async (shareMessage: string) => {
               </div>
             </div>
 
+            {/* Job Overview (Mobile/Tablet) */}
+            <div className="bg-card border border-border rounded-xl p-6 mb-6 lg:hidden">
+              <h3 className="text-lg font-semibold text-foreground mb-6">Job Overview</h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Salary ({currencyLabel})</p>
+                    <p className="font-medium text-foreground">{salaryDisplay}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                    <MapPin className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Location</p>
+                    <p className="font-medium text-foreground">{job.location}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                    <Briefcase className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Job Type</p>
+                    <p className="font-medium text-foreground">{typeConfig.label}</p>
+                  </div>
+                </div>
+                {job.experience_level && (
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                      <GraduationCap className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Experience</p>
+                      <p className="font-medium text-foreground">{job.experience_level}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                    <Calendar className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Posted</p>
+                    <p className="font-medium text-foreground">
+                      {formatDistanceToNow(new Date(job.posted_date), { addSuffix: true })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Job Description */}
             <div className="bg-card border border-border rounded-xl p-6 mb-6">
               <h2 className="text-xl font-semibold text-foreground mb-4">Job Description</h2>
@@ -566,6 +622,23 @@ const copyShareMessage = async (shareMessage: string) => {
               </div>
             )}
 
+            {/* Job Benefits (Mobile/Tablet) */}
+            {job.benefits && job.benefits.length > 0 && (
+              <div className="bg-card border border-border rounded-xl p-6 mb-6 lg:hidden">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Benefits</h3>
+                <div className="flex flex-wrap gap-2">
+                  {job.benefits.map((benefit, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1.5 bg-green-50 text-green-700 text-xs rounded-full border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800/60"
+                    >
+                      {benefit}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Responsibilities */}
             {job.responsibilities && job.responsibilities.length > 0 && (
               <div className="bg-card border border-border rounded-xl p-6 mb-6">
@@ -583,7 +656,7 @@ const copyShareMessage = async (shareMessage: string) => {
 
             {/* Related Jobs */}
             {transformedRelatedJobs.length > 0 && (
-              <div className="mt-12 hidden lg:block">
+              <div className="mt-12">
                 <h2 className="text-2xl font-bold text-foreground mb-6">Related Jobs</h2>
                 <div className="grid md:grid-cols-2 gap-6">
                   {transformedRelatedJobs.map((relatedJob) => (
@@ -597,7 +670,7 @@ const copyShareMessage = async (shareMessage: string) => {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Job Overview */}
-            <div className="bg-card border border-border rounded-xl p-6">
+            <div className="bg-card border border-border rounded-xl p-6 hidden lg:block">
               <h3 className="text-lg font-semibold text-foreground mb-6">Job Overview</h3>
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
@@ -653,7 +726,7 @@ const copyShareMessage = async (shareMessage: string) => {
             </div>
             {/* Job Benefits */}
             {job.benefits && job.benefits.length > 0 && (
-              <div className="bg-card border border-border rounded-xl p-6">
+              <div className="bg-card border border-border rounded-xl p-6 hidden lg:block">
                 <h3 className="text-lg font-semibold text-foreground mb-4">Benefits</h3>
                 <div className="flex flex-wrap gap-2">
                   {job.benefits.map((benefit, index) => (
@@ -668,18 +741,6 @@ const copyShareMessage = async (shareMessage: string) => {
               </div>
             )}
 
-
-             {/* Related Jobs (Mobile/Tablet) */}
-            {transformedRelatedJobs.length > 0 && (
-              <div className="lg:hidden bg-transparent">
-                <h2 className="text-2xl font-bold text-foreground mb-6">Related Jobs</h2>
-                <div className="grid md:grid-cols-2 gap-6">
-                  {transformedRelatedJobs.map((relatedJob) => (
-                    <JobCard key={relatedJob.id} job={relatedJob} />
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Company Info */}
             {job.companies && (
@@ -781,4 +842,3 @@ const copyShareMessage = async (shareMessage: string) => {
 };
 
 export default JobDetails;
-
