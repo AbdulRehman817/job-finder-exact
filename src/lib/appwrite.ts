@@ -28,9 +28,9 @@ const originalPrepareRequest = (client as any).prepareRequest.bind(client);
   try {
     return originalPrepareRequest(method, url, headers, params);
   } catch (error) {
-    const hasBigNumberSerializerError = String((error as any)?.message || '').includes(
-      'isBigNumber is not a function'
-    );
+     const normalizedMessage = String((error as any)?.message || '').toLowerCase();
+    const hasBigNumberSerializerError =
+      normalizedMessage.includes('isbignumber') && normalizedMessage.includes('not a function');
 
     if (!isJsonRequest || !hasBigNumberSerializerError) {
       throw error;

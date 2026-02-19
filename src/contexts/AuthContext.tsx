@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Models, Account as AppwriteAccount, Permission, Role } from "appwrite";
-import { account, databases, DATABASE_ID, COLLECTIONS, ID, storage, BUCKETS } from "@/lib/appwrite";
-
+import { account, databases, DATABASE_ID, COLLECTIONS, ID, storage, BUCKETS, Query } from "@/lib/appwrite";
 
 
 
@@ -88,8 +87,7 @@ interface AuthContextType {
     role: "candidate" | "employer",
     avatarFile?: File | null
   ) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signOut: () => Promise<void>;
+ signIn: (email: string, password: string) => Promise<{ error: any; role?: "candidate" | "employer" }>;  signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -144,19 +142,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       console.log('📡 AuthContext: Checking existing profile in Appwrite');
-      const { documents } = await databases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.PROFILES
-      );
-      const matchedProfiles = documents.filter((doc) => doc.user_id === appwriteUser.$id);
-      console.log('📥 AuthContext: Found existing documents:', documents.length);
+      const existingProfile = await getProfileDocument(appwriteUser.$id);
+      console.log('📥 AuthContext: Found existing profile:', !!existingProfile);
 
-      if (matchedProfiles.length > 0) {
+      if (existingProfile) {
         // Update existing profile
-        const { $id } = matchedProfiles[0];
+          const { $id } = existingProfile;
         console.log('🔄 AuthContext: Updating existing profile:', $id);
         await databases.updateDocument(DATABASE_ID, COLLECTIONS.PROFILES, $id, payload);
-        const result = { ...matchedProfiles[0], ...payload };
+        const result = { ...existingProfile, ...payload };
         console.log('✅ AuthContext: Profile updated successfully');
         return result;
       } else {
@@ -181,14 +175,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     console.log('🔄 AuthContext: loadProfile called with user:', { id: appwriteUser.$id, email: appwriteUser.email });
     try {
       console.log('📡 AuthContext: Fetching profile from Appwrite databases.listDocuments');
-      const { documents } = await databases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.PROFILES
-      );
-      const matchedProfiles = documents.filter((doc) => doc.user_id === appwriteUser.$id);
-      console.log('📥 AuthContext: Received documents from Appwrite:', documents);
-
-      const profileDoc = matchedProfiles.length > 0 ? matchedProfiles[0] : await ensureProfile(appwriteUser);
+      const existingProfile = await getProfileDocument(appwriteUser.$id);
+      const profileDoc = existingProfile ?? await ensureProfile(appwriteUser);
       console.log('📋 AuthContext: Using profile document:', profileDoc);
       const mapped = mapProfile(profileDoc);
       console.log('🔄 AuthContext: Mapped profile data:', mapped);
@@ -197,11 +185,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUserRole(mapped.role);
       setProfile(mapped);
       console.log('✅ AuthContext: Profile loaded successfully');
+       return mapped;
     } catch (error) {
       console.error('❌ AuthContext: Error loading profile:', error);
       clearState();
+       throw error;
     }
   };
+
+ const getProfileDocument = async (userId: string) => {
+    try {
+      const { documents } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
+        Query.equal("user_id", userId),
+      ]);
+      return documents[0] ?? null;
+    } catch {
+      const { documents } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES);
+      return documents.find((doc) => doc.user_id === userId) ?? null;
+    }
+  };
+
 
   const clearState = () => {
     setUser(null);
@@ -332,10 +335,10 @@ if (avatarFile) {
       console.log('📥 AuthContext: Current user from Appwrite:', currentUser.$id);
 
       console.log('📡 AuthContext: Loading profile after signin');
-      await loadProfile(currentUser);
+      const loadedProfile = await loadProfile(currentUser);
 
       console.log('✅ AuthContext: SignIn completed successfully');
-      return { error: null };
+      return { error: null, role: loadedProfile.role };
     } catch (error: any) {
       console.error('❌ AuthContext: SignIn failed:', error);
       return { error };

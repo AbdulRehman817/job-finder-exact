@@ -13,7 +13,6 @@ const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [shouldNavigate, setShouldNavigate] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { signIn, userRole, loading: authLoading } = useAuth();
@@ -26,23 +25,13 @@ const SignIn = () => {
   });
 
 
-  useEffect(() => {
-    // if (shouldNavigate && !authLoading && userRole) {
-    //   navigate(userRole === "employer" ? "/employer-dashboard" : "/dashboard");
-    //   setShouldNavigate(false);
-    // }
-       if (shouldNavigate && !authLoading && userRole) {
-      navigate(userRole === "employer" ? "/employer-dashboard" : "/");
-      setShouldNavigate(false);
-    }
-  }, [shouldNavigate, userRole, authLoading, navigate]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await signIn(email, password);
-    
+    const { error, role } = await signIn(email, password);    
     if (error) {
       toast({
         title: "Sign in failed",
@@ -56,8 +45,8 @@ const SignIn = () => {
         description: "You have successfully signed in.",
       });
       // Trigger navigation when profile is loaded
-      setShouldNavigate(true);
-      setLoading(false);
+      navigate(role === "employer" ? "/employer-dashboard" : "/");
+            setLoading(false);
     }
   };
 
