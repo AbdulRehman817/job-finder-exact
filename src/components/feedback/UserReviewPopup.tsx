@@ -31,11 +31,10 @@ type FeedbackPayload = {
 };
 
 const FEEDBACK_POPUP_COMPLETED_KEY = "hirely:feedback-popup-completed:v1";
-const FEEDBACK_POPUP_PAGE_VIEWS_KEY = "hirely:feedback-popup-page-views:v1";
+const FEEDBACK_POPUP_FIRST_VISIT_AT_KEY = "hirely:feedback-popup-first-visit-at:v1";
 const FEEDBACK_CACHE_KEY = "hirely:feedback-cache:v1";
-const MIN_PAGE_VIEWS_BEFORE_PROMPT = 3;
 const EXCLUDED_PATHS = new Set(["/signin", "/signup"]);
-const AUTO_PROMPT_DELAY_MS = 1200;
+const AUTO_PROMPT_DELAY_MS = 60_000;
 
 const parseCachedFeedback = (): FeedbackPayload[] => {
   if (typeof window === "undefined") {
@@ -63,7 +62,7 @@ const UserReviewPopup = () => {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-   const [hasShownAutoPrompt, setHasShownAutoPrompt] = useState(false);
+  const [hasShownAutoPrompt, setHasShownAutoPrompt] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -74,30 +73,39 @@ const UserReviewPopup = () => {
       return;
     }
 
-   const popupCompleted =
+    const popupCompleted =
       localStorage.getItem(FEEDBACK_POPUP_COMPLETED_KEY) === "true";
     if (popupCompleted) {
       return;
     }
 
-    const currentPageViews =
-      Number(sessionStorage.getItem(FEEDBACK_POPUP_PAGE_VIEWS_KEY) || "0") + 1;
-    sessionStorage.setItem(
-      FEEDBACK_POPUP_PAGE_VIEWS_KEY,
-      String(currentPageViews),
-    );
-
-    if (currentPageViews < MIN_PAGE_VIEWS_BEFORE_PROMPT) {
+    if (isOpen) {
       return;
     }
 
-    const timeoutId = window.setTimeout(() => {
-          setHasShownAutoPrompt(true);
-      setIsOpen(true);
-    }, AUTO_PROMPT_DELAY_MS);
+    const now = Date.now();
+    const storedFirstVisitAt = Number(
+      sessionStorage.getItem(FEEDBACK_POPUP_FIRST_VISIT_AT_KEY) || "0",
+    );
+    const firstVisitAt = storedFirstVisitAt > 0 ? storedFirstVisitAt : now;
 
-     return () => window.clearTimeout(timeoutId);
-  }, [location.pathname]);
+    if (!storedFirstVisitAt) {
+      sessionStorage.setItem(
+        FEEDBACK_POPUP_FIRST_VISIT_AT_KEY,
+        String(firstVisitAt),
+      );
+    }
+
+    const elapsedMs = now - firstVisitAt;
+    const remainingDelayMs = Math.max(0, AUTO_PROMPT_DELAY_MS - elapsedMs);
+
+    const timeoutId = window.setTimeout(() => {
+      setHasShownAutoPrompt(true);
+      setIsOpen(true);
+    }, remainingDelayMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isOpen, location.pathname]);
 
   const markPopupCompleted = () => {
     localStorage.setItem(FEEDBACK_POPUP_COMPLETED_KEY, "true");
@@ -155,14 +163,14 @@ const UserReviewPopup = () => {
   };
 
   const handleDismiss = () => {
-     if (hasShownAutoPrompt) {
+    if (hasShownAutoPrompt) {
       markPopupCompleted();
       setHasShownAutoPrompt(false);
     }
     setIsOpen(false);
   };
 
-    const handleManualOpen = () => {
+  const handleManualOpen = () => {
     setHasShownAutoPrompt(false);
     setIsOpen(true);
   };
@@ -194,7 +202,7 @@ const UserReviewPopup = () => {
 
     markPopupCompleted();
     setIsOpen(false);
-      setHasShownAutoPrompt(false);
+    setHasShownAutoPrompt(false);
     setRating(0);
     setFeedback("");
     setIsSubmitting(false);
@@ -208,7 +216,7 @@ const UserReviewPopup = () => {
   };
 
   return (
-     <>
+    <>
       <Button
         type="button"
         size="sm"
@@ -253,9 +261,9 @@ const UserReviewPopup = () => {
                   </button>
                 ))}
               </div>
-          </div>
+            </div>
 
-          <div>
+            <div>
               <p className="text-sm font-medium text-foreground mb-2">
                 What should we improve next?
               </p>
@@ -267,7 +275,7 @@ const UserReviewPopup = () => {
               />
             </div>
 
-         <div className="flex gap-2">
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 className="flex-1"
@@ -283,8 +291,8 @@ const UserReviewPopup = () => {
                 {isSubmitting ? "Sending..." : "Send review"}
               </Button>
             </div>
-        </div>
-       </DialogContent>
+          </div>
+        </DialogContent>
       </Dialog>
     </>
   );

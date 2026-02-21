@@ -34,7 +34,7 @@ const Footer = () => {
             <ul className="space-y-5 text-base">
               <li>
                 <a
-                  href="mailto:support@hirely.com"
+                  href="mailto: abdulrehmanbey1718@gmail.com"
                   className="inline-flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
                 >
                   <Mail className="h-3 w-4" />
