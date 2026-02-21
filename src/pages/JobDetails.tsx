@@ -41,6 +41,22 @@ import { normalizeJobType } from "@/lib/jobType";
 
 const TAG_LINE_REGEX = /\n?\s*Tags:\s*.+$/i;
 
+const resolveApplyLink = (job: any): string | null => {
+  if (!job) return null;
+
+  const rawApplyLink = [
+    job.apply_link,
+    job.apply_url,
+    job.application_url,
+    job.applyLink,
+    job.applicationUrl,
+    job.applyURL,
+  ].find((value) => typeof value === "string" && value.trim().length > 0) as string | undefined;
+
+  if (!rawApplyLink) return null;
+  return /^https?:\/\//i.test(rawApplyLink) ? rawApplyLink : `https://${rawApplyLink}`;
+};
+
 const stripTagsLineFromDescription = (description: string) =>
   description.replace(TAG_LINE_REGEX, "").trim();
 
@@ -217,33 +233,24 @@ const JobDetails = () => {
   });
 
 
+  const applyLink = resolveApplyLink(job);
+  const hasDirectApplyLink = Boolean(applyLink);
 
    const handleApplyRedirect = () => {
+    if (!hasDirectApplyLink || !applyLink) {
+      toast({
+        title: "Apply link unavailable",
+        description: "This job doesnot have apply link please check the job description for further detail.",
+      });
+      return;
+    }
+
     if (!user) {
       setShowAuthPromptModal(true);
       return;
     }
 
-    const rawApplyLink = [
-      job?.apply_link,
-      job?.apply_url,
-      job?.application_url,
-      (job as any)?.applyLink,
-      (job as any)?.applicationUrl,
-      (job as any)?.applyURL,
-    ].find((value) => typeof value === "string" && value.trim().length > 0) as string | undefined;
-   if (rawApplyLink) {
-      const normalizedApplyLink = /^https?:\/\//i.test(rawApplyLink)
-        ? rawApplyLink
-        : `https://${rawApplyLink}`;
-            window.open(normalizedApplyLink, "_blank", "noopener,noreferrer");
-      return;
-    }
-     toast({
-      title: "Apply link unavailable",
-      description: "Check the job description for application instructions.",
-      variant: "destructive",
-    });
+    window.open(applyLink, "_blank", "noopener,noreferrer");
   };
 
 
@@ -651,12 +658,21 @@ const copyShareMessage = async (shareMessage: string) => {
                       Employers can't apply
                     </Button>
                   ) : (
-                    <Button 
-                      className="btn-primary h-11 px-6"
-                      onClick={handleApplyRedirect}
-                    >
-                      Apply Now <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
+                    <div className="space-y-2 sm:text-right">
+                      <Button
+                        disabled={!hasDirectApplyLink}
+                        className={hasDirectApplyLink ? "btn-primary h-11 px-6" : "h-11 px-6"}
+                        onClick={handleApplyRedirect}
+                      >
+                        Apply Now
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                      {!hasDirectApplyLink && (
+                        <p className="text-xs text-muted-foreground max-w-xs sm:ml-auto">
+                          This job doesnot have apply link please check the job description for further detail.
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
