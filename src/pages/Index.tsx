@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
-import { Search, MapPin, ArrowRight, ExternalLink, Zap, Clock, Shield, Target, CheckCircle, AlertTriangle } from "lucide-react";
+import { Search, ArrowRight, Target, Shield, AlertTriangle, Search as SearchIcon, FileText, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Layout from "@/components/layout/Layout";
 import JobCard from "@/components/jobs/JobCard";
 import { useJobs } from "@/hooks/useJobs";
+import { useCompanies } from "@/hooks/useCompanies";
 import { useSeo } from "@/hooks/useSeo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
@@ -12,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const { data: dbJobs = [], isLoading: jobsLoading, error: jobsError, refetch } = useJobs();
+  const { data: companies = [] } = useCompanies();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,16 +26,16 @@ const Index = () => {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const structuredData = origin
     ? {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        name: "Hirely",
-        url: origin,
-        potentialAction: {
-          "@type": "SearchAction",
-          target: `${origin}/find-jobs?q={search_term_string}`,
-          "query-input": "required name=search_term_string",
-        },
-      }
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "Hirely",
+      url: origin,
+      potentialAction: {
+        "@type": "SearchAction",
+        target: `${origin}/find-jobs?q={search_term_string}`,
+        "query-input": "required name=search_term_string",
+      },
+    }
     : undefined;
 
   useSeo({
@@ -65,6 +67,9 @@ const Index = () => {
   }));
 
   const hasJobs = transformedJobs.length > 0;
+  const activeJobsCount = dbJobs.length;
+  const companyCount = companies.length;
+  
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -76,61 +81,55 @@ const Index = () => {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-primary/5 py-16 lg:py-24">
-        <div className="absolute -top-32 right-0 h-80 w-80 rounded-full bg-primary/15 blur-3xl" />
-        <div className="absolute -bottom-32 left-10 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
-        
+      <section className=" pt-28   bg-gradient-to-br from-primary/10 via-background to-primary/5 pb-16 lg:pt-36 lg:pb-24">
         <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            {/* Badge */}
-            <div className="text-center mb-6 animate-fade-in">
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
-                <Zap className="h-4 w-4" />
-                Quick & Easy Job Search
+          <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
+
+            <p className="text-sm font-medium text-primary mb-4 tracking-wide uppercase">
+              New Opportunities Added Daily
+            </p>
+
+            {/* Main Title */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-heading text-foreground mb-5 leading-[1.15] tracking-tight">
+              Find the right job,{" "}
+              <span className="text-primary">faster</span>
+            </h1>
+
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed">
+Browse thousands of jobs from top companies. Sign in, apply with one click, and get redirected to complete your application.            </p>
+
+            {/* Search Bar */}
+            <div className="w-full max-w-2xl mx-auto mb-12">
+              <div className="bg-card border border-border rounded-lg p-1.5 flex items-center shadow-sm">
+                <div className="pl-3 text-muted-foreground">
+                  <Search className="w-5 h-5" />
+                </div>
+                <Input
+                  placeholder="Job title, keywords, or company..."
+                  className="border-0 bg-transparent shadow-none text-base h-12 focus-visible:ring-0 placeholder:text-muted-foreground/60"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+                <Button
+                  size="lg"
+                  className="rounded-md h-11 px-6 text-sm font-medium bg-primary hover:bg-primary/90"
+                  onClick={handleSearch}
+                >
+                  Search Jobs
+                </Button>
               </div>
             </div>
 
-            {/* Main Heading */}
-            <div className="text-center mb-8">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground mb-6 leading-tight">
-                Find Your Next
-                <span className="text-primary"> Dream Job</span>
-              </h1>
-              <p className="text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto">
-                Browse thousands of jobs from top companies. Sign in, apply with one click, and get redirected to complete your application.
-              </p>
-            </div>
+            {/* Stats */}
+          
 
-            {/* Search Box */}
-           
-
-            {/* Quick Features */}
-            <div className="flex flex-wrap justify-center gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-muted-foreground">Quick Apply</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <ExternalLink className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-muted-foreground">Direct Company Links</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-muted-foreground">Verified Listings</span>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="py-16 bg-background">
+       <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
@@ -192,22 +191,21 @@ const Index = () => {
           </div>
         </div>
       </section>
-
       {/* Featured Jobs Section */}
       {hasJobs && (
-        <section className="py-16 bg-secondary/40">
+        <section className="py-16 bg-background ">
           <div className="container mx-auto px-4">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
               <div>
-                <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
-                  Latest Job Opportunities
+                <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-1">
+                  Latest Openings
                 </h2>
-                <p className="text-lg text-muted-foreground">
-                  Explore our newest listings
+                <p className="text-muted-foreground">
+                  Fresh roles added by hiring teams
                 </p>
               </div>
               <Link to="/find-jobs">
-                <Button variant="outline" size="lg" className="gap-2">
+                <Button variant="outline" className="gap-2">
                   View All Jobs
                   <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -216,11 +214,11 @@ const Index = () => {
 
             {jobsLoading ? (
               <div className="text-center py-12">
-                <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
-                <p className="mt-4 text-muted-foreground">Loading jobs...</p>
+                <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
+                <p className="mt-4 text-sm text-muted-foreground">Loading jobs...</p>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {transformedJobs.slice(0, 6).map((job) => (
                   <JobCard key={job.id} job={job} />
                 ))}
@@ -232,24 +230,24 @@ const Index = () => {
 
       {/* Empty State - When no jobs */}
       {!hasJobs && !jobsLoading && !jobsError && (
-        <section className="py-16 bg-secondary/40">
+        <section className="py-16 bg-background">
           <div className="container mx-auto px-4">
-            <div className="max-w-2xl mx-auto text-center bg-card/80 border border-border/60 rounded-2xl p-12 shadow-lg backdrop-blur">
-              <div className="text-6xl mb-6">💼</div>
-              <h3 className="text-3xl font-bold text-foreground mb-4">
-                Job Listings Coming Soon!
+            <div className="max-w-lg mx-auto text-center bg-card border border-border rounded-lg p-10">
+              <div className="w-12 h-12 bg-primary/10 rounded-md flex items-center justify-center mx-auto mb-5">
+                <Target className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-3">
+                Job Listings Coming Soon
               </h3>
-              <p className="text-lg text-muted-foreground mb-8">
-                We're building our collection of opportunities. Check back soon for exciting job listings from top companies.
+              <p className="text-muted-foreground mb-6 text-sm">
+                We're building our collection of opportunities. Check back soon for new listings.
               </p>
               {!user && (
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link to="/signup">
-                    <Button size="lg" className="btn-primary">
-                      Create Account
-                    </Button>
-                  </Link>
-                </div>
+                <Link to="/signup">
+                  <Button className="btn-primary">
+                    Create Account
+                  </Button>
+                </Link>
               )}
             </div>
           </div>
@@ -257,19 +255,19 @@ const Index = () => {
       )}
 
       {jobsError && !jobsLoading && (
-        <section className="py-16 bg-secondary/40">
+        <section className="py-16 bg-background">
           <div className="container mx-auto px-4">
-            <div className="max-w-2xl mx-auto text-center bg-card/80 border border-destructive/30 rounded-2xl p-12 shadow-lg backdrop-blur">
-              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <AlertTriangle className="h-8 w-8 text-destructive" />
+            <div className="max-w-lg mx-auto text-center bg-card border border-destructive/30 rounded-lg p-10">
+              <div className="w-12 h-12 bg-destructive/10 rounded-md flex items-center justify-center mx-auto mb-5">
+                <AlertTriangle className="h-6 w-6 text-destructive" />
               </div>
-              <h3 className="text-3xl font-bold text-foreground mb-4">
+              <h3 className="text-xl font-bold text-foreground mb-3">
                 Unable To Load Guest Jobs
               </h3>
-              <p className="text-lg text-muted-foreground mb-8">
+              <p className="text-sm text-muted-foreground mb-6">
                 {jobsErrorMessage}
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex gap-3 justify-center">
                 <Button variant="outline" onClick={() => refetch()}>
                   Try Again
                 </Button>
@@ -284,32 +282,27 @@ const Index = () => {
 
       {/* CTA Section - Not logged in */}
       {!user && (
-        <section className="py-16 bg-background">
+        <section className="py-16 bg-secondary/50">
           <div className="container mx-auto px-4">
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-3xl p-8 md:p-12 border border-primary/20 relative overflow-hidden">
-              <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-primary/10 blur-3xl" />
-              <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-primary/10 blur-3xl" />
-              
-              <div className="max-w-4xl mx-auto text-center relative z-10">
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-                  Ready to Find Your Dream Job?
-                </h2>
-                <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-3xl mx-auto">
-                  Join thousands of job seekers who trust us to connect them with amazing opportunities. Sign up for free today!
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link to="/signup">
-                    <Button size="lg" className="btn-primary px-8 h-14 text-base">
-                      Get Started Free
-                      <ArrowRight className="ml-2 w-5 h-5" />
-                    </Button>
-                  </Link>
-                  <Link to="/find-jobs">
-                    <Button size="lg" variant="outline" className="px-8 h-14 text-base">
-                      Browse Jobs
-                    </Button>
-                  </Link>
-                </div>
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+                Ready to find your next role?
+              </h2>
+              <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
+                Join thousands of job seekers who use Hirely to connect with hiring companies. It's free to get started.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link to="/signup">
+                  <Button size="lg" className="btn-primary px-8 h-12">
+                    Get Started Free
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Link>
+                <Link to="/find-jobs">
+                  <Button size="lg" variant="outline" className="px-8 h-12">
+                    Browse Jobs
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
@@ -318,37 +311,32 @@ const Index = () => {
 
       {/* Logged-in user quick actions */}
       {user && (
-        <section className="py-16 bg-background">
+        <section className="py-16 bg-secondary/50">
           <div className="container mx-auto px-4">
-            <div className="bg-gradient-to-r from-primary to-primary/80 rounded-2xl p-8 md:p-12 text-center text-primary-foreground relative overflow-hidden">
-              <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-primary-foreground/10 blur-3xl" />
-              <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-primary-foreground/10 blur-3xl" />
-              
-              <div className="relative z-10">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                  Welcome Back! 👋
-                </h2>
-                <p className="text-lg md:text-xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
-                  Ready to discover your next opportunity? Browse our latest job listings and apply with one click.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link to="/find-jobs">
-                    <Button size="lg" variant="secondary" className="px-8 h-14 text-base">
-                      <Search className="mr-2 w-5 h-5" />
-                      Browse Jobs
-                    </Button>
-                  </Link>
-                  <Link to="/profile">
-                    <Button 
-                      size="lg" 
-                      variant="outline" 
-                      className="bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary px-8 h-14 text-base"
-                    >
-                      My Profile
-                      <ArrowRight className="ml-2 w-5 h-5" />
-                    </Button>
-                  </Link>
-                </div>
+            <div className="max-w-8xl mx-auto bg-primary rounded-xl p-8 md:p-12 text-center text-primary-foreground">
+              <h2 className="text-2xl md:text-3xl font-bold mb-3">
+                Welcome back
+              </h2>
+              <p className="text-primary-foreground/80 mb-8 max-w-xl mx-auto">
+                Ready to discover your next opportunity? Browse our latest job listings and apply with one click.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link to="/find-jobs">
+                  <Button size="lg" variant="secondary" className="px-8 h-12">
+                    <Search className="mr-2 w-4 h-4" />
+                    Browse Jobs
+                  </Button>
+                </Link>
+                <Link to="/profile">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="bg-transparent border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 px-8 h-12"
+                  >
+                    My Profile
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>

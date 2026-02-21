@@ -130,39 +130,7 @@ avatarPreview: "",
           </p>
 
           {/* Account Type Toggle */}
-          <div className="mb-6">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">
-              Create account as a
-            </p>
-            <div className="grid grid-cols-2 gap-4 p-1 bg-secondary rounded-lg">
-              <button
-                type="button"
-                onClick={() => setAccountType("candidate")}
-                className={cn(
-                  "flex items-center justify-center gap-2 py-3 rounded-md text-sm font-medium transition-colors",
-                  accountType === "candidate"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <User className="h-4 w-4" />
-                Candidate
-              </button>
-              <button
-                type="button"
-                onClick={() => setAccountType("employer")}
-                className={cn(
-                  "flex items-center justify-center gap-2 py-3 rounded-md text-sm font-medium transition-colors",
-                  accountType === "employer"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Building2 className="h-4 w-4" />
-                Employers
-              </button>
-            </div>
-          </div>
+        
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Profile Picture Section */}
@@ -277,36 +245,7 @@ avatarPreview: "",
             backgroundImage: "url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1200&h=1600&fit=crop')"
           }}
         />
-        <div className="relative z-10 h-full flex flex-col justify-end p-12 text-primary-foreground">
-          <h2 className="text-4xl font-bold mb-6">
-            {accountType === "candidate" 
-              ? "Find your dream job with Hirely"
-              : "Hire the best talent with Hirely"}
-          </h2>
-          <div className="grid grid-cols-3 gap-8">
-            <div>
-              <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-2">
-                <Briefcase className="h-6 w-6" />
-              </div>
-              <p className="text-2xl font-bold">1,75,324</p>
-              <p className="text-sm text-primary-foreground/70">Live Job</p>
-            </div>
-            <div>
-              <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-2">
-                <Building2 className="h-6 w-6" />
-              </div>
-              <p className="text-2xl font-bold">97,354</p>
-              <p className="text-sm text-primary-foreground/70">Companies</p>
-            </div>
-            <div>
-              <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-2">
-                <User className="h-6 w-6" />
-              </div>
-              <p className="text-2xl font-bold">7,532</p>
-              <p className="text-sm text-primary-foreground/70">Candidates</p>
-            </div>
-          </div>
-        </div>
+       
       </div>
     </div>
   );

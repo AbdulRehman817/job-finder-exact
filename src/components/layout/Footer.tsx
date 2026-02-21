@@ -1,118 +1,87 @@
 import { Link } from "react-router-dom";
-import { Briefcase, Phone, MapPin, Facebook, Youtube, Instagram, Twitter } from "lucide-react";
+import { Twitter, Facebook, Instagram } from "lucide-react";
 import logo from "@/../public/logo.png";
 
 const Footer = () => {
   return (
-    <footer className="bg-slate-900 text-slate-50">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+    <footer className="bg-slate-950 text-slate-300 pt-14 pb-8">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 mb-12">
           {/* Brand */}
-          <div className="lg:col-span-1 relative sm:bottom-[25px]">
-             <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img
+          <div className="lg:col-span-4 space-y-5">
+            <Link to="/" className="flex items-center gap-2 shrink-0">
+              <img
               src={logo}
               alt="Hirely Logo"
               className="h-20 sm:h-20 w-auto object-contain"
             />
-            <span className="text-lg sm:text-xl ml-[-65px] font-bold text-foreground">
+               <span className="text-lg sm:text-xl ml-[-65px] font-bold text-foreground">
               Hirely
             </span>
-          </Link>
-            <div className="space-y-3 text-sm text-primary-foreground/70">
-          
-              
+            </Link>
+            <p className="text-slate-400 leading-relaxed max-w-xs text-sm">
+              Connecting talent with opportunity. The most trusted platform for finding your next career move.
+            </p>
+            <div className="flex gap-2">
+              {[Twitter, Facebook, Instagram].map((Icon, i) => (
+                <div
+                  key={i}
+                  className="h-9 w-9 rounded-md bg-slate-800/80 flex items-center justify-center hover:bg-primary transition-colors cursor-pointer text-slate-400 hover:text-white"
+                >
+                  <Icon className="h-4 w-4" />
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Quick Link */}
-          <div>
-            <h4 className="font-semibold mb-4">Quick Link</h4>
-            <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li><Link to="/about" className="hover:text-primary-foreground transition-colors">About</Link></li>
-              <li>
-                {/* <Link to="/contact" className="hover:text-primary-foreground transition-colors flex items-center gap-1"> */}
-                <span className="text-primary">→</span> 
-                Contact
-                {/* </Link> */}
-                </li>
-              <li>
-                {/* <Link to="/blog" className="hover:text-primary-foreground transition-colors"> */}
-                Blog
-                {/* </Link> */}
-                </li>
+          {/* Quick Links */}
+          <div className="lg:col-span-2">
+            <h4 className="font-semibold text-sm uppercase tracking-wider text-slate-400 mb-5">Quick Links</h4>
+            <ul className="space-y-3">
+              <li><Link to="" className="text-sm text-slate-400 hover:text-white transition-colors">About Us</Link></li>
+              <li><Link to="" className="text-sm text-slate-400 hover:text-white transition-colors">Contact</Link></li>
+              <li><Link to="" className="text-sm text-slate-400 hover:text-white transition-colors">Blog</Link></li>
             </ul>
           </div>
 
-          {/* Candidate */}
-          <div>
-            <h4 className="font-semibold mb-4">Candidate</h4>
-            <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li><Link to="/find-jobs" className="hover:text-primary-foreground transition-colors">Browse Jobs</Link></li>
-              <li>
-                {/* <Link to="/employers" className="hover:text-primary-foreground transition-colors"> */}
-              Browse Employers
-              {/* </Link> */}
-              </li>
-              <li>
-                {/* <Link to="/dashboard" className="hover:text-primary-foreground transition-colors"> */}
-                Candidate Dashboard
-                {/* </Link> */}
-                </li>
-              <li>
-                {/* <Link to="/saved-jobs" className="hover:text-primary-foreground transition-colors"> */}
-                Saved Jobs
-                {/* </Link> */}
-                </li>
+          {/* Candidates */}
+          <div className="lg:col-span-2">
+            <h4 className="font-semibold text-sm uppercase tracking-wider text-slate-400 mb-5">Candidates</h4>
+            <ul className="space-y-3">
+              <li><Link to="" className="text-sm text-slate-400 hover:text-white transition-colors">Browse Jobs</Link></li>
+              <li><Link to="" className="text-sm text-slate-400 hover:text-white transition-colors">Companies</Link></li>
+              <li><Link to="" className="text-sm text-slate-400 hover:text-white transition-colors">Dashboard</Link></li>
             </ul>
           </div>
 
           {/* Employers */}
-          <div>
-            <h4 className="font-semibold mb-4">Employers</h4>
-            <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li>
-                {/* <Link to="/post-job" className="hover:text-primary-foreground transition-colors"> */}
-                Post a Job
-              {/* </Link> */}
-              </li>
-              <li>
-                {/* <Link to="/candidates" className="hover:text-primary-foreground transition-colors"> */}
-                Browse Candidates
-                {/* </Link> */}
-                </li>
-              <li>
-                {/* <Link to="/employer-dashboard" className="hover:text-primary-foreground transition-colors"> */}
-                Employers Dashboard
-                {/* </Link> */}
-                </li>
-              <li>
-                {/* <Link to="/applications" className="hover:text-primary-foreground transition-colors"> */}
-                Applications
-                {/* </Link> */}
-                </li>
+          <div className="lg:col-span-2">
+            <h4 className="font-semibold text-sm uppercase tracking-wider text-slate-400 mb-5">Employers</h4>
+            <ul className="space-y-3">
+              <li><Link to="" className="text-sm text-slate-400 hover:text-white transition-colors">Post a Job</Link></li>
+              <li><Link to="" className="text-sm text-slate-400 hover:text-white transition-colors">Pricing</Link></li>
+              <li><Link to="" className="text-sm text-slate-400 hover:text-white transition-colors">Dashboard</Link></li>
             </ul>
           </div>
 
           {/* Support */}
-          <div>
-            <h4 className="font-semibold mb-4">Support</h4>
-            <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li><Link to="/faqs" className="hover:text-primary-foreground transition-colors">Faqs</Link></li>
-              <li><Link to="/privacy" className="hover:text-primary-foreground transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="hover:text-primary-foreground transition-colors">Terms & Conditions</Link></li>
+          <div className="lg:col-span-2">
+            <h4 className="font-semibold text-sm uppercase tracking-wider text-slate-400 mb-5">Support</h4>
+            <ul className="space-y-3">
+              <li><Link to="" className="text-sm text-slate-400 hover:text-white transition-colors">Help Center</Link></li>
+              <li><Link to="" className="text-sm text-slate-400 hover:text-white transition-colors">Privacy</Link></li>
+              <li><Link to="" className="text-sm text-slate-400 hover:text-white transition-colors">Terms</Link></li>
             </ul>
           </div>
         </div>
-      </div>
 
-      {/* Bottom bar */}
-      <div className="border-t border-primary-foreground/10">
-        <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-primary-foreground/70">
-            (c) 2026 Hirely - Job Portal. All rights Reserved
-          </p>
-         
+        {/* Bottom bar */}
+        <div className="border-t border-slate-800 pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <p>© 2026 Hirely Inc. All rights reserved.</p>
+          <div className="flex gap-6">
+            <Link to="" className="hover:text-slate-300 transition-colors">Privacy Policy</Link>
+            <Link to="" className="hover:text-slate-300 transition-colors">Terms of Service</Link>
+          </div>
         </div>
       </div>
     </footer>

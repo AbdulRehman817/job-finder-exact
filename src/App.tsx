@@ -10,6 +10,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/components/theme-provider";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -48,33 +49,35 @@ const HashJobRouteBridge = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+    <ThemeProvider defaultTheme="light" storageKey="hirely-theme">
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
             <HashJobRouteBridge />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/find-jobs" element={<FindJobs />} />
-            <Route path="/job/:id" element={<JobDetails />} />
-            <Route path="/employers" element={<Employers />} />
-            <Route path="/company/:id" element={<CompanyProfile />} />
-            <Route path="/dashboard" element={<CandidateDashboard />} />
-            <Route path="/employer-dashboard" element={<EmployerDashboard />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/recruiter-profile" element={<RecruiterProfile />} />
-            <Route path="/post-job" element={<PostJob />} />
-         
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/find-jobs" element={<FindJobs />} />
+              <Route path="/job/:id" element={<JobDetails />} />
+              <Route path="/employers" element={<Employers />} />
+              <Route path="/company/:id" element={<CompanyProfile />} />
+              <Route path="/dashboard" element={<CandidateDashboard />} />
+              <Route path="/employer-dashboard" element={<EmployerDashboard />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/recruiter-profile" element={<RecruiterProfile />} />
+              <Route path="/post-job" element={<PostJob />} />
+
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
