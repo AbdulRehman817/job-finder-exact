@@ -4,7 +4,7 @@ import logo from "@/../public/logo.png";
 
 const Footer = () => {
   return (
-    <footer className="bg-slate-950 text-slate-300 pt-14 pb-8">
+    <footer className="bg-slate-950 text-slate-300 pt-14 pb-8 mt-[20px]">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-12">
           {/* Brand */}
@@ -24,19 +24,8 @@ const Footer = () => {
               Connecting talent with opportunity. The most trusted platform for finding your next career move.
             </p>
 
-            <div className="pt-2">
-              <h4 className="font-semibold text-2xl text-white mb-4">Follow us</h4>
-              <div className="flex gap-3">
-                {[Twitter, Facebook, Instagram].map((Icon, i) => (
-                  <div
-                    key={i}
-                    className="h-10 w-10 rounded-md bg-slate-800/80 flex items-center justify-center hover:bg-primary transition-colors cursor-pointer text-slate-300 hover:text-white"
-                  >
-                    <Icon className="h-5 w-5" />
-                  </div>
-                ))}
-              </div>
-            </div>
+          
+          
           </div>
 
           {/* Contact */}
