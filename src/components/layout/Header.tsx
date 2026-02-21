@@ -36,6 +36,7 @@ const Header = () => {
   const mainNavLinks = [
     { label: "Home", path: "/", icon: Home },
     { label: "Find Jobs", path: "/find-jobs", icon: Search },
+    { label: "About", path: "/about", icon: Info },
   ];
 
 

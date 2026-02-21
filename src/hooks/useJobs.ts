@@ -203,6 +203,7 @@ export interface Job {
   benefits: string[] | null;
   requirements: string[] | null;
   responsibilities: string[] | null;
+  skills_required: string[] | null;
   featured: boolean;
   status: "active" | "closed" | "draft";
   posted_date: string;

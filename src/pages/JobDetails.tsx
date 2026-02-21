@@ -13,6 +13,7 @@ import {
     Eye,
   Building2,
   Globe,
+  Tag,
   AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,91 @@ import { useSeo } from "@/hooks/useSeo";
 import { jobTypes } from "@/types";
 import { format, formatDistanceToNow } from "date-fns";
 import { normalizeJobType } from "@/lib/jobType";
+
+const TAG_LINE_REGEX = /\n?\s*Tags:\s*.+$/i;
+
+const stripTagsLineFromDescription = (description: string) =>
+  description.replace(TAG_LINE_REGEX, "").trim();
+
+const dedupeTags = (values: string[]): string[] => {
+  const seen = new Set<string>();
+  const cleaned: string[] = [];
+
+  values.forEach((value) => {
+    const normalized = value.trim().replace(/^#+/, "");
+    if (!normalized) return;
+
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) return;
+
+    seen.add(key);
+    cleaned.push(normalized);
+  });
+
+  return cleaned;
+};
+
+const extractHashtagTags = (description: string): string[] => {
+  const matches = description.match(/#[A-Za-z0-9][A-Za-z0-9._-]*/g) || [];
+  return dedupeTags(matches.map((tag) => tag.replace(/^#/, "")));
+};
+
+const parseTagSource = (value: unknown): string[] => {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return dedupeTags(value.map((item) => String(item)));
+  }
+
+  if (typeof value === "string") {
+    const raw = value.trim();
+    if (!raw) return [];
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return dedupeTags(parsed.map((item) => String(item)));
+      }
+    } catch {
+      // Continue with plain-string parsing.
+    }
+
+    return dedupeTags(raw.split(/[\n,]+/));
+  }
+
+  return [];
+};
+
+const extractPlainTagsLine = (description: string): string[] => {
+  const match = description.match(/(?:^|\n)\s*Tags:\s*(.+)$/i);
+  if (!match?.[1]) return [];
+
+  return dedupeTags(match[1].split(/[\s,]+/));
+};
+
+const getJobTags = (job: any): string[] => {
+  const sourceCandidates = [
+    job?.skills_required,
+    job?.skillsRequired,
+    job?.tags,
+    job?.tag_list,
+    job?.tagList,
+  ];
+
+  for (const candidate of sourceCandidates) {
+    const parsed = parseTagSource(candidate);
+    if (parsed.length > 0) {
+      return parsed;
+    }
+  }
+
+  const fromHashtags = extractHashtagTags(job?.description || "");
+  if (fromHashtags.length > 0) {
+    return fromHashtags;
+  }
+
+  return extractPlainTagsLine(job?.description || "");
+};
 
 const JobDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -66,7 +152,7 @@ const JobDetails = () => {
   const companyName = job?.companies?.name || job?.company || "Company";
   const jobTitle = job?.title ? `${job.title} at ${companyName}` : "Job Details";
   const descriptionSnippet = job?.description
-    ? job.description.replace(/\s+/g, " ").slice(0, 160).trim()
+    ? stripTagsLineFromDescription(job.description).replace(/\s+/g, " ").slice(0, 160).trim()
     : "View job details and apply on Hirely.";
   const jobUrl = job && origin ? `${origin}/job/${job.$id}` : "";
   const employmentTypeMap: Record<string, string> = {
@@ -371,6 +457,8 @@ const copyShareMessage = async (shareMessage: string) => {
 
   const salaryDisplay = formatSalary(job.salary_min, job.salary_max, job.currency );
   const currencyLabel = job.currency;
+  const jobTags = getJobTags(job);
+  const descriptionBody = stripTagsLineFromDescription(job.description);
   
 
   // Transform related jobs
@@ -605,6 +693,26 @@ const copyShareMessage = async (shareMessage: string) => {
                     <p className="font-medium text-foreground">{typeConfig.label}</p>
                   </div>
                 </div>
+                {jobTags.length > 0 && (
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                      <Tag className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Skills & Tags</p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {jobTags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-2.5 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground border border-border"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {job.experience_level && (
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
@@ -634,7 +742,7 @@ const copyShareMessage = async (shareMessage: string) => {
             <div className="bg-card border border-border rounded-xl p-6 mb-6">
               <h2 className="text-xl font-semibold text-foreground mb-4">Job Description</h2>
               <div className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                {job.description}
+                {descriptionBody}
               </div>
             </div>
 
@@ -731,6 +839,26 @@ const copyShareMessage = async (shareMessage: string) => {
                     <p className="font-medium text-foreground">{typeConfig.label}</p>
                   </div>
                 </div>
+                {jobTags.length > 0 && (
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                      <Tag className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Skills & Tags</p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {jobTags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-2.5 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground border border-border"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {job.experience_level && (
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">

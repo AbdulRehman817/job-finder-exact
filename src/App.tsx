@@ -25,6 +25,8 @@ import Profile from "./pages/Profile";
 import RecruiterProfile from "./pages/RecruiterProfile";
 import PostJob from "./pages/PostJob";
 import NotFound from "./pages/NotFound";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -70,6 +72,8 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/recruiter-profile" element={<RecruiterProfile />} />
               <Route path="/post-job" element={<PostJob />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

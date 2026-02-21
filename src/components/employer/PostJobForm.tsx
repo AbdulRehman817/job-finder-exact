@@ -36,6 +36,7 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
     experience_level: "",
     category: "",
     description: "",
+    tags: [] as string[],
     requirements: [] as string[],
     responsibilities: [] as string[],
     benefits: [] as string[],
@@ -46,6 +47,7 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
   const [newRequirement, setNewRequirement] = useState("");
   const [newResponsibility, setNewResponsibility] = useState("");
   const [newBenefit, setNewBenefit] = useState("");
+  const [newTag, setNewTag] = useState("");
   const [showCompanyForm, setShowCompanyForm] = useState(false);
   const [newCompany, setNewCompany] = useState({
     name: "",
@@ -56,20 +58,28 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
   });
 
   const handleAddToList = (
-    list: "requirements" | "responsibilities" | "benefits",
+    list: "tags" | "requirements" | "responsibilities" | "benefits",
     value: string,
     setter: (val: string) => void
   ) => {
-    if (value.trim()) {
+    const normalizedValue =
+      list === "tags"
+        ? value.trim().replace(/^#+/, "").replace(/\s+/g, "-")
+        : value.trim();
+
+    if (normalizedValue) {
       setFormData((prev) => ({
         ...prev,
-        [list]: [...prev[list], value.trim()],
+        [list]: [...prev[list], normalizedValue],
       }));
       setter("");
     }
   };
 
-  const handleRemoveFromList = (list: "requirements" | "responsibilities" | "benefits", index: number) => {
+  const handleRemoveFromList = (
+    list: "tags" | "requirements" | "responsibilities" | "benefits",
+    index: number,
+  ) => {
     setFormData((prev) => ({
       ...prev,
       [list]: prev[list].filter((_, i) => i !== index),
@@ -117,6 +127,11 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
     }
 
     try {
+      const tagsLine =
+        formData.tags.length > 0
+          ? `\n\nTags: ${formData.tags.map((tag) => `#${tag}`).join(" ")}`
+          : "";
+
       const payload: any = {
         title: formData.title,
         company_id: formData.company_id,
@@ -127,7 +142,7 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
         currency: formData.currency,
         experience_level: formData.experience_level || null,
         category: formData.category || null,
-        description: formData.description,
+        description: `${formData.description.trim()}${tagsLine}`,
         requirements: formData.requirements.length > 0 ? JSON.stringify(formData.requirements) : null,
         responsibilities: formData.responsibilities.length > 0 ? JSON.stringify(formData.responsibilities) : null,
         benefits: formData.benefits.length > 0 ? JSON.stringify(formData.benefits) : null,
@@ -399,6 +414,37 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
           rows={6}
           required
         />
+      </div>
+
+      {/* Tags */}
+      <div className="bg-card border border-border rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-4">Tags</h3>
+        <div className="flex gap-2 mb-4">
+          <Input
+            value={newTag}
+            onChange={(e) => setNewTag(e.target.value)}
+            placeholder="Add a tag (e.g., react, ui-ux, remote)"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddToList("tags", newTag, setNewTag);
+              }
+            }}
+          />
+          <Button type="button" onClick={() => handleAddToList("tags", newTag, setNewTag)}>
+            Add
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {formData.tags.map((tag, index) => (
+            <div key={index} className="flex items-center gap-2 bg-muted px-3 py-1 rounded-full">
+              <span className="text-sm">#{tag}</span>
+              <button type="button" onClick={() => handleRemoveFromList("tags", index)}>
+                <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Requirements */}
