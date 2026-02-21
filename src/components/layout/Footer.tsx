@@ -4,7 +4,7 @@ import logo from "@/../public/logo.png";
 
 const Footer = () => {
   return (
-    <footer className="bg-slate-950 text-slate-300 pt-14 pb-8 mt-[40px]">
+    <footer className="bg-slate-950 text-slate-300 pt-14 pb-8">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-12">
           {/* Brand */}
@@ -30,24 +30,20 @@ const Footer = () => {
 
           {/* Contact */}
           <div className="lg:col-span-5 lg:pl-10 lg:text-right">
-            <h4 className="font-semibold text-3xl text-white mb-6">Contact Us</h4>
+            <h4 className="font-semibold text-md text-white mb-6">Contact Us</h4>
             <ul className="space-y-5 text-base">
               <li>
                 <a
                   href="mailto:support@hirely.com"
                   className="inline-flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
                 >
-                  <Mail className="h-4 w-4" />
+                  <Mail className="h-3 w-4" />
                  abdulrehmanbey1718@gmail.com
                 </a>
               </li>
+            
               <li>
-                <Link to="/contact" className="text-slate-300 hover:text-white transition-colors">
-                  Contact Page
-                </Link>
-              </li>
-              <li>
-                <Link to="/about" className="text-slate-300 hover:text-white transition-colors">
+                <Link to="/about" className="text-slate-300 hover:text-white transition-colors text-md">
                   About Hirely
                 </Link>
               </li>
