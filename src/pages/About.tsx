@@ -16,7 +16,7 @@ const About = () => {
       icon: BriefcaseBusiness,
       title: "Manual Job Posting",
       description:
-        "I personally collect and post every job listing. This is not an open employer posting portal.",
+"Every job listing is personally collected and posted to maintain quality. Hirely is not an open employer posting portal."
     },
     {
       icon: Users,
@@ -42,8 +42,8 @@ const About = () => {
               A manually managed job board
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              Hirely helps job seekers discover opportunities faster. I add and maintain listings by myself,
-              so the platform stays focused on quality jobs instead of recruiter self-posting.
+             Hirely helps job seekers find opportunities faster. Every job is added and maintained by us, keeping the platform focused on quality roles.
+
             </p>
           </div>
         </div>

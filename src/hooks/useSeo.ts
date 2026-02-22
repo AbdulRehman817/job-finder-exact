@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 
 const SITE_NAME = "Hirely";
-const DEFAULT_TITLE = "Hirely - Find Jobs";
+const DEFAULT_TITLE = "Hirely – Connecting Talent to Real Job Openings";
 const DEFAULT_DESCRIPTION =
-  "Hirely connects job seekers with modern recruiters. Find roles fast or post jobs with confidence.";
+  "Hirely connects job seekers with verified job opportunities. Find roles fast, posted with confidence.";
 
 export interface SeoConfig {
   title?: string;
