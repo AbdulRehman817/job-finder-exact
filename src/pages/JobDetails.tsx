@@ -239,13 +239,7 @@ const JobDetails = () => {
   const hasDirectApplyLink = Boolean(applyLink);
 
    const handleApplyRedirect = () => {
-    if (!hasDirectApplyLink || !applyLink) {
-      toast({
-        title: "Apply link unavailable",
-        description: "This job doesnot have apply link please check the job description for further detail.",
-      });
-      return;
-    }
+    if (!applyLink) return;
 
     if (!user) {
       setShowAuthPromptModal(true);
@@ -663,22 +657,12 @@ const copyShareMessage = async (shareMessage: string) => {
                     <Button disabled className="h-11 px-6">
                       Employers can't apply
                     </Button>
-                  ) : (
-                    <div className="space-y-2 sm:text-right">
-                      <Button
-                        disabled={!hasDirectApplyLink}
-                        className={hasDirectApplyLink ? "btn-primary h-11 px-6" : "h-11 px-6"}
-                        onClick={handleApplyRedirect}
-                      >
-                        Apply Now
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                      {!hasDirectApplyLink && (
-                        <p className="text-xs text-muted-foreground max-w-xs sm:ml-auto">
-This job does not have an apply link. Please check the job description for further details. The HR email is provided there.                        </p>
-                      )}
-                    </div>
-                  )}
+                  ) : hasDirectApplyLink ? (
+                    <Button className="btn-primary h-11 px-6" onClick={handleApplyRedirect}>
+                      Apply Now
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             </div>
