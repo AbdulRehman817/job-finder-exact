@@ -114,6 +114,8 @@ export const Query = {
   equal: (attribute: string, value: unknown | unknown[]) => makeQuery('equal', attribute, value),
   orderDesc: (attribute: string) => makeQuery('orderDesc', attribute),
   orderAsc: (attribute: string) => makeQuery('orderAsc', attribute),
+  limit: (value: number) => makeQuery('limit', undefined, value),
+  offset: (value: number) => makeQuery('offset', undefined, value),
 };
 
 let anonymousSessionPromise: Promise<void> | null = null;

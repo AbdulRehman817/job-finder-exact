@@ -4,6 +4,7 @@ import {
   DATABASE_ID,
   COLLECTIONS,
   ID,
+  Query,
   ensureAnonymousSession,
 } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
@@ -220,14 +221,37 @@ export interface Job {
   };
 }
 
+const JOBS_BATCH_SIZE = 100;
+
+const fetchAllJobDocuments = async () => {
+  const allJobs: any[] = [];
+  let offset = 0;
+
+  while (true) {
+    const { documents } = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.JOBS,
+      [Query.limit(JOBS_BATCH_SIZE), Query.offset(offset)],
+    );
+
+    allJobs.push(...documents);
+
+    if (documents.length < JOBS_BATCH_SIZE) {
+      break;
+    }
+
+    offset += JOBS_BATCH_SIZE;
+  }
+
+  return allJobs;
+};
+
 const fetchPublicJobs = async (filters?: {
   type?: string;
   location?: string;
   search?: string;
-}) => {  const { documents: jobs } = await databases.listDocuments(
-    DATABASE_ID,
- COLLECTIONS.JOBS,
-  );
+}) => {
+  const jobs = await fetchAllJobDocuments();
 
   const normalizedTypeFilter = parseJobType(filters?.type);
   const normalizedLocationFilter = String(filters?.location || "")
