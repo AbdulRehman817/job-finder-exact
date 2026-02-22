@@ -675,8 +675,7 @@ const copyShareMessage = async (shareMessage: string) => {
                       </Button>
                       {!hasDirectApplyLink && (
                         <p className="text-xs text-muted-foreground max-w-xs sm:ml-auto">
-                          This job doesnot have apply link please check the job description for further detail.
-                        </p>
+This job does not have an apply link. Please check the job description for further details. The HR email is provided there.                        </p>
                       )}
                     </div>
                   )}
