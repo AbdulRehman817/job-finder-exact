@@ -25,6 +25,7 @@ import { useEmployerProfileCompletion } from "@/hooks/useProfileCompletion";
 import { useCreateCompany, useMyCompanies } from "@/hooks/useCompanies";
 import CompanyProfileForm from "@/components/company/CompanyProfileForm";
 import { databases, DATABASE_ID, COLLECTIONS, Query } from "@/lib/appwrite";
+import { dispatchFeedbackNudge } from "@/lib/feedbackPrompt";
 
 const RecruiterProfile = () => {
   const { user, profile, loading, refreshProfile, userRole } = useAuth();
@@ -135,6 +136,10 @@ const RecruiterProfile = () => {
       toast({
         title: "Profile updated",
         description: "Your recruiter profile has been successfully updated.",
+      });
+      dispatchFeedbackNudge({
+        source: "recruiter_profile_saved",
+        route: "/recruiter-profile",
       });
     } catch (error: any) {
       toast({

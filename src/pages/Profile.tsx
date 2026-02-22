@@ -30,6 +30,7 @@ import { useResumeUpload } from "@/hooks/useResumeUpload";
 import { useCandidateProfileCompletion } from "@/hooks/useProfileCompletion";
 import { databases, DATABASE_ID, COLLECTIONS, Query, storage, BUCKETS, ID } from "@/lib/appwrite";
 import { getAvatarUrl } from "@/lib/avatar";
+import { dispatchFeedbackNudge } from "@/lib/feedbackPrompt";
 import { Permission, Role } from "appwrite";
 
 const Profile = () => {
@@ -213,6 +214,10 @@ const Profile = () => {
       toast({
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
+      });
+      dispatchFeedbackNudge({
+        source: "candidate_profile_saved",
+        route: "/profile",
       });
     } catch (error: any) {
       toast({

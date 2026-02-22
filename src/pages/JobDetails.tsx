@@ -1,5 +1,5 @@
 import { useState,useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { 
   MapPin, 
   DollarSign, 
@@ -38,6 +38,7 @@ import { useSeo } from "@/hooks/useSeo";
 import { jobTypes } from "@/types";
 import { format, formatDistanceToNow } from "date-fns";
 import { normalizeJobType } from "@/lib/jobType";
+import { dispatchFeedbackNudge } from "@/lib/feedbackPrompt";
 
 const TAG_LINE_REGEX = /\n?\s*Tags:\s*.+$/i;
 
@@ -142,6 +143,7 @@ const getJobTags = (job: any): string[] => {
 
 const JobDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
   const { user, userRole, profile } = useAuth();
   const { toast } = useToast();
@@ -290,6 +292,10 @@ const JobDetails = () => {
       toast({
         title: "Application submitted! ✅",
         description: "You have successfully applied for this job. The recruiter will review your application.",
+      });
+      dispatchFeedbackNudge({
+        source: "application_submitted",
+        route: location.pathname,
       });
       setShowApplyModal(false);
       setCoverLetter("");

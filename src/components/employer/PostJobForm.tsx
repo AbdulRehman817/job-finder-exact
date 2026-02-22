@@ -13,6 +13,7 @@ import {
 import { useCreateJob } from "@/hooks/useJobs";
 import { useMyCompanies, useCreateCompany } from "@/hooks/useCompanies";
 import { useToast } from "@/hooks/use-toast";
+import { dispatchFeedbackNudge } from "@/lib/feedbackPrompt";
 import { X, Plus } from "lucide-react";
 
 interface PostJobFormProps {
@@ -161,6 +162,7 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
         title: "Job posted!",
         description: "Your job has been successfully posted.",
       });
+      dispatchFeedbackNudge({ source: "job_posted", route: "/post-job" });
 
       onSuccess?.();
     } catch (error: any) {

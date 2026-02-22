@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Star } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Sparkles, Star } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,11 @@ import {
   databases,
   ensureAnonymousSession,
 } from "@/lib/appwrite";
+import {
+  FEEDBACK_NUDGE_EVENT,
+  FeedbackNudgeDetail,
+  trackFeedbackFunnel,
+} from "@/lib/feedbackPrompt";
 
 type FeedbackPayload = {
   rating: number;
@@ -30,11 +35,18 @@ type FeedbackPayload = {
   userEmail: string | null;
 };
 
-const FEEDBACK_POPUP_COMPLETED_KEY = "hirely:feedback-popup-completed:v1";
-const FEEDBACK_POPUP_FIRST_VISIT_AT_KEY = "hirely:feedback-popup-first-visit-at:v1";
+const FEEDBACK_POPUP_SUBMITTED_KEY = "hirely:feedback-popup-submitted:v2";
+const FEEDBACK_POPUP_LAST_DISMISSED_AT_KEY =
+  "hirely:feedback-popup-last-dismissed-at:v2";
+const FEEDBACK_POPUP_AUTO_PROMPT_COUNT_KEY =
+  "hirely:feedback-popup-auto-prompt-count:v2";
+const FEEDBACK_POPUP_SESSION_PROMPTED_KEY =
+  "hirely:feedback-popup-session-prompted:v2";
 const FEEDBACK_CACHE_KEY = "hirely:feedback-cache:v1";
 const EXCLUDED_PATHS = new Set(["/signin", "/signup"]);
-const AUTO_PROMPT_DELAY_MS = 60_000;
+const AUTO_PROMPT_DELAY_MS = 30_000;
+const DISMISS_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
+const MAX_AUTO_PROMPTS = 3;
 
 const parseCachedFeedback = (): FeedbackPayload[] => {
   if (typeof window === "undefined") {
@@ -54,6 +66,19 @@ const parseCachedFeedback = (): FeedbackPayload[] => {
   }
 };
 
+const saveCachedFeedback = (payloads: FeedbackPayload[]) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(FEEDBACK_CACHE_KEY, JSON.stringify(payloads));
+};
+
+const readNumberKey = (key: string) => {
+  if (typeof window === "undefined") return 0;
+  return Number(localStorage.getItem(key) || "0");
+};
+
 const UserReviewPopup = () => {
   const location = useLocation();
   const { toast } = useToast();
@@ -62,20 +87,38 @@ const UserReviewPopup = () => {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasShownAutoPrompt, setHasShownAutoPrompt] = useState(false);
+  const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false);
+  const [openSource, setOpenSource] = useState<"manual" | "auto" | "nudge" | null>(
+    null,
+  );
+  const submittedInThisCycleRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
-    if (EXCLUDED_PATHS.has(location.pathname)) {
+    setHasSubmittedFeedback(
+      localStorage.getItem(FEEDBACK_POPUP_SUBMITTED_KEY) === "true",
+    );
+  }, []);
+
+  const isExcludedPath = EXCLUDED_PATHS.has(location.pathname);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
       return;
     }
 
-    const popupCompleted =
-      localStorage.getItem(FEEDBACK_POPUP_COMPLETED_KEY) === "true";
-    if (popupCompleted) {
+    if (isExcludedPath) {
+      return;
+    }
+
+    if (hasSubmittedFeedback) {
+      return;
+    }
+
+    if (sessionStorage.getItem(FEEDBACK_POPUP_SESSION_PROMPTED_KEY) === "true") {
       return;
     }
 
@@ -83,38 +126,88 @@ const UserReviewPopup = () => {
       return;
     }
 
-    const now = Date.now();
-    const storedFirstVisitAt = Number(
-      sessionStorage.getItem(FEEDBACK_POPUP_FIRST_VISIT_AT_KEY) || "0",
+    const lastDismissedAt = Number(
+      localStorage.getItem(FEEDBACK_POPUP_LAST_DISMISSED_AT_KEY) || "0",
     );
-    const firstVisitAt = storedFirstVisitAt > 0 ? storedFirstVisitAt : now;
-
-    if (!storedFirstVisitAt) {
-      sessionStorage.setItem(
-        FEEDBACK_POPUP_FIRST_VISIT_AT_KEY,
-        String(firstVisitAt),
-      );
+    const dismissElapsedMs = Date.now() - lastDismissedAt;
+    if (lastDismissedAt > 0 && dismissElapsedMs < DISMISS_COOLDOWN_MS) {
+      return;
     }
 
-    const elapsedMs = now - firstVisitAt;
-    const remainingDelayMs = Math.max(0, AUTO_PROMPT_DELAY_MS - elapsedMs);
+    const autoPromptCount = readNumberKey(FEEDBACK_POPUP_AUTO_PROMPT_COUNT_KEY);
+    if (autoPromptCount >= MAX_AUTO_PROMPTS) {
+      return;
+    }
 
     const timeoutId = window.setTimeout(() => {
-      setHasShownAutoPrompt(true);
+      setRating(0);
+      setFeedback("");
+      setOpenSource("auto");
       setIsOpen(true);
-    }, remainingDelayMs);
+      sessionStorage.setItem(FEEDBACK_POPUP_SESSION_PROMPTED_KEY, "true");
+      localStorage.setItem(
+        FEEDBACK_POPUP_AUTO_PROMPT_COUNT_KEY,
+        String(autoPromptCount + 1),
+      );
+      trackFeedbackFunnel("feedback_prompt_seen", "auto");
+    }, AUTO_PROMPT_DELAY_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isOpen, location.pathname]);
+  }, [hasSubmittedFeedback, isExcludedPath, isOpen]);
 
-  const markPopupCompleted = () => {
-    localStorage.setItem(FEEDBACK_POPUP_COMPLETED_KEY, "true");
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (hasSubmittedFeedback || isExcludedPath) {
+      return;
+    }
+
+    const handleNudge = (event: Event) => {
+      if (isOpen) {
+        return;
+      }
+
+      const customEvent = event as CustomEvent<FeedbackNudgeDetail>;
+      const source = customEvent.detail?.source || "unknown";
+
+      setRating(0);
+      setFeedback("");
+      setOpenSource("nudge");
+      setIsOpen(true);
+      sessionStorage.setItem(FEEDBACK_POPUP_SESSION_PROMPTED_KEY, "true");
+      trackFeedbackFunnel("feedback_prompt_seen", `nudge:${source}`);
+    };
+
+    window.addEventListener(FEEDBACK_NUDGE_EVENT, handleNudge as EventListener);
+
+    return () =>
+      window.removeEventListener(
+        FEEDBACK_NUDGE_EVENT,
+        handleNudge as EventListener,
+      );
+  }, [hasSubmittedFeedback, isExcludedPath, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const source = openSource || "unknown";
+    trackFeedbackFunnel("feedback_prompt_opened", source);
+  }, [isOpen, openSource]);
+
+  const markPopupSubmitted = () => {
+    localStorage.setItem(FEEDBACK_POPUP_SUBMITTED_KEY, "true");
+    localStorage.removeItem(FEEDBACK_POPUP_LAST_DISMISSED_AT_KEY);
+    setHasSubmittedFeedback(true);
   };
 
   const cacheFeedback = (payload: FeedbackPayload) => {
     const cachedFeedback = parseCachedFeedback();
     cachedFeedback.push(payload);
-    localStorage.setItem(FEEDBACK_CACHE_KEY, JSON.stringify(cachedFeedback));
+    saveCachedFeedback(cachedFeedback);
   };
 
   const submitToAppwrite = async (payload: FeedbackPayload) => {
@@ -153,26 +246,79 @@ const UserReviewPopup = () => {
     }
   };
 
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-
-    if (!open && hasShownAutoPrompt) {
-      markPopupCompleted();
-      setHasShownAutoPrompt(false);
+  const flushCachedFeedback = async () => {
+    const cachedFeedback = parseCachedFeedback();
+    if (cachedFeedback.length === 0) {
+      return 0;
     }
+
+    const unsentFeedback: FeedbackPayload[] = [];
+
+    for (const item of cachedFeedback) {
+      const isStored = await submitToAppwrite(item);
+      if (!isStored) {
+        unsentFeedback.push(item);
+      }
+    }
+
+    saveCachedFeedback(unsentFeedback);
+    return cachedFeedback.length - unsentFeedback.length;
+  };
+
+  const registerDismiss = (source: string) => {
+    localStorage.setItem(
+      FEEDBACK_POPUP_LAST_DISMISSED_AT_KEY,
+      String(Date.now()),
+    );
+    trackFeedbackFunnel("feedback_prompt_dismissed", source);
+  };
+
+  const resetDraft = () => {
+    setRating(0);
+    setFeedback("");
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open && submittedInThisCycleRef.current) {
+      submittedInThisCycleRef.current = false;
+      setIsOpen(false);
+      setOpenSource(null);
+      return;
+    }
+
+    if (!open) {
+      registerDismiss(`${openSource || "unknown"}:dialog-close`);
+      resetDraft();
+      setIsOpen(false);
+      setOpenSource(null);
+      return;
+    }
+
+    setIsOpen(true);
   };
 
   const handleDismiss = () => {
-    if (hasShownAutoPrompt) {
-      markPopupCompleted();
-      setHasShownAutoPrompt(false);
-    }
+    registerDismiss(`${openSource || "unknown"}:not-now`);
+    resetDraft();
     setIsOpen(false);
+    setOpenSource(null);
   };
 
   const handleManualOpen = () => {
-    setHasShownAutoPrompt(false);
+    if (hasSubmittedFeedback) {
+      return;
+    }
+
+    resetDraft();
+    setOpenSource("manual");
     setIsOpen(true);
+    sessionStorage.setItem(FEEDBACK_POPUP_SESSION_PROMPTED_KEY, "true");
+    trackFeedbackFunnel("feedback_prompt_seen", "manual-button");
+  };
+
+  const handleRatingSelect = (value: number) => {
+    setRating(value);
+    trackFeedbackFunnel("feedback_rating_selected", String(value));
   };
 
   const handleSubmit = async () => {
@@ -186,6 +332,7 @@ const UserReviewPopup = () => {
     }
 
     setIsSubmitting(true);
+    await flushCachedFeedback();
 
     const payload: FeedbackPayload = {
       rating,
@@ -197,42 +344,57 @@ const UserReviewPopup = () => {
       userEmail: user?.email || null,
     };
 
-    cacheFeedback(payload);
     const isStoredInAppwrite = await submitToAppwrite(payload);
+    if (!isStoredInAppwrite) {
+      cacheFeedback(payload);
+    }
 
-    markPopupCompleted();
+    markPopupSubmitted();
+    submittedInThisCycleRef.current = true;
     setIsOpen(false);
-    setHasShownAutoPrompt(false);
-    setRating(0);
-    setFeedback("");
+    setOpenSource(null);
+    resetDraft();
     setIsSubmitting(false);
+    trackFeedbackFunnel(
+      "feedback_prompt_submitted",
+      isStoredInAppwrite ? "appwrite" : "local-cache",
+    );
 
     toast({
       title: "Thanks for your feedback!",
       description: isStoredInAppwrite
-        ? "Your review was saved successfully."
-        : "Review saved locally, but Appwrite save failed. Check feedback collection setup and permissions.",
+        ? "Your response helps us prioritize the next improvements."
+        : "Saved locally for now. We'll retry sending it when your session is ready.",
     });
   };
 
+  const submitButtonLabel =
+    rating > 0 && !feedback.trim()
+      ? `Submit ${rating}-star review`
+      : "Send review";
+
   return (
     <>
-      <Button
-        type="button"
-        size="sm"
-        className="fixed bottom-6 right-6 z-40 btn-primary shadow-lg"
-        onClick={handleManualOpen}
-      >
-        Give feedback
-      </Button>
+      {!hasSubmittedFeedback && !isExcludedPath && (
+        <Button
+          type="button"
+          size="sm"
+          className="fixed bottom-6 right-6 z-40 btn-primary shadow-lg gap-2 animate-[pulse_3s_ease-in-out_infinite]"
+          onClick={handleManualOpen}
+        >
+          <Sparkles className="h-4 w-4" />
+          Help improve Hirely
+        </Button>
+      )}
 
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Quick website review</DialogTitle>
+            <DialogTitle>Quick 10-second feedback</DialogTitle>
             <DialogDescription>
-              Tell us what you think about your experience on Hirely. This popup
-              appears only once.
+              {openSource === "nudge"
+                ? "Nice work. Tell us how this experience felt so we can improve it."
+                : "Rate your experience and optionally share one improvement idea."}
             </DialogDescription>
           </DialogHeader>
 
@@ -246,7 +408,7 @@ const UserReviewPopup = () => {
                   <button
                     key={value}
                     type="button"
-                    onClick={() => setRating(value)}
+                    onClick={() => handleRatingSelect(value)}
                     className={`rounded-md p-1 transition-colors ${
                       value <= rating
                         ? "text-amber-500"
@@ -265,7 +427,7 @@ const UserReviewPopup = () => {
 
             <div>
               <p className="text-sm font-medium text-foreground mb-2">
-                What should we improve next?
+                What should we improve next? (optional)
               </p>
               <Textarea
                 value={feedback}
@@ -288,7 +450,7 @@ const UserReviewPopup = () => {
                 onClick={handleSubmit}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Sending..." : "Send review"}
+                {isSubmitting ? "Sending..." : submitButtonLabel}
               </Button>
             </div>
           </div>
