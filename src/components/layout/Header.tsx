@@ -31,7 +31,6 @@ const Header = () => {
   const headerRef = useRef<HTMLElement>(null);
   const { toast } = useToast();
 
-
   // Navigation links - consistent for all users
   const mainNavLinks = [
     { label: "Home", path: "/", icon: Home },
@@ -77,10 +76,13 @@ const Header = () => {
         title: "Profile image updated",
         description: "Your profile picture has been updated.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to upload profile picture";
+
       toast({
         title: "Avatar upload failed",
-        description: error.message || "Failed to upload profile picture",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -220,7 +222,9 @@ const Header = () => {
             ) : (
               <>
                 <Link to="/signin" className="hidden md:block">
-                  <Button variant="ghost">Sign In</Button>
+                  <Button className="bg-transparent text-[#0F1729]  dark:text-slate-100 ">
+                    Sign In
+                  </Button>
                 </Link>
                 <Link to="/signup" className="hidden md:block">
                   <Button className="btn-primary">Get Started</Button>
@@ -295,7 +299,7 @@ const Header = () => {
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 <Link to="/signin" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="outline" className="w-full">Sign In</Button>
+                  <Button >Sign In</Button>
                 </Link>
                 <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
                   <Button className="btn-primary w-full">Sign Up</Button>
