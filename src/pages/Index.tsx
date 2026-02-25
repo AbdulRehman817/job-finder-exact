@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Search, ArrowRight, Target, Shield, AlertTriangle, Search as SearchIcon, FileText, ExternalLink } from "lucide-react";
+import { Search, ArrowRight, Target, AlertTriangle, Search as SearchIcon, UserCheck, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Layout from "@/components/layout/Layout";
@@ -24,24 +24,53 @@ const Index = () => {
       : "Unable to load jobs right now. Please try again.";
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const homeCanonical = origin ? `${origin}/` : undefined;
+  const homeImage = origin ? `${origin}/logo.png` : undefined;
   const structuredData = origin
-    ? {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: "Hirely",
-      url: origin,
-      potentialAction: {
-        "@type": "SearchAction",
-        target: `${origin}/find-jobs?q={search_term_string}`,
-        "query-input": "required name=search_term_string",
+    ? [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "Hirely",
+        url: origin,
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${origin}/find-jobs?q={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
       },
-    }
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        name: "Hirely",
+        url: origin,
+        logo: homeImage || `${origin}/logo.png`,
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        name: "Hirely Home",
+        url: homeCanonical || origin,
+        description:
+          "Browse thousands of jobs from top companies. Sign in, apply with one click, and get redirected to complete your application.",
+      },
+    ]
     : undefined;
 
   useSeo({
     title: "Find Your Next Dream Job",
     description:
       "Browse thousands of jobs from top companies. Apply quickly and get redirected to complete your application.",
+    keywords: [
+      "job board",
+      "find jobs",
+      "remote jobs",
+      "full-time jobs",
+      "career opportunities",
+      "hirely",
+    ],
+    canonical: homeCanonical,
+    image: homeImage,
     structuredData,
   });
 
@@ -78,6 +107,27 @@ const Index = () => {
     navigate(`/find-jobs?${params.toString()}`);
   };
 
+  const howItWorksSteps = [
+    {
+      icon: SearchIcon,
+      step: "1",
+      title: "Search & Browse",
+      desc: "Find jobs that match your skills and interests from our curated listings",
+    },
+    {
+      icon: UserCheck,
+      step: "2",
+      title: "Sign In & Apply",
+      desc: "Create your free account and apply to jobs with a single click",
+    },
+    {
+      icon: ExternalLink,
+      step: "3",
+      title: "Get Redirected",
+      desc: "Complete your application directly on the company's website",
+    },
+  ];
+
   return (
     <Layout>
       {/* Hero Section */}
@@ -91,8 +141,8 @@ const Index = () => {
 
             {/* Main Title */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-heading text-foreground mb-5 leading-[1.15] tracking-tight">
-              Find the right job,{" "}
-              <span className="text-primary">faster</span>
+            Find the right job,{" "}
+              <span className="text-primary italic">faster</span>
             </h1>
 
             <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed">
@@ -129,7 +179,7 @@ Browse thousands of jobs from top companies. Sign in, apply with one click, and 
       </section>
 
       {/* How It Works */}
-       <section className="py-16 bg-background">
+ <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">

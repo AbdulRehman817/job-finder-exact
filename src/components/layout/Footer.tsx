@@ -24,8 +24,8 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-12">
           {/* Brand */}
-          <div className="lg:col-span-7 space-y-5">
-            <Link to="/" className="inline-flex items-center shrink-0 ml-1">
+           <div className="lg:col-span-7 space-y-0">
+            <Link to="/" className="flex items-center gap-2 shrink-0 ">
               <BrandLogo
                 className="gap-3"
                 imageWrapperClassName="h-12 w-12 rounded-xl"
