@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Linkedin, Mail } from "lucide-react";
-import logo from "@/../public/logo.png";
+import BrandLogo from "./BrandLogo";
 
 const WHATSAPP_COMMUNITY_URL = "https://chat.whatsapp.com/BZ6TwCE0esh89aw3KAnGnx";
 const LINKEDIN_URL = "https://www.linkedin.com/company/hirely";
@@ -25,15 +25,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-12">
           {/* Brand */}
           <div className="lg:col-span-7 space-y-5">
-            <Link to="/" className="flex items-center gap-2 shrink-0">
-              <img
-                src={logo}
-                alt="Hirely Logo"
-                className="h-20 sm:h-20 w-auto object-contain"
+            <Link to="/" className="inline-flex items-center shrink-0 ml-1">
+              <BrandLogo
+                className="gap-3"
+                imageWrapperClassName="h-12 w-12 rounded-xl"
+                textClassName="text-2xl font-bold text-white"
               />
-              <span className="text-lg sm:text-xl ml-[-65px] font-bold text-foreground">
-                Hirely
-              </span>
             </Link>
 
             <p className="mb-[6px] text-slate-400 leading-relaxed max-w-xl text-sm sm:text-base ">

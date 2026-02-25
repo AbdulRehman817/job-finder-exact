@@ -209,7 +209,6 @@ const EmployerDashboard = () => {
 
   const viewApplicantDetails = async (application: any) => {
     setApplicantDetail(application);
-    console.log('Application details:', applicantDetail);
     // Get signed URL for resume if exists
     if (application.profiles?.resume_url || application.resume_url) {
       try {

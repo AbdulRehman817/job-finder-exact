@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useSeo } from "@/hooks/useSeo";
+import BrandLogo from "@/components/layout/BrandLogo";
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -51,7 +52,13 @@ const SignIn = () => {
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left side - Form */}
       <div className="flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-12">
-       
+        <Link to="/" className="inline-flex items-center mb-10">
+          <BrandLogo
+            className="gap-3"
+            imageWrapperClassName="h-11 w-11"
+            textClassName="text-2xl"
+          />
+        </Link>
 
         <div className="max-w-sm">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1">Sign in</h1>

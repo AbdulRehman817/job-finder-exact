@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSeo } from "@/hooks/useSeo";
 import { cn } from "@/lib/utils";
 import { storage, BUCKETS, ID } from "@/lib/appwrite";
+import BrandLogo from "@/components/layout/BrandLogo";
 
 const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -116,8 +117,12 @@ avatarPreview: "",
       {/* Left side - Form */}
       <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-16 py-12">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 mb-12">
-          
+        <Link to="/" className="inline-flex items-center mb-12">
+          <BrandLogo
+            className="gap-3"
+            imageWrapperClassName="h-11 w-11"
+            textClassName="text-2xl"
+          />
         </Link>
 
         <div className="max-w-md">

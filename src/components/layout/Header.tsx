@@ -4,7 +4,6 @@ import { ChevronDown, Menu, X, User, LogOut, Home, Search, PlusCircle, Info, } f
 import { Button } from "@/components/ui/button";
 import { Permission, Role } from "appwrite";
 import { getAvatarUrl } from "@/lib/avatar";
-import logo from "@/../public/logo.png";
 
 
 import {
@@ -20,6 +19,7 @@ import {  useAuth } from "@/contexts/AuthContext";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
+import BrandLogo from "./BrandLogo";
 
 
 const Header = () => {
@@ -145,15 +145,12 @@ const Header = () => {
     >
       <div className="container mx-auto h-16 px-4">
         <div className="flex h-full items-center justify-between gap-3">
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img
-              src={logo}
-              alt="Hirely Logo"
-              className="h-20 sm:h-20 w-auto object-contain"
+          <Link to="/" className="flex items-center shrink-0">
+            <BrandLogo
+              className="gap-3"
+              imageWrapperClassName="h-12 w-12"
+              textClassName="text-xl sm:text-2xl"
             />
-            <span className="text-lg sm:text-xl ml-[-65px] font-bold text-foreground">
-              Hirely
-            </span>
           </Link>
 
           <nav className="hidden md:flex flex-1 items-center justify-center gap-1">
