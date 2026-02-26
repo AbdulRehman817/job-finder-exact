@@ -135,9 +135,15 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
 
-            <p className="text-sm font-medium text-primary mb-4 tracking-wide uppercase">
-              New Opportunities Added Daily
-            </p>
+          <div className="flex items-center justify-center gap-[10px] mb-[18px] text-[11px] font-bold tracking-[3.5px] uppercase text-[#6B5EFF]">
+  
+  <span className="w-[24px] h-[2px] bg-[#6B5EFF] rounded"></span>
+  
+New Oppurtunities Added Daily
+  
+  <span className="w-[24px] h-[2px] bg-[#6B5EFF] rounded"></span>
+
+</div>
 
             {/* Main Title */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-heading text-foreground mb-5 leading-[1.15] tracking-tight">
