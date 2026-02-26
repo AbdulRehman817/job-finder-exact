@@ -3,7 +3,7 @@ import { Linkedin, Mail } from "lucide-react";
 import BrandLogo from "./BrandLogo";
 
 const WHATSAPP_COMMUNITY_URL = "https://chat.whatsapp.com/BZ6TwCE0esh89aw3KAnGnx";
-const LINKEDIN_URL = "https://www.linkedin.com/company/hirely";
+const LINKEDIN_URL = "https://www.linkedin.com/company/hirelypk";
 
 const WhatsAppIcon = ({ className }: { className?: string }) => {
   return (
