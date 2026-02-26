@@ -146,7 +146,7 @@ const Index = () => {
             </h1>
 
             <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed">
-Browse thousands of jobs from top companies. Sign in, apply with one click, and get redirected to complete your application.            </p>
+Experience a premium, high-performance job search engine designed for the modern professional. Join Hirelypk today.   </p>
 
             {/* Search Bar */}
             <div className="w-full max-w-2xl mx-auto mb-12">
@@ -179,7 +179,7 @@ Browse thousands of jobs from top companies. Sign in, apply with one click, and 
       </section>
 
       {/* How It Works */}
- <section className="py-16 bg-background">
+  <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
@@ -190,55 +190,58 @@ Browse thousands of jobs from top companies. Sign in, apply with one click, and 
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {[
-              {
-                icon: "🔍",
-                step: "1",
-                title: "Search & Browse",
-                desc: "Find jobs that match your skills and interests from our curated listings"
-              },
-              {
-                icon: "📝",
-                step: "2",
-                title: "Sign In & Apply",
-                desc: "Create your free account and apply to jobs with a single click"
-              },
-              {
-                icon: "🚀",
-                step: "3",
-                title: "Get Redirected",
-                desc: "Complete your application directly on the company's website"
-              }
-            ].map((item, index) => (
-              <div key={index} className="relative group">
+            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              <div className="relative group">
                 <div className="bg-card/80 border border-border/60 rounded-2xl p-8 text-center hover:shadow-lg transition-all backdrop-blur">
-                  {/* Step Number */}
                   <div className="absolute -top-4 -right-4 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg">
-                    {item.step}
+                    1
                   </div>
-                  
-                  {/* Icon */}
-                  <div className="text-6xl mb-4">{item.icon}</div>
-                  
-                  {/* Content */}
-                  <h3 className="text-xl font-bold text-foreground mb-3">
-                    {item.title}
-                  </h3>
+                  <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <SearchIcon className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-3">Search & Browse</h3>
                   <p className="text-muted-foreground">
-                    {item.desc}
+                   Find jobs that match your skills and interests from our curated listings
                   </p>
                 </div>
-
-                {/* Arrow connector (except for last item) */}
-                {index < 2 && (
-                  <div className="hidden md:block absolute top-1/2 -right-4 transform translate-x-1/2 -translate-y-1/2 z-10">
-                    <ArrowRight className="w-8 h-8 text-primary/40" />
-                  </div>
-                )}
+                <div className="hidden md:block absolute top-1/2 -right-4 transform translate-x-1/2 -translate-y-1/2 z-10">
+                  <ArrowRight className="w-8 h-8 text-primary/40" />
+                </div>
               </div>
-            ))}
-          </div>
+
+              <div className="relative group">
+                <div className="bg-card/80 border border-border/60 rounded-2xl p-8 text-center hover:shadow-lg transition-all backdrop-blur">
+                  <div className="absolute -top-4 -right-4 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg">
+                    2
+                  </div>
+                  <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <UserCheck className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-3">Sign In & Apply</h3>
+                  <p className="text-muted-foreground">
+                   Create your free account and apply to jobs with a single click
+                  </p>
+                </div>
+                <div className="hidden md:block absolute top-1/2 -right-4 transform translate-x-1/2 -translate-y-1/2 z-10">
+                  <ArrowRight className="w-8 h-8 text-primary/40" />
+                </div>
+              </div>
+
+              <div className="relative group">
+                <div className="bg-card/80 border border-border/60 rounded-2xl p-8 text-center hover:shadow-lg transition-all backdrop-blur">
+                  <div className="absolute -top-4 -right-4 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg">
+                    3
+                  </div>
+                  <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <ExternalLink className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-3">Get Redirected</h3>
+                  <p className="text-muted-foreground">
+                   Complete your application directly on the company's website
+                  </p>
+                </div>
+              </div>
+            </div>
         </div>
       </section>
       {/* Featured Jobs Section */}

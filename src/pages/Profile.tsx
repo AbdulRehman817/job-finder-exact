@@ -229,7 +229,6 @@ const Profile = () => {
       setSaving(false);
     }
   };
-
   return (
     <Layout>
       <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent py-8">
