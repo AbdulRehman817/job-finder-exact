@@ -80,7 +80,7 @@ const Footer = () => {
             
               <li>
                 <Link to="/about" className="text-slate-300 hover:text-white transition-colors text-md">
-                  About Hirely
+                  About Hirelypk
                 </Link>
               </li>
             </ul>
@@ -89,7 +89,7 @@ const Footer = () => {
 
         {/* Bottom bar */}
         <div className="border-t border-slate-800 pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-          <p>� 2026 Hirely Inc. All rights reserved.</p>
+          <p>� 2026 Hirelypk Inc. All rights reserved.</p>
           <div className="flex gap-6">
             <Link to="/contact" className="hover:text-slate-300 transition-colors">Privacy Policy</Link>
             <Link to="/contact" className="hover:text-slate-300 transition-colors">Terms of Service</Link>
@@ -101,3 +101,4 @@ const Footer = () => {
 };
 
 export default Footer;
+

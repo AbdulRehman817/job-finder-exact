@@ -6,9 +6,9 @@ import { useSeo } from "@/hooks/useSeo";
 
 const About = () => {
   useSeo({
-    title: "About Hirely",
+    title: "About Hirelypk",
     description:
-      "Hirely is a manually curated job board where each listing is reviewed and posted directly by me.",
+      "Hirelypk is a manually curated job board where each listing is reviewed and posted directly by me.",
   });
 
   const highlights = [
@@ -16,7 +16,7 @@ const About = () => {
       icon: BriefcaseBusiness,
       title: "Manual Job Posting",
       description:
-"Every job listing is personally collected and posted to maintain quality. Hirely is not an open employer posting portal."
+"Every job listing is personally collected and posted to maintain quality. Hirelypk is not an open employer posting portal."
     },
     {
       icon: Users,
@@ -37,12 +37,12 @@ const About = () => {
       <section className="pt-28 pb-16 lg:pt-36 lg:pb-24 bg-gradient-to-br from-primary/10 via-background to-primary/5">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl text-center mx-auto">
-            <p className="text-sm font-medium text-primary mb-4 tracking-wide uppercase">About Hirely</p>
+            <p className="text-sm font-medium text-primary mb-4 tracking-wide uppercase">About Hirelypk</p>
             <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-6 leading-tight">
               A manually managed job board
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed">
-             Hirely helps job seekers find opportunities faster. Every job is added and maintained by us, keeping the platform focused on quality roles.
+             Hirelypk helps job seekers find opportunities faster. Every job is added and maintained by us, keeping the platform focused on quality roles.
 
             </p>
           </div>
@@ -99,3 +99,4 @@ const About = () => {
 };
 
 export default About;
+

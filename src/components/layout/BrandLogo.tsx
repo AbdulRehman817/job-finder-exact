@@ -27,7 +27,7 @@ const BrandLogo = ({
       >
         <img
           src={BRAND_LOGO_SRC}
-          alt="Hirely logo"
+          alt="Hirelypk logo"
           className={cn(
             "h-full w-full object-cover object-center scale-[2.1]",
             imageClassName
@@ -41,7 +41,7 @@ const BrandLogo = ({
             textClassName
           )}
         >
-          Hirely
+          Hirelypk
         </span>
       ) : null}
     </div>
@@ -49,3 +49,4 @@ const BrandLogo = ({
 };
 
 export default BrandLogo;
+

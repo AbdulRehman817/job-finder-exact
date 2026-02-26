@@ -26,7 +26,7 @@ const CompanyProfile = () => {
   const companyName = company?.name || "Company Profile";
   const companyDescription = company?.description
     ? company.description.replace(/\s+/g, " ").slice(0, 160).trim()
-    : "Explore company details and open roles on Hirely.";
+    : "Explore company details and open roles on Hirelypk.";
 
   useSeo({
     title: companyName,
@@ -326,3 +326,4 @@ const CompanyProfile = () => {
 };
 
 export default CompanyProfile;
+

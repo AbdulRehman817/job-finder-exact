@@ -383,7 +383,7 @@ const UserReviewPopup = () => {
           onClick={handleManualOpen}
         >
           <Sparkles className="h-4 w-4" />
-          Help improve Hirely
+          Help improve Hirelypk
         </Button>
       )}
 
@@ -461,3 +461,4 @@ const UserReviewPopup = () => {
 };
 
 export default UserReviewPopup;
+

@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 
-const SITE_NAME = "Hirely";
-const DEFAULT_TITLE = "Hirely - Connecting Talent to Real Job Openings";
+const SITE_NAME = "Hirelypk";
+const DEFAULT_TITLE = "Hirelypk - Connecting Talent to Real Job Openings";
 const DEFAULT_DESCRIPTION =
-  "Hirely connects job seekers with verified job opportunities. Find roles fast, posted with confidence.";
+  "Hirelypk connects job seekers with verified job opportunities. Find roles fast, posted with confidence.";
 
 export interface SeoConfig {
   title?: string;
@@ -99,3 +99,4 @@ export const useSeo = ({
     upsertJsonLd("seo-structured-data", structuredData);
   }, [title, description, keywords, image, canonical, type, noIndex, structuredData]);
 };
+

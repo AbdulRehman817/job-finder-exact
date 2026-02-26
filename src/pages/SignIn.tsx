@@ -21,7 +21,7 @@ const SignIn = () => {
 
   useSeo({
     title: "Sign In",
-    description: "Sign in to Hirely to manage your job search and applications.",
+    description: "Sign in to Hirelypk to manage your job search and applications.",
     noIndex: true,
   });
 
@@ -140,3 +140,4 @@ const SignIn = () => {
 };
 
 export default SignIn;
+

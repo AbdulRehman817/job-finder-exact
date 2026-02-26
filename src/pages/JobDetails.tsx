@@ -171,7 +171,7 @@ const JobDetails = () => {
   const jobTitle = job?.title ? `${job.title} at ${companyName}` : "Job Details";
   const descriptionSnippet = job?.description
     ? stripTagsLineFromDescription(job.description).replace(/\s+/g, " ").slice(0, 160).trim()
-    : "View job details and apply on Hirely.";
+    : "View job details and apply on Hirelypk.";
   const jobUrl = job && origin ? `${origin}/job/${job.$id}` : "";
   const employmentTypeMap: Record<string, string> = {
     "full-time": "FULL_TIME",

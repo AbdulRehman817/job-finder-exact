@@ -119,7 +119,7 @@ const FindJobs = () => {
   useSeo({
     title: "Find Jobs",
     description:
-      "Search and filter jobs by title, location, and type on Hirely.",
+      "Search and filter jobs by title, location, and type on Hirelypk.",
     noIndex: hasActiveFilters,
   });
 
@@ -421,3 +421,4 @@ const FindJobs = () => {
 };
 
 export default FindJobs;
+

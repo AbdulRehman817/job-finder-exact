@@ -12,7 +12,7 @@ const Employers = () => {
 
   useSeo({
     title: "Hire Top Talent",
-    description: "Discover employers and explore open roles on Hirely.",
+    description: "Discover employers and explore open roles on Hirelypk.",
   });
 
   // Transform database companies
@@ -131,3 +131,4 @@ const Employers = () => {
 };
 
 export default Employers;
+

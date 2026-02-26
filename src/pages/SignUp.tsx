@@ -31,7 +31,7 @@ avatarPreview: "",
 
   useSeo({
     title: "Create Account",
-    description: "Create a Hirely account to apply for jobs or hire top talent.",
+    description: "Create a Hirelypk account to apply for jobs or hire top talent.",
     noIndex: true,
   });
 
@@ -104,7 +104,7 @@ avatarPreview: "",
   } else {
     toast({
       title: "Account created!",
-      description: "Welcome to Hirely! You are now signed in.",
+      description: "Welcome to Hirelypk! You are now signed in.",
     });
     navigate(accountType === "employer" ? "/employer-dashboard" : "/profile");
   }
@@ -257,3 +257,4 @@ avatarPreview: "",
 };
 
 export default SignUp;
+

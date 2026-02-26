@@ -31,7 +31,7 @@ const Index = () => {
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
-        name: "Hirely",
+        name: "Hirelypk",
         url: origin,
         potentialAction: {
           "@type": "SearchAction",
@@ -42,14 +42,14 @@ const Index = () => {
       {
         "@context": "https://schema.org",
         "@type": "Organization",
-        name: "Hirely",
+        name: "Hirelypk",
         url: origin,
         logo: homeImage || `${origin}/logo.png`,
       },
       {
         "@context": "https://schema.org",
         "@type": "WebPage",
-        name: "Hirely Home",
+        name: "Hirelypk Home",
         url: homeCanonical || origin,
         description:
           "Browse thousands of jobs from top companies. Sign in, apply with one click, and get redirected to complete your application.",
@@ -339,7 +339,7 @@ Browse thousands of jobs from top companies. Sign in, apply with one click, and 
                 Ready to find your next role?
               </h2>
               <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-                Join thousands of job seekers who use Hirely to connect with hiring companies. It's free to get started.
+                Join thousands of job seekers who use Hirelypk to connect with hiring companies. It's free to get started.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link to="/signup">
