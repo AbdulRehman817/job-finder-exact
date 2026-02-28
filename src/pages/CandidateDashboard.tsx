@@ -11,9 +11,7 @@ import {
   CheckCircle2,
   XCircle,
   Target,
-  Bookmark,
   Award,
-  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,7 +19,7 @@ import Layout from "@/components/layout/Layout";
 import ProfileCompletionBanner from "@/components/profile/ProfileCompletionBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyApplications } from "@/hooks/useApplications";
-import { useSavedJobs, useUnsaveJob } from "@/hooks/useSavedJobs";
+import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "@/hooks/useNotifications";
 import { useCandidateProfileCompletion } from "@/hooks/useProfileCompletion";
 import { cn } from "@/lib/utils";
@@ -34,10 +32,11 @@ const CandidateDashboard = () => {
   const { data: notifications = [] } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
-  const unsaveJob = useUnsaveJob();
   const profileCompletion = useCandidateProfileCompletion();
   const [searchParams, setSearchParams] = useSearchParams();
-  const defaultTab = searchParams.get("tab") || "overview";
+  const requestedTab = searchParams.get("tab") || "overview";
+  const allowedTabs = ["overview", "applications", "notifications"];
+  const defaultTab = allowedTabs.includes(requestedTab) ? requestedTab : "overview";
 
   if (loading) {
     return (
@@ -208,13 +207,6 @@ const CandidateDashboard = () => {
               >
                 <FileText className="h-4 w-4 mr-2" />
                 Applications ({applications.length})
-              </TabsTrigger>
-              <TabsTrigger
-                value="saved"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl px-5 py-2.5 text-base font-medium"
-              >
-                <Bookmark className="h-4 w-4 mr-2" />
-                Saved ({savedJobs.length})
               </TabsTrigger>
               <TabsTrigger
                 value="notifications"
@@ -389,68 +381,6 @@ const CandidateDashboard = () => {
             </div>
           </TabsContent>
 
-          {/* Saved Jobs Tab */}
-          <TabsContent value="saved" className="mt-0">
-            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
-              <div className="p-6 border-b border-border">
-                <h3 className="text-xl font-bold text-foreground">Saved Jobs ({savedJobs.length})</h3>
-              </div>
-              {savedJobs.length === 0 ? (
-                <div className="p-16 text-center">
-                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-5">
-                    <Heart className="h-10 w-10 text-primary" />
-                  </div>
-                  <h4 className="text-xl font-bold text-foreground mb-3">No saved jobs</h4>
-                  <p className="text-base text-muted-foreground mb-6">Save jobs to apply later</p>
-                  <Link to="/find-jobs">
-                    <Button className="btn-primary h-11 px-6">Browse Jobs</Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {savedJobs.map((savedJob) => (
-                    <div key={savedJob.id} className="p-6 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center justify-between gap-5">
-                        <div className="flex items-center gap-5 min-w-0 flex-1">
-                          <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center text-2xl shrink-0">
-                            💼
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <Link
-                              to={`/job/${savedJob.job_id}`}
-                              className="text-lg font-bold text-foreground hover:text-primary block mb-1"
-                            >
-                              {savedJob.jobs?.title || "Job Title"}
-                            </Link>
-                            <p className="text-base text-muted-foreground">
-                              {savedJob.jobs?.companies?.name}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <Link to={`/job/${savedJob.job_id}`}>
-                            <Button variant="outline" size="default" className="h-10">
-                              <ExternalLink className="h-4 w-4 mr-2" />
-                              View
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="ghost"
-                            size="default"
-                            onClick={() => unsaveJob.mutate(savedJob.job_id)}
-                            className="text-destructive hover:text-destructive h-10"
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
           {/* Notifications Tab */}
           <TabsContent value="notifications" className="mt-0">
             <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
@@ -523,3 +453,4 @@ const CandidateDashboard = () => {
 };
 
 export default CandidateDashboard;
+

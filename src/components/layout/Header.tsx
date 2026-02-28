@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, Menu, X, User, LogOut, Home, Search, PlusCircle, Info, } from "lucide-react";
+import { ChevronDown, Menu, X, User, LogOut, Home, Search, PlusCircle, Info, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Permission, Role } from "appwrite";
 import { getAvatarUrl } from "@/lib/avatar";
@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { databases, DATABASE_ID, COLLECTIONS, Query, storage, BUCKETS, ID } from "@/lib/appwrite";
 import {  useAuth } from "@/contexts/AuthContext";
+import { useSavedJobs } from "@/hooks/useSavedJobs";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
@@ -26,10 +27,12 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, userRole, profile, signOut, refreshProfile } = useAuth();
+  const { data: savedJobs = [] } = useSavedJobs();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const { toast } = useToast();
+  const savedJobsCount = savedJobs.length;
 
   // Navigation links - consistent for all users
   const mainNavLinks = [
@@ -94,6 +97,9 @@ const Header = () => {
 
   const navLinks = [
     ...mainNavLinks,
+    ...(user && userRole !== "employer"
+      ? [{ label: "Saved Jobs", path: "/saved-jobs", icon: Bookmark, count: savedJobsCount }]
+      : []),
     // ...(user ? [{ label: "Dashboard", path: dashboardPath, icon: LayoutDashboard }] : []),
     ...(userRole === "employer" ? [{ label: "Post a Job", path: "/post-job", icon: PlusCircle }] : []),
   ];
@@ -164,11 +170,16 @@ const Header = () => {
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
-              >
-                <link.icon className="h-4 w-4" />
-                {link.label}
-              </Link>
-            ))}
+                >
+                  <link.icon className="h-4 w-4" />
+                  {link.label}
+                  {"count" in link && (
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold leading-none text-primary-foreground">
+                      {link.count}
+                    </span>
+                  )}
+                </Link>
+              ))}
           </nav>
 
           <div className="flex items-center gap-2">
@@ -268,11 +279,16 @@ const Header = () => {
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted"
                 )}
-              >
-                <link.icon className="h-5 w-5" />
-                {link.label}
-              </Link>
-            ))}
+                >
+                  <link.icon className="h-5 w-5" />
+                  {link.label}
+                  {"count" in link && (
+                    <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold leading-none text-primary-foreground">
+                      {link.count}
+                    </span>
+                  )}
+                </Link>
+              ))}
           </nav>
 
           <div className="mt-4 pt-4 border-t border-border">

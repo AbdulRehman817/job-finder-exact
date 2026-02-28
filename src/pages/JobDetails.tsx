@@ -30,7 +30,7 @@ import Layout from "@/components/layout/Layout";
 import JobCard from "@/components/jobs/JobCard";
 import { useIncrementJobViews, useJob, useJobs } from "@/hooks/useJobs";
 import { useApplyForJob, useHasApplied } from "@/hooks/useApplications";
-import { useSaveJob, useUnsaveJob, useIsJobSaved } from "@/hooks/useSavedJobs";
+import { useSaveJob, useUnsaveJob, useIsJobSaved, useSavedJobs } from "@/hooks/useSavedJobs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCandidateProfileCompletion } from "@/hooks/useProfileCompletion";
 import { useToast } from "@/hooks/use-toast";
@@ -156,6 +156,7 @@ const JobDetails = () => {
   const { data: relatedJobs = [] } = useJobs();
   const { data: hasApplied = false } = useHasApplied(id || "");
   const { data: isSaved = false } = useIsJobSaved(id || "");
+  const { data: savedJobs = [] } = useSavedJobs();
   const profileCompletion = useCandidateProfileCompletion();
   const jobErrorMessage =
     jobError instanceof Error
@@ -165,6 +166,9 @@ const JobDetails = () => {
   const applyForJob = useApplyForJob();
   const saveJob = useSaveJob();
   const unsaveJob = useUnsaveJob();
+  const savedJobsCount = savedJobs.length;
+  const requiresSignInForSave = !user;
+  const isSaveActionPending = saveJob.isPending || unsaveJob.isPending;
  const { mutateAsync: incrementJobViews } = useIncrementJobViews();
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const companyName = job?.companies?.name || job?.company || "Company";
@@ -387,8 +391,14 @@ const copyShareMessage = async (shareMessage: string) => {
         await unsaveJob.mutateAsync(id!);
         toast({ title: "Job removed from saved" });
       } else {
-        await saveJob.mutateAsync(id!);
-        toast({ title: "Job saved!" });
+        const result = await saveJob.mutateAsync(id!);
+        const alreadySaved =
+          typeof result === "object" &&
+          result !== null &&
+          "message" in result &&
+          (result as { message?: string }).message === "Already saved";
+
+        toast({ title: alreadySaved ? "Job already saved" : "Job saved!" });
       }
     } catch (error: any) {
       toast({
@@ -617,11 +627,24 @@ const copyShareMessage = async (shareMessage: string) => {
                 <div className="flex items-center gap-2 shrink-0">
                   <Button 
                     variant="outline" 
-                    size="icon"
+                    size="default"
                     onClick={handleSave}
-                    className={isSaved ? "text-primary border-primary" : ""}
+                    disabled={isSaveActionPending}
+                    className={isSaved ? "h-10 border-primary bg-primary/10 text-primary hover:bg-primary/15" : "h-10"}
                   >
                     {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+                    {isSaveActionPending
+                      ? "Updating..."
+                      : requiresSignInForSave
+                        ? "Sign in to Save"
+                        : isSaved
+                          ? "Saved"
+                          : "Save Job"}
+                    {!requiresSignInForSave && userRole !== "employer" && (
+                      <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-primary">
+                        {savedJobsCount}
+                      </span>
+                    )}
                   </Button>
                  <Button variant="outline" size="icon" onClick={handleShareJob}>
                     <Share2 className="h-4 w-4" />
