@@ -221,6 +221,19 @@
     animation: fadeIn 0.3s ease-out forwards;
   }
 
+  @keyframes bell-slide-x {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-2px);
+    }
+    75% {
+      transform: translateX(2px);
+    }
+  }
+
   @keyframes fadeIn {
     from {
       opacity: 0;

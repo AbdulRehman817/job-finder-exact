@@ -59,11 +59,10 @@ const NotificationDropdown = () => {
         <Button
           variant="ghost"
           size="icon"
-          className="group relative transition-all duration-300 hover:-translate-y-0.5 hover:scale-110 active:scale-95"
+          className="group relative transition-colors duration-200 hover:text-primary"
           aria-label="Open notifications"
         >
-          <span className="pointer-events-none absolute inset-1 rounded-full bg-primary/15 opacity-0 transition-opacity duration-200 group-hover:animate-ping group-hover:opacity-100" />
-          <Bell className="relative h-5 w-5 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-125 group-hover:animate-pulse" />
+          <Bell className="h-5 w-5 group-hover:animate-[bell-slide-x_0.7s_ease-in-out_infinite]" />
           {badgeCount > 0 && (
             <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-destructive-foreground">
               {badgeCount > 9 ? "9+" : badgeCount}
