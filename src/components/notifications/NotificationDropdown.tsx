@@ -1,5 +1,14 @@
 import { Link } from "react-router-dom";
-import { Bell, Check, CheckCheck, Trash2 } from "lucide-react";
+import {
+  Bell,
+  BriefcaseBusiness,
+  ClipboardList,
+  CheckCheck,
+  PartyPopper,
+  UserCheck,
+  UserX,
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,129 +18,175 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSavedJobs } from "@/hooks/useSavedJobs";
 import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
   useNotifications,
   useUnreadNotificationsCount,
-  useMarkNotificationRead,
-  useMarkAllNotificationsRead,
 } from "@/hooks/useNotifications";
 
+const getNotificationIcon = (type: string) => {
+  switch (type) {
+    case "shortlisted":
+      return <UserCheck className="h-4 w-4 text-blue-600 dark:text-blue-300" />;
+    case "rejected":
+      return <UserX className="h-4 w-4 text-red-600 dark:text-red-300" />;
+    case "hired":
+      return <PartyPopper className="h-4 w-4 text-green-600 dark:text-green-300" />;
+    case "application_received":
+      return <BriefcaseBusiness className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />;
+    default:
+      return <Bell className="h-4 w-4 text-muted-foreground" />;
+  }
+};
+
 const NotificationDropdown = () => {
+  const { userRole } = useAuth();
+  const isCandidate = userRole === "candidate";
+  const { data: savedJobs = [] } = useSavedJobs();
   const { data: notifications = [] } = useNotifications();
   const { data: unreadCount = 0 } = useUnreadNotificationsCount();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "shortlisted":
-        return "🎯";
-      case "rejected":
-        return "❌";
-      case "hired":
-        return "🎉";
-      case "application_received":
-        return "📩";
-      default:
-        return "🔔";
-    }
-  };
-
-  const getNotificationColor = (type: string) => {
-    switch (type) {
-      case "shortlisted":
-        return "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300";
-      case "rejected":
-        return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300";
-      case "hired":
-        return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300";
-      case "application_received":
-        return "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
-  };
+  const badgeCount = isCandidate ? savedJobs.length : unreadCount;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {unreadCount > 9 ? "9+" : unreadCount}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="group relative transition-all duration-300 hover:-translate-y-0.5 hover:scale-110 active:scale-95"
+          aria-label="Open notifications"
+        >
+          <span className="pointer-events-none absolute inset-1 rounded-full bg-primary/15 opacity-0 transition-opacity duration-200 group-hover:animate-ping group-hover:opacity-100" />
+          <Bell className="relative h-5 w-5 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-125 group-hover:animate-pulse" />
+          {badgeCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-destructive-foreground">
+              {badgeCount > 9 ? "9+" : badgeCount}
             </span>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 bg-background border border-border">
-        <div className="px-3 py-2 border-b border-border flex items-center justify-between">
-          <span className="font-semibold text-foreground">Notifications</span>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs h-7"
-              onClick={() => markAllRead.mutate()}
-            >
-              <CheckCheck className="h-3 w-3 mr-1" />
-              Mark all read
-            </Button>
-          )}
-        </div>
 
-        <div className="max-h-80 overflow-y-auto">
-          {notifications.length === 0 ? (
-            <div className="p-6 text-center">
-              <Bell className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No notifications yet</p>
-            </div>
-          ) : (
-            notifications.slice(0, 5).map((notification) => (
-              <DropdownMenuItem
-                key={notification.$id}
-                className={cn(
-                  "flex items-start gap-3 p-3 cursor-pointer",
-                  !notification.is_read && "bg-primary/5"
-                )}
-                onClick={() => {
-                  if (!notification.is_read) {
-                    markRead.mutate(notification.$id);
-                  }
-                }}
+      {isCandidate ? (
+        <DropdownMenuContent
+          align="end"
+          className="w-[min(92vw,22rem)] border border-border bg-background p-0 shadow-lg"
+        >
+          <div className="border-b border-border px-4 py-3">
+            <p className="text-sm font-semibold text-foreground">Notifications</p>
+            <p className="text-xs text-muted-foreground">
+              {savedJobs.length > 0
+                ? `${savedJobs.length} saved job${savedJobs.length === 1 ? "" : "s"}`
+                : "No saved jobs yet"}
+            </p>
+          </div>
+
+          <div className="p-2">
+            {savedJobs.length > 0 ? (
+              <Link
+                to="/saved-jobs"
+                className="flex items-center gap-3 rounded-md px-3 py-3 transition-colors hover:bg-muted"
               >
-                <span className="text-xl">{getNotificationIcon(notification.type)}</span>
-                <div className="flex-1 min-w-0">
-                  <p className={cn("text-sm", !notification.is_read && "font-medium")}>
-                    {notification.title}
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-foreground">
+                  <ClipboardList className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    View your {savedJobs.length} saved job{savedJobs.length === 1 ? "" : "s"}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">{notification.message}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {formatDistanceToNow(new Date(notification.$createdAt), { addSuffix: true })}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Open saved jobs</p>
                 </div>
-                {!notification.is_read && (
-                  <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2" />
-                )}
-              </DropdownMenuItem>
-            ))
-          )}
-        </div>
-
-        {notifications.length > 0 && (
-          <>
-            <DropdownMenuSeparator />
-            <div className="p-2">
-              <Link to="/notifications" className="block">
-                <Button variant="outline" className="w-full" size="sm">
-                  View All Notifications
-                </Button>
               </Link>
-            </div>
-          </>
-        )}
-      </DropdownMenuContent>
+            ) : (
+              <div className="rounded-md px-3 py-4 text-center">
+                <span className="mx-auto mb-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground">
+                  <ClipboardList className="h-5 w-5" />
+                </span>
+                <p className="text-sm font-medium text-foreground">No saved jobs yet</p>
+                <Link to="/find-jobs" className="text-xs text-primary hover:underline">
+                  Browse jobs
+                </Link>
+              </div>
+            )}
+          </div>
+        </DropdownMenuContent>
+      ) : (
+        <DropdownMenuContent
+          align="end"
+          className="w-[min(92vw,22rem)] border border-border bg-background"
+        >
+          <div className="flex items-center justify-between border-b border-border px-3 py-2">
+            <span className="font-semibold text-foreground">Notifications</span>
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => markAllRead.mutate()}
+              >
+                <CheckCheck className="mr-1 h-3 w-3" />
+                Mark all read
+              </Button>
+            )}
+          </div>
+
+          <div className="max-h-80 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="p-6 text-center">
+                <Bell className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">No notifications yet</p>
+              </div>
+            ) : (
+              notifications.slice(0, 5).map((notification) => (
+                <DropdownMenuItem
+                  key={notification.$id}
+                  className={cn(
+                    "flex cursor-pointer items-start gap-3 p-3",
+                    !notification.is_read && "bg-primary/5"
+                  )}
+                  onClick={() => {
+                    if (!notification.is_read) {
+                      markRead.mutate(notification.$id);
+                    }
+                  }}
+                >
+                  <div className="mt-0.5">{getNotificationIcon(notification.type)}</div>
+                  <div className="min-w-0 flex-1">
+                    <p className={cn("text-sm", !notification.is_read && "font-medium")}>
+                      {notification.title}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">{notification.message}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(notification.$createdAt), { addSuffix: true })}
+                    </p>
+                  </div>
+                  {!notification.is_read && (
+                    <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                  )}
+                </DropdownMenuItem>
+              ))
+            )}
+          </div>
+
+          {notifications.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <div className="p-2">
+                <Link to="/notifications" className="block">
+                  <Button variant="outline" size="sm" className="w-full">
+                    View All Notifications
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
+        </DropdownMenuContent>
+      )}
     </DropdownMenu>
   );
 };

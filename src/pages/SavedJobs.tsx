@@ -1,5 +1,5 @@
-import { BookmarkCheck, ExternalLink, Heart, MapPin, Trash2 } from "lucide-react";
-import { Link, Navigate } from "react-router-dom";
+import { Bookmark, Building2, Heart, MapPin } from "lucide-react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,14 +24,23 @@ const formatJobType = (type?: string) => {
     .join(" ");
 };
 
+const toSalaryText = (value: number) => {
+  if (value >= 1000) {
+    return `$${Math.round(value / 1000)}K`;
+  }
+
+  return `$${value.toLocaleString()}`;
+};
+
 const formatSalary = (min: number | null | undefined, max: number | null | undefined) => {
-  if (!min && !max) return "Competitive";
-  if (min && max) return `USD ${min.toLocaleString()} - ${max.toLocaleString()}`;
-  if (min) return `USD ${min.toLocaleString()}+`;
-  return `Up to USD ${max!.toLocaleString()}`;
+  if (!min && !max) return "Salary not specified";
+  if (min && max) return `${toSalaryText(min)} - ${toSalaryText(max)}`;
+  if (min) return `${toSalaryText(min)}+`;
+  return `Up to ${toSalaryText(max!)}`;
 };
 
 const SavedJobs = () => {
+  const navigate = useNavigate();
   const { user, loading, userRole } = useAuth();
   const { data: savedJobs = [], isLoading } = useSavedJobs();
   const unsaveJob = useUnsaveJob();
@@ -41,7 +50,7 @@ const SavedJobs = () => {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 text-center">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p className="mt-4 text-muted-foreground">Loading saved jobs...</p>
         </div>
       </Layout>
@@ -58,32 +67,18 @@ const SavedJobs = () => {
 
   return (
     <Layout hideFooter>
-      <section className="relative overflow-hidden border-b border-border bg-card py-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.08),transparent_55%)]" />
-        <div className="container relative mx-auto px-4">
-          <h1 className="mb-3 text-3xl font-bold text-foreground">Saved Jobs</h1>
-          <p className="mb-6 text-sm text-muted-foreground">
-            Keep track of roles you want to apply for.
+      <section className="border-b border-border bg-card py-10 sm:py-12">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl font-bold text-foreground sm:text-4xl">Saved Jobs</h1>
+          <p className="mt-2 text-sm text-muted-foreground sm:text-base">
+            You currently have {savedJobs.length} saved job{savedJobs.length === 1 ? "" : "s"}.
           </p>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-border bg-background/80 p-4">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Total Saved</p>
-              <p className="mt-1 text-2xl font-semibold text-foreground">{savedJobs.length}</p>
-            </div>
-            <div className="rounded-xl border border-border bg-background/80 p-4">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Last Updated</p>
-              <p className="mt-1 text-sm font-medium text-foreground">
-                {savedJobs.length > 0 ? getSavedTime(savedJobs[0]) : "No saves yet"}
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-10">
+      <section className="container mx-auto px-4 py-6 sm:py-10">
         {savedJobs.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card p-14 text-center shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-sm sm:p-14">
             <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
               <Heart className="h-10 w-10 text-primary" />
             </div>
@@ -96,60 +91,80 @@ const SavedJobs = () => {
             </Link>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="space-y-4">
             {savedJobs.map((savedJob) => (
               <article
                 key={savedJob.id}
-                className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/30"
+                role="button"
+                tabIndex={0}
+                onClick={() => savedJob.job_id && navigate(`/job/${savedJob.job_id}`)}
+                onKeyDown={(event) => {
+                  if (!savedJob.job_id) return;
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    navigate(`/job/${savedJob.job_id}`);
+                  }
+                }}
+                className="group cursor-pointer rounded-2xl border border-border bg-card p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-slate-100 hover:shadow-md dark:hover:bg-slate-800/70 sm:p-6"
               >
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary" className="gap-1">
-                    <BookmarkCheck className="h-3.5 w-3.5" />
-                    Saved {getSavedTime(savedJob)}
-                  </Badge>
-                  <Badge variant="outline">{formatJobType(savedJob.jobs?.type)}</Badge>
-                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
+                      {savedJob.jobs?.companies?.logo_url ? (
+                        <img
+                          src={savedJob.jobs.companies.logo_url}
+                          alt={savedJob.jobs.companies.name}
+                          className="h-9 w-9 object-contain"
+                        />
+                      ) : (
+                        <Building2 className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </div>
 
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      to={`/job/${savedJob.job_id}`}
-                      className="block truncate text-lg font-bold text-foreground hover:text-primary"
-                    >
-                      {savedJob.jobs?.title || "Job not available"}
-                    </Link>
-                    <p className="mt-1 truncate text-sm text-muted-foreground">
-                      {savedJob.jobs?.companies?.name || "Company not available"}
-                    </p>
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-medium text-foreground">
+                        {savedJob.jobs?.companies?.name || "Company not available"}
+                      </p>
 
-                    <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                      <h3 className="mt-1 block text-lg font-bold leading-snug text-foreground transition-colors  sm:text-2xl">
+                        {savedJob.jobs?.title || "Job not available"}
+                      </h3>
+
                       {savedJob.jobs?.location && (
-                        <span className="inline-flex items-center gap-1.5">
+                        <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground sm:text-base">
                           <MapPin className="h-4 w-4" />
                           {savedJob.jobs.location}
-                        </span>
+                        </p>
                       )}
-                      <span>{formatSalary(savedJob.jobs?.salary_min, savedJob.jobs?.salary_max)}</span>
+
+                     
+                      
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 md:shrink-0">
-                    <Link to={`/job/${savedJob.job_id}`}>
-                      <Button variant="outline" className="h-10">
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        View Job
-                      </Button>
-                    </Link>
+                  <div className="shrink-0 text-right">
                     <Button
                       variant="ghost"
-                      onClick={() => unsaveJob.mutate(savedJob.job_id)}
+                      size="icon"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        unsaveJob.mutate(savedJob.job_id);
+                      }}
                       disabled={unsaveJob.isPending || !savedJob.job_id}
-                      className="h-10 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      className="text-[#6366f2] hover:bg-transparent hover:text-[#6366f2] focus-visible:ring-[#6366f2]/40"
+                      aria-label="Remove saved job"
                     >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {unsaveJob.isPending && removingJobId === savedJob.job_id ? "Removing..." : "Remove"}
+                      <Bookmark className="h-4 w-4 fill-[#6366f2] text-[#6366f2]" />
                     </Button>
                   </div>
+                </div>
+
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    {unsaveJob.isPending && removingJobId === savedJob.job_id ? "Removing..." : "Saved in your list"}
+                  </p>
+
+                  <p className="text-xs text-muted-foreground">Saved {getSavedTime(savedJob)}</p>
                 </div>
               </article>
             ))}

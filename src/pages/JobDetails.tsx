@@ -633,18 +633,14 @@ const copyShareMessage = async (shareMessage: string) => {
                     className={isSaved ? "h-10 border-primary bg-primary/10 text-primary hover:bg-primary/15" : "h-10"}
                   >
                     {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
-                    {isSaveActionPending
+                    {/* {isSaveActionPending
                       ? "Updating..."
                       : requiresSignInForSave
                         ? "Sign in to Save"
                         : isSaved
                           ? "Saved"
-                          : "Save Job"}
-                    {!requiresSignInForSave && userRole !== "employer" && (
-                      <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-primary">
-                        {savedJobsCount}
-                      </span>
-                    )}
+                          : "Save Job"} */}
+                   
                   </Button>
                  <Button variant="outline" size="icon" onClick={handleShareJob}>
                     <Share2 className="h-4 w-4" />
