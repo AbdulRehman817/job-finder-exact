@@ -463,15 +463,17 @@ const copyShareMessage = async (shareMessage: string) => {
   const formatSalary = (
     min: number | null,
     max: number | null,
-    _currency: string | null,
+    currency: string | null,
   ) => {
-    if (!min && !max) return "No Salary Mentioned";
-    if (min && max) return `${min.toLocaleString()} - ${max.toLocaleString()}`;
-    if (min) return `${min.toLocaleString()}+`;
-    return `Up to ${max!.toLocaleString()}`;
+    const unit = currency || "USD";
+    if (!min && !max) return "Competitive";
+    if (min && max) return `${unit} ${min.toLocaleString()} - ${max.toLocaleString()}`;
+    if (min) return `${unit} ${min.toLocaleString()}+`;
+    return `Up to ${unit} ${max!.toLocaleString()}`;
   };
 
   const salaryDisplay = formatSalary(job.salary_min, job.salary_max, job.currency );
+  const currencyLabel = job.currency;
   const jobTags = getJobTags(job);
   const descriptionBody = stripTagsLineFromDescription(job.description);
   
@@ -631,13 +633,14 @@ const copyShareMessage = async (shareMessage: string) => {
                     className={isSaved ? "h-10 border-primary bg-primary/10 text-primary hover:bg-primary/15" : "h-10"}
                   >
                     {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
-                    {/* {isSaveActionPending
+                    {isSaveActionPending
                       ? "Updating..."
                       : requiresSignInForSave
                         ? "Sign in to Save"
                         : isSaved
                           ? "Saved"
-                          : "Save Job"} */}
+                          : "Save Job"}
+                   
                   </Button>
                  <Button variant="outline" size="icon" onClick={handleShareJob}>
                     <Share2 className="h-4 w-4" />
@@ -692,7 +695,7 @@ const copyShareMessage = async (shareMessage: string) => {
                     <DollarSign className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Salary</p>
+                    <p className="text-sm text-muted-foreground">Salary ({currencyLabel})</p>
                     <p className="font-medium text-foreground">{salaryDisplay}</p>
                   </div>
                 </div>
@@ -838,7 +841,7 @@ const copyShareMessage = async (shareMessage: string) => {
                     <DollarSign className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Salary</p>
+                    <p className="text-sm text-muted-foreground">Salary ({currencyLabel})</p>
                     <p className="font-medium text-foreground">{salaryDisplay}</p>
                   </div>
                 </div>
