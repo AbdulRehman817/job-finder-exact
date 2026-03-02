@@ -548,12 +548,11 @@ const FindJobs = () => {
     noIndex: hasActiveFilters,
   });
 
-  const formatSalary = (min: number | null, max: number | null, currency: string) => {
-    if (!min && !max) return "Competitive";
-    const unit = currency || "USD";
-    if (min && max) return `${unit} ${(min / 1000).toFixed(0)}k - ${unit} ${(max / 1000).toFixed(0)}k`;
-    if (min) return `${unit} ${(min / 1000).toFixed(0)}k+`;
-    return `Up to ${unit} ${(max! / 1000).toFixed(0)}k`;
+  const formatSalary = (min: number | null, max: number | null, _currency: string) => {
+    if (!min && !max) return "No Salary Mentioned";
+    if (min && max) return `${(min / 1000).toFixed(0)}k - ${(max / 1000).toFixed(0)}k`;
+    if (min) return `${(min / 1000).toFixed(0)}k+`;
+    return `Up to ${(max! / 1000).toFixed(0)}k`;
   };
 
   return (

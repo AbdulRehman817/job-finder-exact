@@ -75,12 +75,11 @@ const Index = () => {
   });
 
   // Transform database jobs to match the Job interface used by JobCard
-  const formatSalary = (min: number | null, max: number | null, currency: string | null) => {
-    const unit = currency || "USD";
-    if (!min && !max) return "Competitive";
-    if (min && max) return `${unit} ${min.toLocaleString()} - ${max.toLocaleString()}`;
-    if (min) return `${unit} ${min.toLocaleString()}+`;
-    return `Up to ${unit} ${max!.toLocaleString()}`;
+  const formatSalary = (min: number | null, max: number | null, _currency: string | null) => {
+    if (!min && !max) return "No Salary Mentioned";
+    if (min && max) return `${min.toLocaleString()} - ${max.toLocaleString()}`;
+    if (min) return `${min.toLocaleString()}+`;
+    return `Up to ${max!.toLocaleString()}`;
   };
 
   const transformedJobs = dbJobs.map((job) => ({
