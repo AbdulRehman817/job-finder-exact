@@ -463,17 +463,14 @@ const copyShareMessage = async (shareMessage: string) => {
   const formatSalary = (
     min: number | null,
     max: number | null,
-    currency: string | null,
   ) => {
-    const unit = currency || "USD";
-    if (!min && !max) return "Competitive";
-    if (min && max) return `${unit} ${min.toLocaleString()} - ${max.toLocaleString()}`;
-    if (min) return `${unit} ${min.toLocaleString()}+`;
-    return `Up to ${unit} ${max!.toLocaleString()}`;
+    if (!min && !max) return "No Salary Mentioned";
+    if (min && max) return `${min.toLocaleString()} - ${max.toLocaleString()}`;
+    if (min) return `${min.toLocaleString()}+`;
+    return `Up to ${max!.toLocaleString()}`;
   };
 
-  const salaryDisplay = formatSalary(job.salary_min, job.salary_max, job.currency );
-  const currencyLabel = job.currency;
+  const salaryDisplay = formatSalary(job.salary_min, job.salary_max);
   const jobTags = getJobTags(job);
   const descriptionBody = stripTagsLineFromDescription(job.description);
   
@@ -488,7 +485,7 @@ const copyShareMessage = async (shareMessage: string) => {
       company: j.companies?.name || j.company || "Company",
       companyLogo: j.companies?.logo_url || "",
       location: j.location,
-      salary: formatSalary(j.salary_min, j.salary_max, j.currency || "USD"),
+      salary: formatSalary(j.salary_min, j.salary_max),
   type: normalizeJobType(j.type),
         featured: j.featured || false,
       postedDate: j.posted_date,
@@ -695,7 +692,7 @@ const copyShareMessage = async (shareMessage: string) => {
                     <DollarSign className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Salary ({currencyLabel})</p>
+                    <p className="text-sm text-muted-foreground">Salary</p>
                     <p className="font-medium text-foreground">{salaryDisplay}</p>
                   </div>
                 </div>
@@ -841,7 +838,7 @@ const copyShareMessage = async (shareMessage: string) => {
                     <DollarSign className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Salary ({currencyLabel})</p>
+                    <p className="text-sm text-muted-foreground">Salary</p>
                     <p className="font-medium text-foreground">{salaryDisplay}</p>
                   </div>
                 </div>
