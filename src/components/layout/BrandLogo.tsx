@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
+import { BRAND_LOGO_PATH, BRAND_NAME } from "@/lib/brand";
 
-const BRAND_LOGO_SRC = "/logo.png";
+const BRAND_LOGO_SRC = BRAND_LOGO_PATH;
 
 interface BrandLogoProps {
   className?: string;
@@ -27,7 +28,7 @@ const BrandLogo = ({
       >
         <img
           src={BRAND_LOGO_SRC}
-          alt="Hirelypk logo"
+          alt={`${BRAND_NAME} logo`}
           className={cn(
             "h-full w-full object-cover object-center scale-[2.1]",
             imageClassName
@@ -41,7 +42,7 @@ const BrandLogo = ({
             textClassName
           )}
         >
-          Hirelypk
+          {BRAND_NAME}
         </span>
       ) : null}
     </div>

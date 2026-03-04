@@ -1,9 +1,16 @@
 import { useEffect } from "react";
+import {
+  BRAND_DESCRIPTION,
+  BRAND_LOGO_PATH,
+  BRAND_NAME,
+  BRAND_TAGLINE,
+  BRAND_SITE_URL,
+  toAbsoluteUrl,
+} from "@/lib/brand";
 
-const SITE_NAME = "Hirelypk";
-const DEFAULT_TITLE = "Hirelypk - Connecting Talent to Real Job Openings";
-const DEFAULT_DESCRIPTION =
-  "Hirelypk connects job seekers with verified job opportunities. Find roles fast, posted with confidence.";
+const SITE_NAME = BRAND_NAME;
+const DEFAULT_TITLE = `${BRAND_NAME} - ${BRAND_TAGLINE}`;
+const DEFAULT_DESCRIPTION = BRAND_DESCRIPTION;
 
 export interface SeoConfig {
   title?: string;
@@ -17,8 +24,11 @@ export interface SeoConfig {
 }
 
 const upsertMeta = (attr: "name" | "property", key: string, content?: string) => {
-  if (!content || typeof document === "undefined") return;
   let meta = document.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
+  if (!content) {
+    if (meta) meta.remove();
+    return;
+  }
   if (!meta) {
     meta = document.createElement("meta");
     meta.setAttribute(attr, key);
@@ -28,8 +38,11 @@ const upsertMeta = (attr: "name" | "property", key: string, content?: string) =>
 };
 
 const upsertLink = (rel: string, href?: string) => {
-  if (!href || typeof document === "undefined") return;
   let link = document.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement | null;
+  if (!href) {
+    if (link) link.remove();
+    return;
+  }
   if (!link) {
     link = document.createElement("link");
     link.setAttribute("rel", rel);
@@ -56,6 +69,11 @@ const upsertJsonLd = (id: string, data?: SeoConfig["structuredData"]) => {
   }
 };
 
+const resolveAbsoluteUrl = (value?: string) => {
+  if (!value) return undefined;
+  return /^https?:\/\//i.test(value) ? value : toAbsoluteUrl(value);
+};
+
 export const useSeo = ({
   title,
   description,
@@ -69,11 +87,26 @@ export const useSeo = ({
   useEffect(() => {
     if (typeof document === "undefined") return;
 
-    const resolvedTitle = title ? `${title} | ${SITE_NAME}` : DEFAULT_TITLE;
+    const normalizedTitle = title?.trim();
+    const shouldAppendSiteName =
+      normalizedTitle &&
+      !normalizedTitle.toLowerCase().includes(SITE_NAME.toLowerCase());
+
+    const resolvedTitle = normalizedTitle
+      ? shouldAppendSiteName
+        ? `${normalizedTitle} | ${SITE_NAME}`
+        : normalizedTitle
+      : DEFAULT_TITLE;
+
     const resolvedDescription = description || DEFAULT_DESCRIPTION;
     const resolvedKeywords = Array.isArray(keywords) ? keywords.join(", ") : keywords;
-    const resolvedUrl = canonical || window.location.href;
-    const resolvedImage = image || `${window.location.origin}/logo.png`;
+    const resolvedCanonical = resolveAbsoluteUrl(canonical);
+    const resolvedUrl = resolvedCanonical || window.location.href || BRAND_SITE_URL;
+    const resolvedImage =
+      resolveAbsoluteUrl(image) ||
+      (typeof window !== "undefined"
+        ? `${window.location.origin}${BRAND_LOGO_PATH}`
+        : toAbsoluteUrl(BRAND_LOGO_PATH));
 
     document.title = resolvedTitle;
     upsertMeta("name", "description", resolvedDescription);
@@ -90,6 +123,7 @@ export const useSeo = ({
     upsertMeta("property", "og:type", type);
     upsertMeta("property", "og:url", resolvedUrl);
     upsertMeta("property", "og:image", resolvedImage);
+    upsertMeta("property", "og:image:alt", `${SITE_NAME} logo`);
 
     upsertMeta("name", "twitter:card", "summary_large_image");
     upsertMeta("name", "twitter:title", resolvedTitle);

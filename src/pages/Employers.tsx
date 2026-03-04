@@ -6,13 +6,28 @@ import Layout from "@/components/layout/Layout";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useSeo } from "@/hooks/useSeo";
 import { topCompanies as mockCompanies } from "@/data/mockData";
+import { BRAND_NAME } from "@/lib/brand";
 
 const Employers = () => {
   const { data: dbCompanies = [], isLoading } = useCompanies();
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const canonical = origin ? `${origin}/employers` : undefined;
+  const structuredData = canonical
+    ? {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: `${BRAND_NAME} Employers`,
+        description: "Explore hiring companies and open opportunities.",
+        url: canonical,
+      }
+    : undefined;
 
   useSeo({
-    title: "Hire Top Talent",
-    description: "Discover employers and explore open roles on Hirelypk.",
+    title: "Employers",
+    description: `Discover employers and explore open roles on ${BRAND_NAME}.`,
+    keywords: ["hiring companies", "employers", "company profiles", "recruitment"],
+    canonical,
+    structuredData,
   });
 
   // Transform database companies
