@@ -139,44 +139,7 @@ const About = () => {
       </section>
 
       {/* ── Mission statement ── */}
-      <section className="py-20 bg-muted/30 border-t border-border">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="rounded-2xl bg-card border border-border p-10 md:p-14 relative overflow-hidden">
-              {/* Decorative blob */}
-              <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
-
-              <div className="relative grid md:grid-cols-2 gap-10 items-center">
-                <div>
-                  <p className="text-xs font-bold tracking-widest uppercase text-primary mb-4">Our Mission</p>
-                  <h2 className="text-3xl font-bold text-foreground leading-snug mb-5">
-                    Built for people who take their careers seriously.
-                  </h2>
-                  <p className="text-muted-foreground leading-relaxed text-sm">
-                    We believe finding the right job shouldn't feel like searching for a needle in a haystack.
-                    Hirelypk strips away the clutter and connects you directly to opportunities worth your time.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  {[
-                    { icon: Zap, text: "Fast, distraction-free browsing experience" },
-                    { icon: ShieldCheck, text: "Every listing manually verified by our team" },
-                    { icon: Globe, text: "Opportunities from companies across Pakistan and beyond" },
-                  ].map(({ icon: Icon, text }) => (
-                    <div key={text} className="flex items-start gap-3.5">
-                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/8">
-                        <Icon className="h-4 w-4 text-primary" />
-                      </div>
-                      <p className="text-sm text-foreground leading-relaxed">{text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+    
 
       {/* ── CTA ── */}
     
