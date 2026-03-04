@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Search, ArrowRight, Target, AlertTriangle, Search as SearchIcon, UserCheck, ExternalLink } from "lucide-react";
+import { Search, ArrowRight, Target, AlertTriangle, Search as SearchIcon, UserCheck, ExternalLink, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Layout from "@/components/layout/Layout";
@@ -26,55 +26,80 @@ const Index = () => {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const homeCanonical = origin ? `${origin}/` : undefined;
   const homeImage = origin ? `${origin}/logo.png` : undefined;
+  const steps = [
+  {
+    icon: Search,
+    step: "01",
+    title: "Search & Browse",
+    desc: "Find jobs that match your skills and interests from our curated listings.",
+    iconColor: "text-sky-600",
+    iconBg: "bg-sky-50 dark:bg-sky-900/20",
+    iconBorder: "border-sky-200/70 dark:border-sky-800/40",
+    stepColor: "text-sky-500/30",
+  },
+  {
+    icon: UserCheck,
+    step: "02",
+    title: "Sign In & Apply",
+    desc: "Create your free account and apply to jobs with a single click.",
+    iconColor: "text-violet-600",
+    iconBg: "bg-violet-50 dark:bg-violet-900/20",
+    iconBorder: "border-violet-200/70 dark:border-violet-800/40",
+    stepColor: "text-violet-500/30",
+  },
+  {
+    icon: ExternalLink,
+    step: "03",
+    title: "Get Redirected",
+    desc: "Complete your application directly on the company's official website.",
+    iconColor: "text-emerald-600",
+    iconBg: "bg-emerald-50 dark:bg-emerald-900/20",
+    iconBorder: "border-emerald-200/70 dark:border-emerald-800/40",
+    stepColor: "text-emerald-500/30",
+  },
+];
+
   const structuredData = origin
     ? [
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        name: "Hirelypk",
-        url: origin,
-        potentialAction: {
-          "@type": "SearchAction",
-          target: `${origin}/find-jobs?q={search_term_string}`,
-          "query-input": "required name=search_term_string",
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Hirelypk",
+          url: origin,
+          potentialAction: {
+            "@type": "SearchAction",
+            target: `${origin}/find-jobs?q={search_term_string}`,
+            "query-input": "required name=search_term_string",
+          },
         },
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        name: "Hirelypk",
-        url: origin,
-        logo: homeImage || `${origin}/logo.png`,
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        name: "Hirelypk Home",
-        url: homeCanonical || origin,
-        description:
-          "Browse thousands of jobs from top companies. Sign in, apply with one click, and get redirected to complete your application.",
-      },
-    ]
+        {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Hirelypk",
+          url: origin,
+          logo: homeImage || `${origin}/logo.png`,
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: "Hirelypk Home",
+          url: homeCanonical || origin,
+          description:
+            "Browse thousands of jobs from top companies. Sign in, apply with one click, and get redirected to complete your application.",
+        },
+      ]
     : undefined;
 
   useSeo({
     title: "Find Your Next Dream Job",
     description:
       "Browse thousands of jobs from top companies. Apply quickly and get redirected to complete your application.",
-    keywords: [
-      "job board",
-      "find jobs",
-      "remote jobs",
-      "full-time jobs",
-      "career opportunities",
-      "hirely",
-    ],
+    keywords: ["job board", "find jobs", "remote jobs", "full-time jobs", "career opportunities", "hirely"],
     canonical: homeCanonical,
     image: homeImage,
     structuredData,
   });
 
-  // Transform database jobs to match the Job interface used by JobCard
   const formatSalary = (min: number | null, max: number | null, _currency: string | null) => {
     if (!min && !max) return "No Salary Mentioned";
     if (min && max) return `${min.toLocaleString()} - ${max.toLocaleString()}`;
@@ -95,9 +120,6 @@ const Index = () => {
   }));
 
   const hasJobs = transformedJobs.length > 0;
-  const activeJobsCount = dbJobs.length;
-  const companyCount = companies.length;
-  
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -106,69 +128,65 @@ const Index = () => {
     navigate(`/find-jobs?${params.toString()}`);
   };
 
-  const howItWorksSteps = [
-    {
-      icon: SearchIcon,
-      step: "1",
-      title: "Search & Browse",
-      desc: "Find jobs that match your skills and interests from our curated listings",
-    },
-    {
-      icon: UserCheck,
-      step: "2",
-      title: "Sign In & Apply",
-      desc: "Create your free account and apply to jobs with a single click",
-    },
-    {
-      icon: ExternalLink,
-      step: "3",
-      title: "Get Redirected",
-      desc: "Complete your application directly on the company's website",
-    },
-  ];
-
   return (
     <Layout>
       {/* Hero Section */}
-      <section className=" pt-28   bg-gradient-to-br from-primary/10 via-background to-primary/5 pb-16 lg:pt-36 lg:pb-24">
-        <div className="container mx-auto px-4">
+      <section className="relative overflow-hidden bg-background pt-24 pb-20 lg:pt-32 lg:pb-28 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-primary/10 via-background to-background">
+        {/* Background elements */}
+      
+
+
+        <div className="container relative mx-auto px-4">
           <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
+            {/* Eyebrow */}
+            <div className="inline-flex items-center gap-2.5 mb-7 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5">
+              <TrendingUp className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs font-semibold tracking-widest uppercase text-primary">
+                New Opportunities Added Daily
+              </span>
+            </div>
 
-          <div className="flex items-center justify-center gap-[10px] mb-[18px] text-[11px] font-bold tracking-[3.5px] uppercase text-[#6B5EFF]">
-  
-  <span className="w-[24px] h-[2px] bg-[#6B5EFF] rounded"></span>
-  
-New Oppurtunities Added Daily
-  
-  <span className="w-[24px] h-[2px] bg-[#6B5EFF] rounded"></span>
-
-</div>
-
-            {/* Main Title */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-heading text-foreground mb-5 leading-[1.15] tracking-tight">
-            Find the right job,{" "}
-              <span className="text-primary italic">faster</span>
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-foreground mb-6 leading-[1.05]">
+              Find the right job,{" "}
+              <em className="not-italic text-primary relative">
+                faster
+                <svg
+                  className="absolute -bottom-2 left-0 w-full"
+                  viewBox="0 0 180 10"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M2 7C40 2 90 2 178 7"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    className="text-primary/30"
+                  />
+                </svg>
+              </em>
             </h1>
 
-            <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed">
-Experience a premium, high-performance job search engine designed for the modern professional. Join Hirelypk today.   </p>
+            <p className="text-lg text-muted-foreground max-w-xl mb-10 leading-relaxed">
+              A premium, high-performance job search engine built for the modern professional.
+            </p>
 
             {/* Search Bar */}
-            <div className="w-full max-w-2xl mx-auto mb-12">
-              <div className="bg-card border border-border rounded-lg p-1.5 flex items-center shadow-sm">
-                <div className="pl-3 text-muted-foreground">
-                  <Search className="w-5 h-5" />
+            <div className="w-full max-w-2xl mx-auto mb-14">
+              <div className="bg-card border border-border rounded-2xl p-2 flex items-center shadow-xl shadow-black/5 dark:shadow-black/25 gap-1">
+                <div className="pl-3 text-muted-foreground shrink-0">
+                  <Search className="w-4 h-4" />
                 </div>
                 <Input
                   placeholder="Job title, keywords, or company..."
-                  className="border-0 bg-transparent shadow-none text-base h-12 focus-visible:ring-0 placeholder:text-muted-foreground/60"
+                  className="border-0 bg-transparent shadow-none text-sm h-11 focus-visible:ring-0 placeholder:text-muted-foreground/60"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
                 <Button
-                  size="lg"
-                  className="rounded-md h-11 px-6 text-sm font-medium bg-primary hover:bg-primary/90"
+                  size="default"
+                  className="rounded-xl h-11 px-6 text-sm font-semibold shrink-0 shadow-md shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all"
                   onClick={handleSearch}
                 >
                   Search Jobs
@@ -176,94 +194,98 @@ Experience a premium, high-performance job search engine designed for the modern
               </div>
             </div>
 
-            {/* Stats */}
-          
-
+            {/* Quick filter pills */}
+            {hasJobs && (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <span className="text-xs text-muted-foreground mr-1">Popular:</span>
+                {["Remote", "Full Time", "Internship", "Contract"].map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => navigate(`/find-jobs?q=${tag.toLowerCase()}`)}
+                    className="rounded-full border border-border bg-card hover:border-primary/30 hover:bg-primary/5 hover:text-primary px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors"
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
 
       {/* How It Works */}
-  <section className="py-16 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-              How It Works
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Get started in three simple steps
-            </p>
-          </div>
+     <section className="py-20 border-y border-border bg-muted/20">
+      <div className="container mx-auto px-4">
+        {/* Header */}
+        <div className="text-center mb-14">
+         
+          <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4 tracking-tight">
+            How It Works
+          </h2>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+            Get from browsing to applying in three straightforward steps.
+          </p>
+        </div>
 
-            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              <div className="relative group">
-                <div className="bg-card/80 border border-border/60 rounded-2xl p-8 text-center hover:shadow-lg transition-all backdrop-blur">
-                  <div className="absolute -top-4 -right-4 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg">
-                    1
-                  </div>
-                  <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <SearchIcon className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-bold text-foreground mb-3">Search & Browse</h3>
-                  <p className="text-muted-foreground">
-                   Find jobs that match your skills and interests from our curated listings
-                  </p>
+        {/* Cards */}
+        <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          {steps.map((item, index) => (
+            <div key={index} className="relative group flex flex-col">
+              {/* Connector arrow between cards */}
+              {index < 2 && (
+                <div className="hidden md:flex absolute top-1/2 -right-5 -translate-y-1/2 z-10 items-center justify-center w-6">
+                  <ArrowRight className="w-4 h-4 text-border" />
                 </div>
-                <div className="hidden md:block absolute top-1/2 -right-4 transform translate-x-1/2 -translate-y-1/2 z-10">
-                  <ArrowRight className="w-8 h-8 text-primary/40" />
-                </div>
-              </div>
+              )}
 
-              <div className="relative group">
-                <div className="bg-card/80 border border-border/60 rounded-2xl p-8 text-center hover:shadow-lg transition-all backdrop-blur">
-                  <div className="absolute -top-4 -right-4 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg">
-                    2
-                  </div>
-                  <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <UserCheck className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-bold text-foreground mb-3">Sign In & Apply</h3>
-                  <p className="text-muted-foreground">
-                   Create your free account and apply to jobs with a single click
-                  </p>
-                </div>
-                <div className="hidden md:block absolute top-1/2 -right-4 transform translate-x-1/2 -translate-y-1/2 z-10">
-                  <ArrowRight className="w-8 h-8 text-primary/40" />
-                </div>
-              </div>
+              <div className="relative flex-1 bg-card border border-border rounded-2xl p-6 overflow-hidden transition-all duration-300 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1">
+                {/* Faint step number watermark */}
+                <span
+                  className={`absolute -bottom-3 -right-1 text-7xl font-black leading-none select-none pointer-events-none font-mono ${item.stepColor}`}
+                >
+                  {item.step}
+                </span>
 
-              <div className="relative group">
-                <div className="bg-card/80 border border-border/60 rounded-2xl p-8 text-center hover:shadow-lg transition-all backdrop-blur">
-                  <div className="absolute -top-4 -right-4 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg">
-                    3
-                  </div>
-                  <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <ExternalLink className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-bold text-foreground mb-3">Get Redirected</h3>
-                  <p className="text-muted-foreground">
-                   Complete your application directly on the company's website
-                  </p>
+                {/* Icon */}
+                <div
+                  className={`
+                    inline-flex items-center justify-center
+                    h-11 w-11 rounded-xl mb-5
+                    border ${item.iconBorder} ${item.iconBg}
+                    group-hover:scale-105 transition-transform duration-300
+                  `}
+                >
+                  <item.icon className={`h-5 w-5 ${item.iconColor}`} strokeWidth={2} />
+                </div>
+
+                {/* Text */}
+                <div className="relative">
+                  <h3 className="text-base font-bold text-foreground mb-1.5">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
                 </div>
               </div>
             </div>
+          ))}
         </div>
-      </section>
+      </div>
+    </section>
+
       {/* Featured Jobs Section */}
       {hasJobs && (
-        <section className="py-16 bg-background ">
+        <section className="py-20 bg-background">
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
               <div>
-                <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-1">
+                <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-2">Fresh Listings</p>
+                <h2 className="text-2xl lg:text-3xl font-bold text-foreground">
                   Latest Openings
                 </h2>
-                <p className="text-muted-foreground">
-                  Fresh roles added by hiring teams
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Recently posted roles from top hiring teams
                 </p>
               </div>
               <Link to="/find-jobs">
-                <Button variant="outline" className="gap-2">
+                <Button variant="outline" className="gap-2 rounded-xl hover:border-primary/30 hover:text-primary">
                   View All Jobs
                   <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -271,8 +293,11 @@ Experience a premium, high-performance job search engine designed for the modern
             </div>
 
             {jobsLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
+              <div className="flex flex-col items-center py-16">
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-full border-2 border-primary/20" />
+                  <div className="absolute inset-0 h-10 w-10 animate-spin rounded-full border-2 border-transparent border-t-primary" />
+                </div>
                 <p className="mt-4 text-sm text-muted-foreground">Loading jobs...</p>
               </div>
             ) : (
@@ -286,25 +311,21 @@ Experience a premium, high-performance job search engine designed for the modern
         </section>
       )}
 
-      {/* Empty State - When no jobs */}
+      {/* Empty State */}
       {!hasJobs && !jobsLoading && !jobsError && (
-        <section className="py-16 bg-background">
+        <section className="py-20 bg-background">
           <div className="container mx-auto px-4">
-            <div className="max-w-lg mx-auto text-center bg-card border border-border rounded-lg p-10">
-              <div className="w-12 h-12 bg-primary/10 rounded-md flex items-center justify-center mx-auto mb-5">
-                <Target className="w-6 h-6 text-primary" />
+            <div className="max-w-lg mx-auto text-center bg-card border border-border rounded-2xl p-12">
+              <div className="w-14 h-14 bg-primary/8 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                <Target className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="text-xl font-bold text-foreground mb-3">
-                Job Listings Coming Soon
-              </h3>
-              <p className="text-muted-foreground mb-6 text-sm">
+              <h3 className="text-xl font-bold text-foreground mb-3">Job Listings Coming Soon</h3>
+              <p className="text-muted-foreground mb-7 text-sm leading-relaxed">
                 We're building our collection of opportunities. Check back soon for new listings.
               </p>
               {!user && (
                 <Link to="/signup">
-                  <Button className="btn-primary">
-                    Create Account
-                  </Button>
+                  <Button className="rounded-xl px-6">Create Account</Button>
                 </Link>
               )}
             </div>
@@ -313,24 +334,20 @@ Experience a premium, high-performance job search engine designed for the modern
       )}
 
       {jobsError && !jobsLoading && (
-        <section className="py-16 bg-background">
+        <section className="py-20 bg-background">
           <div className="container mx-auto px-4">
-            <div className="max-w-lg mx-auto text-center bg-card border border-destructive/30 rounded-lg p-10">
-              <div className="w-12 h-12 bg-destructive/10 rounded-md flex items-center justify-center mx-auto mb-5">
-                <AlertTriangle className="h-6 w-6 text-destructive" />
+            <div className="max-w-lg mx-auto text-center bg-card border border-destructive/20 rounded-2xl p-12">
+              <div className="w-14 h-14 bg-destructive/8 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                <AlertTriangle className="h-7 w-7 text-destructive" />
               </div>
-              <h3 className="text-xl font-bold text-foreground mb-3">
-                Unable To Load Guest Jobs
-              </h3>
-              <p className="text-sm text-muted-foreground mb-6">
-                {jobsErrorMessage}
-              </p>
+              <h3 className="text-xl font-bold text-foreground mb-3">Unable To Load Jobs</h3>
+              <p className="text-sm text-muted-foreground mb-7">{jobsErrorMessage}</p>
               <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={() => refetch()}>
+                <Button variant="outline" onClick={() => refetch()} className="rounded-xl">
                   Try Again
                 </Button>
                 <Link to="/find-jobs">
-                  <Button className="btn-primary">Open Job Search</Button>
+                  <Button className="rounded-xl">Open Job Search</Button>
                 </Link>
               </div>
             </div>
@@ -340,24 +357,25 @@ Experience a premium, high-performance job search engine designed for the modern
 
       {/* CTA Section - Not logged in */}
       {!user && (
-        <section className="py-16 bg-secondary/50">
+        <section className="py-20 bg-muted/30 border-t border-border">
           <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+            <div className="max-w-2xl mx-auto text-center">
+              <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-4">Get Started</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-5">
                 Ready to find your next role?
               </h2>
-              <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-                Join thousands of job seekers who use Hirelypk to connect with hiring companies. It's free to get started.
+              <p className="text-muted-foreground mb-10 max-w-lg mx-auto leading-relaxed">
+                Join thousands of job seekers who use Hirelypk to connect with hiring companies. It's completely free.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link to="/signup">
-                  <Button size="lg" className="btn-primary px-8 h-12">
+                  <Button size="lg" className="rounded-xl px-8 h-12 shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all">
                     Get Started Free
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Link>
                 <Link to="/find-jobs">
-                  <Button size="lg" variant="outline" className="px-8 h-12">
+                  <Button size="lg" variant="outline" className="rounded-xl px-8 h-12 hover:border-primary/30 hover:text-primary">
                     Browse Jobs
                   </Button>
                 </Link>
@@ -369,32 +387,36 @@ Experience a premium, high-performance job search engine designed for the modern
 
       {/* Logged-in user quick actions */}
       {user && (
-        <section className="py-16 bg-secondary/50">
+        <section className="py-20 border-t border-border">
           <div className="container mx-auto px-4">
-            <div className="max-w-8xl mx-auto bg-primary rounded-xl p-8 md:p-12 text-center text-primary-foreground">
-              <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                Welcome back
-              </h2>
-              <p className="text-primary-foreground/80 mb-8 max-w-xl mx-auto">
-                Ready to discover your next opportunity? Browse our latest job listings and apply with one click.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link to="/find-jobs">
-                  <Button size="lg" variant="secondary" className="px-8 h-12">
-                    <Search className="mr-2 w-4 h-4" />
-                    Browse Jobs
-                  </Button>
-                </Link>
-                <Link to="/profile">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="bg-transparent border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 px-8 h-12"
-                  >
-                    My Profile
-                    <ArrowRight className="ml-2 w-4 h-4" />
-                  </Button>
-                </Link>
+            <div className="max-w-4xl mx-auto bg-primary rounded-2xl p-10 md:p-14 text-center text-primary-foreground relative overflow-hidden">
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/5 blur-2xl" />
+                <div className="absolute -bottom-10 left-10 w-48 h-48 rounded-full bg-white/5 blur-2xl" />
+              </div>
+              <div className="relative">
+                <h2 className="text-2xl md:text-3xl font-bold mb-3">Welcome back 👋</h2>
+                <p className="text-primary-foreground/75 mb-10 max-w-xl mx-auto leading-relaxed">
+                  Ready to discover your next opportunity? Browse our latest job listings.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link to="/find-jobs">
+                    <Button size="lg" variant="secondary" className="rounded-xl px-8 h-12 font-semibold">
+                      <Search className="mr-2 w-4 h-4" />
+                      Browse Jobs
+                    </Button>
+                  </Link>
+                  <Link to="/profile">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="rounded-xl bg-transparent border-white/25 text-white hover:bg-white/10 px-8 h-12"
+                    >
+                      My Profile
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

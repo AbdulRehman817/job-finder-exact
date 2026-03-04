@@ -159,9 +159,9 @@ const Header = () => {
                 to={link.path}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                  isActive(link.path)
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                 isActive(link.path)
+                    ? "text-primary bg-primary/8"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                 )}
                 >
                   <link.icon className="h-4 w-4" />
@@ -277,9 +277,22 @@ const Header = () => {
           <div className="mt-4 pt-4 border-t border-border">
             {user ? (
               <div className="space-y-2">
-                <div className="rounded-lg bg-muted/60 px-4 py-3">
-                  <p className="text-sm font-medium text-foreground">{profile?.full_name || "User"}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                <div className="rounded-lg bg-muted/60 px-4 py-3 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20 overflow-hidden shrink-0">
+                    {getAvatarUrl(profile?.avatar_url) ? (
+                      <img
+                        src={getAvatarUrl(profile?.avatar_url) ?? ""}
+                        alt=""
+                        className="h-10 w-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-5 w-5 text-primary" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{profile?.full_name || "User"}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
                 </div>
                 <Link
                   to={userRole === "employer" ? "/recruiter-profile" : "/profile"}

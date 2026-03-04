@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Sparkles, Star } from "lucide-react";
+import { Sparkles, Star, MessageSquarePlus } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,16 +49,10 @@ const DISMISS_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000;
 const MAX_AUTO_PROMPTS = 3;
 
 const parseCachedFeedback = (): FeedbackPayload[] => {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
+  if (typeof window === "undefined") return [];
   try {
     const rawValue = localStorage.getItem(FEEDBACK_CACHE_KEY);
-    if (!rawValue) {
-      return [];
-    }
-
+    if (!rawValue) return [];
     const parsed = JSON.parse(rawValue);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -67,10 +61,7 @@ const parseCachedFeedback = (): FeedbackPayload[] => {
 };
 
 const saveCachedFeedback = (payloads: FeedbackPayload[]) => {
-  if (typeof window === "undefined") {
-    return;
-  }
-
+  if (typeof window === "undefined") return;
   localStorage.setItem(FEEDBACK_CACHE_KEY, JSON.stringify(payloads));
 };
 
@@ -79,25 +70,29 @@ const readNumberKey = (key: string) => {
   return Number(localStorage.getItem(key) || "0");
 };
 
+const ratingLabels: Record<number, string> = {
+  1: "Poor",
+  2: "Fair",
+  3: "Good",
+  4: "Great",
+  5: "Excellent",
+};
+
 const UserReviewPopup = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false);
-  const [openSource, setOpenSource] = useState<"manual" | "auto" | "nudge" | null>(
-    null,
-  );
+  const [openSource, setOpenSource] = useState<"manual" | "auto" | "nudge" | null>(null);
   const submittedInThisCycleRef = useRef(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
+    if (typeof window === "undefined") return;
     setHasSubmittedFeedback(
       localStorage.getItem(FEEDBACK_POPUP_SUBMITTED_KEY) === "true",
     );
@@ -106,38 +101,18 @@ const UserReviewPopup = () => {
   const isExcludedPath = EXCLUDED_PATHS.has(location.pathname);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    if (isExcludedPath) {
-      return;
-    }
-
-    if (hasSubmittedFeedback) {
-      return;
-    }
-
-    if (sessionStorage.getItem(FEEDBACK_POPUP_SESSION_PROMPTED_KEY) === "true") {
-      return;
-    }
-
-    if (isOpen) {
-      return;
-    }
+    if (typeof window === "undefined") return;
+    if (isExcludedPath || hasSubmittedFeedback) return;
+    if (sessionStorage.getItem(FEEDBACK_POPUP_SESSION_PROMPTED_KEY) === "true") return;
+    if (isOpen) return;
 
     const lastDismissedAt = Number(
       localStorage.getItem(FEEDBACK_POPUP_LAST_DISMISSED_AT_KEY) || "0",
     );
-    const dismissElapsedMs = Date.now() - lastDismissedAt;
-    if (lastDismissedAt > 0 && dismissElapsedMs < DISMISS_COOLDOWN_MS) {
-      return;
-    }
+    if (lastDismissedAt > 0 && Date.now() - lastDismissedAt < DISMISS_COOLDOWN_MS) return;
 
     const autoPromptCount = readNumberKey(FEEDBACK_POPUP_AUTO_PROMPT_COUNT_KEY);
-    if (autoPromptCount >= MAX_AUTO_PROMPTS) {
-      return;
-    }
+    if (autoPromptCount >= MAX_AUTO_PROMPTS) return;
 
     const timeoutId = window.setTimeout(() => {
       setRating(0);
@@ -156,22 +131,13 @@ const UserReviewPopup = () => {
   }, [hasSubmittedFeedback, isExcludedPath, isOpen]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    if (hasSubmittedFeedback || isExcludedPath) {
-      return;
-    }
+    if (typeof window === "undefined") return;
+    if (hasSubmittedFeedback || isExcludedPath) return;
 
     const handleNudge = (event: Event) => {
-      if (isOpen) {
-        return;
-      }
-
+      if (isOpen) return;
       const customEvent = event as CustomEvent<FeedbackNudgeDetail>;
       const source = customEvent.detail?.source || "unknown";
-
       setRating(0);
       setFeedback("");
       setOpenSource("nudge");
@@ -181,21 +147,12 @@ const UserReviewPopup = () => {
     };
 
     window.addEventListener(FEEDBACK_NUDGE_EVENT, handleNudge as EventListener);
-
-    return () =>
-      window.removeEventListener(
-        FEEDBACK_NUDGE_EVENT,
-        handleNudge as EventListener,
-      );
+    return () => window.removeEventListener(FEEDBACK_NUDGE_EVENT, handleNudge as EventListener);
   }, [hasSubmittedFeedback, isExcludedPath, isOpen]);
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const source = openSource || "unknown";
-    trackFeedbackFunnel("feedback_prompt_opened", source);
+    if (!isOpen) return;
+    trackFeedbackFunnel("feedback_prompt_opened", openSource || "unknown");
   }, [isOpen, openSource]);
 
   const markPopupSubmitted = () => {
@@ -213,33 +170,16 @@ const UserReviewPopup = () => {
   const submitToAppwrite = async (payload: FeedbackPayload) => {
     try {
       await ensureAnonymousSession();
-
       const documentData: Record<string, string | number> = {
         rating: payload.rating,
         page_path: payload.page,
         submitted_at: payload.submittedAt,
         user_agent: payload.userAgent,
       };
-
-      if (payload.feedback) {
-        documentData.feedback = payload.feedback;
-      }
-
-      if (payload.userId) {
-        documentData.user_id = payload.userId;
-      }
-
-      if (payload.userEmail) {
-        documentData.user_email = payload.userEmail;
-      }
-
-      await databases.createDocument(
-        DATABASE_ID,
-        COLLECTIONS.FEEDBACK,
-        ID.unique(),
-        documentData
-      );
-
+      if (payload.feedback) documentData.feedback = payload.feedback;
+      if (payload.userId) documentData.user_id = payload.userId;
+      if (payload.userEmail) documentData.user_email = payload.userEmail;
+      await databases.createDocument(DATABASE_ID, COLLECTIONS.FEEDBACK, ID.unique(), documentData);
       return true;
     } catch {
       return false;
@@ -248,33 +188,24 @@ const UserReviewPopup = () => {
 
   const flushCachedFeedback = async () => {
     const cachedFeedback = parseCachedFeedback();
-    if (cachedFeedback.length === 0) {
-      return 0;
-    }
-
+    if (cachedFeedback.length === 0) return 0;
     const unsentFeedback: FeedbackPayload[] = [];
-
     for (const item of cachedFeedback) {
       const isStored = await submitToAppwrite(item);
-      if (!isStored) {
-        unsentFeedback.push(item);
-      }
+      if (!isStored) unsentFeedback.push(item);
     }
-
     saveCachedFeedback(unsentFeedback);
     return cachedFeedback.length - unsentFeedback.length;
   };
 
   const registerDismiss = (source: string) => {
-    localStorage.setItem(
-      FEEDBACK_POPUP_LAST_DISMISSED_AT_KEY,
-      String(Date.now()),
-    );
+    localStorage.setItem(FEEDBACK_POPUP_LAST_DISMISSED_AT_KEY, String(Date.now()));
     trackFeedbackFunnel("feedback_prompt_dismissed", source);
   };
 
   const resetDraft = () => {
     setRating(0);
+    setHoverRating(0);
     setFeedback("");
   };
 
@@ -285,7 +216,6 @@ const UserReviewPopup = () => {
       setOpenSource(null);
       return;
     }
-
     if (!open) {
       registerDismiss(`${openSource || "unknown"}:dialog-close`);
       resetDraft();
@@ -293,7 +223,6 @@ const UserReviewPopup = () => {
       setOpenSource(null);
       return;
     }
-
     setIsOpen(true);
   };
 
@@ -305,10 +234,6 @@ const UserReviewPopup = () => {
   };
 
   const handleManualOpen = () => {
-    if (hasSubmittedFeedback) {
-      return;
-    }
-
     resetDraft();
     setOpenSource("manual");
     setIsOpen(true);
@@ -345,9 +270,7 @@ const UserReviewPopup = () => {
     };
 
     const isStoredInAppwrite = await submitToAppwrite(payload);
-    if (!isStoredInAppwrite) {
-      cacheFeedback(payload);
-    }
+    if (!isStoredInAppwrite) cacheFeedback(payload);
 
     markPopupSubmitted();
     submittedInThisCycleRef.current = true;
@@ -361,13 +284,14 @@ const UserReviewPopup = () => {
     );
 
     toast({
-      title: "Thanks for your feedback!",
+      title: "Thanks for your feedback! 🎉",
       description: isStoredInAppwrite
         ? "Your response helps us prioritize the next improvements."
         : "Saved locally for now. We'll retry sending it when your session is ready.",
     });
   };
 
+  const activeRating = hoverRating || rating;
   const submitButtonLabel =
     rating > 0 && !feedback.trim()
       ? `Submit ${rating}-star review`
@@ -375,83 +299,102 @@ const UserReviewPopup = () => {
 
   return (
     <>
-      {!hasSubmittedFeedback && !isExcludedPath && (
-        <Button
+      {/* Floating trigger button */}
+      {!isExcludedPath && (
+        <button
           type="button"
-          size="sm"
-          className="fixed bottom-6 right-6 z-40 btn-primary shadow-lg gap-2 animate-[pulse_3s_ease-in-out_infinite]"
           onClick={handleManualOpen}
+          className="fixed bottom-6 right-6 z-40 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-primary/35 animate-[pulse_3s_ease-in-out_infinite]"
         >
-          <Sparkles className="h-4 w-4" />
+          <MessageSquarePlus className="h-4 w-4" />
           Help improve Hirelypk
-        </Button>
+        </button>
       )}
 
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Quick 10-second feedback</DialogTitle>
-            <DialogDescription>
-              {openSource === "nudge"
-                ? "Nice work. Tell us how this experience felt so we can improve it."
-                : "Rate your experience and optionally share one improvement idea."}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-sm rounded-2xl p-0 overflow-hidden gap-0">
+          {/* Coloured top strip */}
+          <div className="h-1 w-full bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
 
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm font-medium text-foreground mb-2">
-                How would you rate your experience?
-              </p>
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => handleRatingSelect(value)}
-                    className={`rounded-md p-1 transition-colors ${
-                      value <= rating
-                        ? "text-amber-500"
-                        : "text-muted-foreground hover:text-amber-400"
-                    }`}
-                    aria-label={`Rate ${value} star${value > 1 ? "s" : ""}`}
-                  >
-                    <Star
-                      className="h-5 w-5"
-                      fill={value <= rating ? "currentColor" : "none"}
-                    />
-                  </button>
-                ))}
+          <div className="p-6">
+            <DialogHeader className="mb-5">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                  <Sparkles className="h-4.5 w-4.5 text-primary" />
+                </div>
+                <DialogTitle className="text-base font-bold">Quick feedback</DialogTitle>
               </div>
-            </div>
+              <DialogDescription className="text-sm leading-relaxed">
+                {openSource === "nudge"
+                  ? "Nice work! How did that feel? One rating helps us improve."
+                  : "Rate your experience and share one thing we should do better."}
+              </DialogDescription>
+            </DialogHeader>
 
-            <div>
-              <p className="text-sm font-medium text-foreground mb-2">
-                What should we improve next? (optional)
-              </p>
-              <Textarea
-                value={feedback}
-                onChange={(event) => setFeedback(event.target.value)}
-                placeholder="Share one thing we should do better."
-                className="min-h-[110px]"
-              />
-            </div>
+            <div className="space-y-5">
+              {/* Star rating */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                  Your experience
+                </p>
+                <div className="flex items-center gap-1.5">
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => handleRatingSelect(value)}
+                      onMouseEnter={() => setHoverRating(value)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className="rounded-lg p-1 transition-transform hover:scale-110 active:scale-95"
+                      aria-label={`Rate ${value} star${value > 1 ? "s" : ""}`}
+                    >
+                      <Star
+                        className={`h-7 w-7 transition-colors ${
+                          value <= activeRating
+                            ? "text-amber-400 fill-amber-400"
+                            : "text-muted-foreground/40"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                  {activeRating > 0 && (
+                    <span className="ml-2 text-sm font-semibold text-amber-500 transition-all">
+                      {ratingLabels[activeRating]}
+                    </span>
+                  )}
+                </div>
+              </div>
 
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleDismiss}
-              >
-                Not now
-              </Button>
-              <Button
-                className="btn-primary flex-1"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Sending..." : submitButtonLabel}
-              </Button>
+              {/* Feedback textarea */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  Suggestions <span className="normal-case font-normal text-muted-foreground/70">(optional)</span>
+                </p>
+                <Textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="What's one thing we should do better?"
+                  className="min-h-[90px] rounded-xl resize-none text-sm"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl h-10 text-sm border-border bg-background text-foreground hover:!bg-primary hover:!text-primary-foreground hover:!border-primary"
+                  onClick={handleDismiss}
+                >
+                  Not now
+                </Button>
+                <Button
+                  className="flex-1 rounded-xl h-10 text-sm font-semibold shadow-md shadow-primary/20"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Sending…" : submitButtonLabel}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
@@ -461,4 +404,3 @@ const UserReviewPopup = () => {
 };
 
 export default UserReviewPopup;
-

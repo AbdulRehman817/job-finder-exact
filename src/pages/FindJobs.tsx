@@ -1,428 +1,3 @@
-// import { useState } from "react";
-// import { Link, useSearchParams } from "react-router-dom";
-// import {
-//   Search,
-//   MapPin,
-//   SlidersHorizontal,
-//   ChevronLeft,
-//   ChevronRight,
-//   Briefcase,
-//   X,
-//   Building2,
-//   DollarSign,
-//   Clock,
-//   Sparkles,
-//   AlertTriangle,
-// } from "lucide-react";
-// import { Button } from "@/components/ui/button";
-// import { Input } from "@/components/ui/input";
-// import { Checkbox } from "@/components/ui/checkbox";
-// import { Badge } from "@/components/ui/badge";
-// import { useJobs } from "@/hooks/useJobs";
-// import { useSeo } from "@/hooks/useSeo";
-// import Header from "@/components/layout/Header";
-// import { cn } from "@/lib/utils";
-// import { formatDistanceToNow } from "date-fns";
-// import { normalizeJobType } from "@/lib/jobType";
-
-// const ITEMS_PER_PAGE = 12;
-
-// const jobTypeColors: Record<string, string> = {
-//   "full-time": "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-//   "part-time": "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-//   "internship": "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-//   "remote": "bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-//   "contract": "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-// };
-
-// const FindJobs = () => {
-//   const [searchParams, setSearchParams] = useSearchParams();
-//   const [showFilters, setShowFilters] = useState(false);
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
-//   const [locationTerm, setLocationTerm] = useState("");
-//   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-
-//   const { data: dbJobs = [], isLoading, error: jobsError, refetch } = useJobs({ search: searchTerm });
-//   const jobsErrorMessage =
-//     jobsError instanceof Error
-//       ? jobsError.message
-//       : "Unable to load jobs right now. Please try again.";
-
-//   // Transform database jobs
-//   const transformedJobs = dbJobs.map((job) => ({
-//     id: job.$id,
-//     title: job.title,
-//     company: job.companies?.name || job.company || "Company",
-//     companyLogo: job.companies?.logo_url || "",
-//     companyId: job.companies?.$id || "",
-//     location: job.location,
-//     salary_min: job.salary_min,
-//     salary_max: job.salary_max,
-//     currency: job.currency || "USD",
-//     type: normalizeJobType(job.type),
-//     featured: job.featured || false,
-//     postedDate: job.posted_date,
-//     description: job.description,
-//   }));
-
-//   // Filter by selected types and location
-//   let filteredJobs = transformedJobs;
-
-//   if (selectedTypes.length > 0) {
-//     filteredJobs = filteredJobs.filter((job) => selectedTypes.includes(job.type));
-//   }
-
-//   if (locationTerm) {
-//     filteredJobs = filteredJobs.filter((job) =>
-//       job.location.toLowerCase().includes(locationTerm.toLowerCase())
-//     );
-//   }
-
-//   // Pagination
-//   const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
-//   const paginatedJobs = filteredJobs.slice(
-//     (currentPage - 1) * ITEMS_PER_PAGE,
-//     currentPage * ITEMS_PER_PAGE
-//   );
-
-//   const handleTypeChange = (type: string, checked: boolean) => {
-//     if (checked) {
-//       setSelectedTypes([...selectedTypes, type]);
-//     } else {
-//       setSelectedTypes(selectedTypes.filter((t) => t !== type));
-//     }
-//     setCurrentPage(1);
-//   };
-
-//   const handleSearch = () => {
-//     if (searchTerm) {
-//       setSearchParams({ q: searchTerm });
-//     } else {
-//       setSearchParams({});
-//     }
-//     setCurrentPage(1);
-//   };
-
-//   const clearFilters = () => {
-//     setSelectedTypes([]);
-//     setLocationTerm("");
-//     setSearchTerm("");
-//     setSearchParams({});
-//     setCurrentPage(1);
-//   };
-
-//   const hasActiveFilters =
-//     selectedTypes.length > 0 ||
-//     locationTerm.trim().length > 0 ||
-//     searchTerm.trim().length > 0;
-//   useSeo({
-//     title: "Find Jobs",
-//     description:
-//       "Search and filter jobs by title, location, and type on Hirelypk.",
-//     noIndex: hasActiveFilters,
-//   });
-
-//   const formatSalary = (min: number | null, max: number | null, currency: string) => {
-//     if (!min && !max) return "Competitive";
-//     const unit = currency || "USD";
-//     if (min && max) return `${unit} ${(min / 1000).toFixed(0)}k - ${unit} ${(max / 1000).toFixed(0)}k`;
-//     if (min) return `${unit} ${(min / 1000).toFixed(0)}k+`;
-//     return `Up to ${unit} ${(max! / 1000).toFixed(0)}k`;
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-background">
-//       <Header />
-
-//       {/* Search Section */}
-//       <section className="border-b border-border bg-card py-8">
-//         <div className="container mx-auto px-4">
-//           <div className="max-w-4xl mx-auto text-center mb-6">
-//             <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-//               Find Your Perfect Job
-//             </h1>
-//             <p className="text-muted-foreground text-sm">
-//               {filteredJobs.length} opportunities available
-//             </p>
-//           </div>
-
-//           {/* Search Box */}
-//           <div className="max-w-4xl mx-auto bg-background border border-border rounded-lg p-3">
-//             <div className="flex flex-col lg:flex-row gap-3">
-//               <div className="relative flex-1">
-//                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-//                 <Input
-//                   placeholder="Job title, keyword, company..."
-//                   className="pl-10 h-11 text-sm border-0 bg-muted/50 rounded-md"
-//                   value={searchTerm}
-//                   onChange={(e) => setSearchTerm(e.target.value)}
-//                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-//                 />
-//               </div>
-//               <div className="relative flex-1">
-//                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-//                 <Input
-//                   placeholder="City, state or country"
-//                   className="pl-10 h-11 text-sm border-0 bg-muted/50 rounded-md"
-//                   value={locationTerm}
-//                   onChange={(e) => setLocationTerm(e.target.value)}
-//                 />
-//               </div>
-//               <Button className="h-11 px-6 rounded-md w-full lg:w-auto" onClick={handleSearch}>
-//                 <Search className="h-4 w-4 mr-2" />
-//                 Search
-//               </Button>
-//             </div>
-//           </div>
-//         </div>
-//       </section>
-
-//       <div className="container mx-auto px-4 py-8">
-//         <div className="flex flex-col lg:flex-row gap-8">
-//           {/* Filters Sidebar */}
-//           <aside className={cn(
-//             "lg:w-64 shrink-0",
-//             showFilters ? "block" : "hidden lg:block"
-//           )}>
-//             <div className="bg-card border border-border rounded-lg p-5 sticky top-20">
-//               <div className="flex items-center justify-between mb-5">
-//                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-//                   <SlidersHorizontal className="h-4 w-4" />
-//                   Filters
-//                 </h3>
-//                 {hasActiveFilters && (
-//                   <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-7">
-//                     Clear all
-//                   </Button>
-//                 )}
-//               </div>
-
-//               {/* Job Type Filters */}
-//               <div className="space-y-3">
-//                 <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Job Type</h4>
-//                 <div className="space-y-2.5">
-//                   {[
-//                     { value: "full-time", label: "Full Time", count: dbJobs.filter(j => j.type === "full-time").length },
-//                     { value: "part-time", label: "Part Time", count: dbJobs.filter(j => j.type === "part-time").length },
-//                     { value: "internship", label: "Internship", count: dbJobs.filter(j => j.type === "internship").length },
-//                     { value: "remote", label: "Remote", count: dbJobs.filter(j => j.type === "remote").length },
-//                     { value: "contract", label: "Contract", count: dbJobs.filter(j => j.type === "contract").length },
-//                   ].map((type) => (
-//                     <label
-//                       key={type.value}
-//                       className="flex items-center justify-between cursor-pointer"
-//                     >
-//                       <div className="flex items-center gap-2.5">
-//                         <Checkbox
-//                           checked={selectedTypes.includes(type.value)}
-//                           onCheckedChange={(checked) => handleTypeChange(type.value, !!checked)}
-//                         />
-//                         <span className="text-sm text-foreground">
-//                           {type.label}
-//                         </span>
-//                       </div>
-//                       <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-//                         {type.count}
-//                       </span>
-//                     </label>
-//                   ))}
-//                 </div>
-//               </div>
-//             </div>
-//           </aside>
-
-//           {/* Main Content */}
-//           <main className="flex-1">
-//             {/* Mobile Filter Toggle */}
-//             <div className="lg:hidden mb-4">
-//               <Button
-//                 variant="outline"
-//                 onClick={() => setShowFilters(!showFilters)}
-//                 className="w-full justify-between"
-//               >
-//                 <span className="flex items-center gap-2">
-//                   <SlidersHorizontal className="h-4 w-4" />
-//                   Filters
-//                 </span>
-//                 {selectedTypes.length > 0 && (
-//                   <Badge variant="secondary">{selectedTypes.length}</Badge>
-//                 )}
-//               </Button>
-//             </div>
-
-//             {/* Results Header */}
-//             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-//               <p className="text-sm text-foreground">
-//                 <span className="font-semibold">{filteredJobs.length}</span> jobs found
-//                 {searchTerm && <span className="text-muted-foreground"> for "{searchTerm}"</span>}
-//               </p>
-//               {hasActiveFilters && (
-//                 <div className="hidden sm:flex items-center gap-2">
-//                   {selectedTypes.map((type) => (
-//                     <Badge
-//                       key={type}
-//                       variant="secondary"
-//                       className="flex items-center gap-1 cursor-pointer hover:bg-destructive/10 text-xs"
-//                       onClick={() => handleTypeChange(type, false)}
-//                     >
-//                       {type.replace("-", " ")}
-//                       <X className="h-3 w-3" />
-//                     </Badge>
-//                   ))}
-//                 </div>
-//               )}
-//             </div>
-
-//             {/* Jobs List */}
-//             {isLoading ? (
-//               <div className="text-center py-16">
-//                 <div className="animate-spin h-7 w-7 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
-//                 <p className="mt-3 text-sm text-muted-foreground">Loading jobs...</p>
-//               </div>
-//             ) : jobsError ? (
-//               <div className="text-center py-16 bg-card border border-destructive/20 rounded-lg">
-//                 <div className="w-12 h-12 bg-destructive/10 rounded-md flex items-center justify-center mx-auto mb-4">
-//                   <AlertTriangle className="h-6 w-6 text-destructive" />
-//                 </div>
-//                 <h3 className="text-base font-semibold text-foreground mb-2">Couldn't load jobs</h3>
-//                 <p className="text-sm text-muted-foreground mb-5 max-w-md mx-auto px-4">{jobsErrorMessage}</p>
-//                 <div className="flex items-center justify-center gap-3">
-//                   <Button variant="outline" size="sm" onClick={() => refetch()}>
-//                     Try Again
-//                   </Button>
-//                   <Link to="/signin">
-//                     <Button size="sm" className="btn-primary">Sign In</Button>
-//                   </Link>
-//                 </div>
-//               </div>
-//             ) : paginatedJobs.length === 0 ? (
-//               <div className="text-center py-16 bg-card border border-border rounded-lg">
-//                 <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center mx-auto mb-4">
-//                   <Briefcase className="h-6 w-6 text-muted-foreground" />
-//                 </div>
-//                 <h3 className="text-base font-semibold text-foreground mb-2">No jobs found</h3>
-//                 <p className="text-sm text-muted-foreground mb-5">Try adjusting your search or filters</p>
-//                 <Button variant="outline" size="sm" onClick={clearFilters}>
-//                   Clear Filters
-//                 </Button>
-//               </div>
-//             ) : (
-//               <div className="space-y-3">
-//                 {paginatedJobs.map((job) => (
-//                   <Link
-//                     key={job.id}
-//                     to={`/job/${job.id}`}
-//                     className="block bg-card border border-border rounded-lg p-5 hover:shadow-md hover:border-primary/30 transition-all group"
-//                   >
-//                     <div className="flex flex-col sm:flex-row gap-4">
-//                       {/* Company Logo */}
-//                       <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center overflow-hidden shrink-0">
-//                         {job.companyLogo ? (
-//                           <img src={job.companyLogo} alt={job.company} className="w-9 h-9 object-contain" />
-//                         ) : (
-//                           <Building2 className="h-5 w-5 text-muted-foreground" />
-//                         )}
-//                       </div>
-
-//                       {/* Job Info */}
-//                       <div className="flex-1 min-w-0">
-//                         <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-//                           <div>
-//                             <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-//                               {job.title}
-//                             </h3>
-//                             <p className="text-sm text-muted-foreground">{job.company}</p>
-//                           </div>
-//                           {job.featured && (
-//                             <Badge className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs">
-//                               <Sparkles className="h-3 w-3 mr-1" />
-//                               Featured
-//                             </Badge>
-//                           )}
-//                         </div>
-
-//                         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3">
-//                           <span className="flex items-center gap-1">
-//                             <MapPin className="h-3.5 w-3.5" />
-//                             {job.location}
-//                           </span>
-//                           <span className="flex items-center gap-1">
-//                             <DollarSign className="h-3.5 w-3.5" />
-//                             {formatSalary(job.salary_min, job.salary_max, job.currency)}
-//                           </span>
-//                           <span className="flex items-center gap-1">
-//                             <Clock className="h-3.5 w-3.5" />
-//                             {formatDistanceToNow(new Date(job.postedDate), { addSuffix: true })}
-//                           </span>
-//                         </div>
-
-//                         <Badge className={cn("font-medium text-xs", jobTypeColors[job.type] || jobTypeColors["full-time"])}>
-//                           {job.type.replace("-", " ")}
-//                         </Badge>
-//                       </div>
-//                     </div>
-//                   </Link>
-//                 ))}
-//               </div>
-//             )}
-
-//             {/* Pagination */}
-//             {totalPages > 1 && (
-//               <div className="flex items-center justify-center gap-1.5 mt-8">
-//                 <Button
-//                   variant="outline"
-//                   size="icon"
-//                   className="h-9 w-9"
-//                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-//                   disabled={currentPage === 1}
-//                 >
-//                   <ChevronLeft className="h-4 w-4" />
-//                 </Button>
-//                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-//                   let pageNum;
-//                   if (totalPages <= 5) {
-//                     pageNum = i + 1;
-//                   } else if (currentPage <= 3) {
-//                     pageNum = i + 1;
-//                   } else if (currentPage >= totalPages - 2) {
-//                     pageNum = totalPages - 4 + i;
-//                   } else {
-//                     pageNum = currentPage - 2 + i;
-//                   }
-//                   return (
-//                     <Button
-//                       key={pageNum}
-//                       variant={currentPage === pageNum ? "default" : "outline"}
-//                       size="icon"
-//                       className="h-9 w-9"
-//                       onClick={() => setCurrentPage(pageNum)}
-//                     >
-//                       {pageNum}
-//                     </Button>
-//                   );
-//                 })}
-//                 <Button
-//                   variant="outline"
-//                   size="icon"
-//                   className="h-9 w-9"
-//                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-//                   disabled={currentPage === totalPages}
-//                 >
-//                   <ChevronRight className="h-4 w-4" />
-//                 </Button>
-//               </div>
-//             )}
-//           </main>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default FindJobs;
-
-
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -453,11 +28,19 @@ import { normalizeJobType } from "@/lib/jobType";
 const ITEMS_PER_PAGE = 12;
 
 const jobTypeColors: Record<string, string> = {
-  "full-time": "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  "part-time": "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-  "internship": "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  "remote": "bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  "contract": "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  "full-time": "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/40",
+  "part-time": "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/40",
+  "internship": "bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-900/20 dark:text-sky-400 dark:border-sky-800/40",
+  "remote": "bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-800/40",
+  "contract": "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800/40",
+};
+
+const jobTypeFilterColors: Record<string, string> = {
+  "full-time": "text-emerald-600",
+  "part-time": "text-amber-600",
+  "internship": "text-sky-600",
+  "remote": "text-violet-600",
+  "contract": "text-rose-600",
 };
 
 const FindJobs = () => {
@@ -474,7 +57,6 @@ const FindJobs = () => {
       ? jobsError.message
       : "Unable to load jobs right now. Please try again.";
 
-  // Transform database jobs
   const transformedJobs = dbJobs.map((job) => ({
     id: job.$id,
     title: job.title,
@@ -491,7 +73,6 @@ const FindJobs = () => {
     description: job.description,
   }));
 
-  // Filter by selected types and location
   let filteredJobs = transformedJobs;
 
   if (selectedTypes.length > 0) {
@@ -504,7 +85,6 @@ const FindJobs = () => {
     );
   }
 
-  // Pagination
   const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
   const paginatedJobs = filteredJobs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -541,16 +121,16 @@ const FindJobs = () => {
     selectedTypes.length > 0 ||
     locationTerm.trim().length > 0 ||
     searchTerm.trim().length > 0;
+
   useSeo({
     title: "Find Jobs | Hirelypk",
-    description:
-      "Search and filter jobs by title, location, and type on Hirelypk.",
+    description: "Search and filter jobs by title, location, and type on Hirelypk.",
     noIndex: hasActiveFilters,
   });
 
   const formatSalary = (min: number | null, max: number | null, _currency: string) => {
     if (!min && !max) return "No Salary Mentioned";
-    if (min && max) return `${(min / 1000).toFixed(0)}k - ${(max / 1000).toFixed(0)}k`;
+    if (min && max) return `${(min / 1000).toFixed(0)}k – ${(max / 1000).toFixed(0)}k`;
     if (min) return `${(min / 1000).toFixed(0)}k+`;
     return `Up to ${(max! / 1000).toFixed(0)}k`;
   };
@@ -559,42 +139,60 @@ const FindJobs = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Search Section */}
-      <section className="relative border-b border-border bg-card py-16">
-        <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_0%_0%,rgba(37,99,235,0.05),transparent)]" />
-        <div className="container relative z-10 mx-auto px-4">
-          <div className="mx-auto max-w-4xl text-center">
-            <h1 className="mb-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-              Find Your <span className="text-primary">Perfect Role</span>
+      {/* Hero Search Section */}
+      <section className="relative overflow-hidden border-b border-border bg-card">
+        {/* Background decoration */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
+          <div className="absolute -bottom-12 left-1/4 w-64 h-64 rounded-full bg-primary/3 blur-2xl" />
+        </div>
+
+        <div className="container relative mx-auto px-4 py-14">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/8 px-4 py-1.5 text-xs font-semibold tracking-widest uppercase text-primary mb-5">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              {filteredJobs.length} Live Opportunities
+            </div>
+            <h1 className="mb-3 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              Find Your{" "}
+              <span className="relative">
+                <span className="text-primary">Perfect Role</span>
+                <svg className="absolute -bottom-1 left-0 w-full" viewBox="0 0 200 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 5.5C47 1.5 100 1.5 199 5.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-primary/30"/>
+                </svg>
+              </span>
             </h1>
-            <p className="mb-10 text-lg text-muted-foreground">
-              Browse through <span className="font-semibold text-foreground">{filteredJobs.length}</span> verified career opportunities.
+            <p className="mb-10 text-base text-muted-foreground">
+              Browse curated listings from top companies, filtered by role, location, and type.
             </p>
 
             {/* Search Box */}
-            <div className="mx-auto max-w-4xl rounded-xl border border-border bg-background p-2 shadow-xl shadow-black/5 dark:shadow-black/20">
+            <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-background p-2 shadow-lg shadow-black/5 dark:shadow-black/30">
               <div className="flex flex-col gap-2 lg:flex-row">
                 <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Job title, keyword, company..."
-                    className="h-14 border-0 bg-muted/30 pl-12 text-base transition-colors focus:bg-muted/50"
+                    className="h-12 border-0 bg-muted/30 pl-11 text-sm focus:bg-muted/50 transition-colors rounded-xl"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   />
                 </div>
                 <div className="relative flex-1">
-                  <MapPin className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <MapPin className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="City, state or country"
-                    className="h-14 border-0 bg-muted/30 pl-12 text-base transition-colors focus:bg-muted/50"
+                    className="h-12 border-0 bg-muted/30 pl-11 text-sm focus:bg-muted/50 transition-colors rounded-xl"
                     value={locationTerm}
                     onChange={(e) => setLocationTerm(e.target.value)}
                   />
                 </div>
-                <Button className="h-14 px-8 text-base font-bold shadow-lg shadow-primary/20" onClick={handleSearch}>
-                  Search
+                <Button
+                  className="h-12 px-7 rounded-xl font-semibold shadow-md shadow-primary/20 transition-all hover:shadow-primary/30 hover:-translate-y-0.5 w-full lg:w-auto"
+                  onClick={handleSearch}
+                >
+                  Search Jobs
                 </Button>
               </div>
             </div>
@@ -602,92 +200,107 @@ const FindJobs = () => {
         </div>
       </section>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-10">
         <div className="flex flex-col lg:flex-row gap-8">
+
           {/* Filters Sidebar */}
-          <aside className={cn(
-            "lg:w-64 shrink-0",
-            showFilters ? "block" : "hidden lg:block"
-          )}>
-            <div className="bg-card border border-border rounded-lg p-5 sticky top-20">
+          <aside className={cn("lg:w-60 shrink-0", showFilters ? "block" : "hidden lg:block")}>
+            <div className="bg-card border border-border rounded-2xl p-5 sticky top-24">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <SlidersHorizontal className="h-4 w-4" />
+                  <SlidersHorizontal className="h-4 w-4 text-primary" />
                   Filters
                 </h3>
                 {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-7">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="text-xs h-7 text-muted-foreground hover:text-foreground"
+                  >
                     Clear all
                   </Button>
                 )}
               </div>
 
-              {/* Job Type Filters */}
               <div className="space-y-3">
-                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Job Type</h4>
-                <div className="space-y-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Job Type</p>
+                <div className="space-y-1">
                   {[
-                    { value: "full-time", label: "Full Time", count: dbJobs.filter(j => j.type === "full-time").length },
-                    { value: "part-time", label: "Part Time", count: dbJobs.filter(j => j.type === "part-time").length },
-                    { value: "internship", label: "Internship", count: dbJobs.filter(j => j.type === "internship").length },
-                    { value: "remote", label: "Remote", count: dbJobs.filter(j => j.type === "remote").length },
-                    { value: "contract", label: "Contract", count: dbJobs.filter(j => j.type === "contract").length },
-                  ].map((type) => (
-                    <label
-                      key={type.value}
-                      className="flex items-center justify-between cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Checkbox
-                          checked={selectedTypes.includes(type.value)}
-                          onCheckedChange={(checked) => handleTypeChange(type.value, !!checked)}
-                        />
-                        <span className="text-sm text-foreground">
-                          {type.label}
+                    { value: "full-time", label: "Full Time" },
+                    { value: "part-time", label: "Part Time" },
+                    { value: "internship", label: "Internship" },
+                    { value: "remote", label: "Remote" },
+                    { value: "contract", label: "Contract" },
+                  ].map((type) => {
+                    const count = dbJobs.filter(j => j.type === type.value).length;
+                    const isSelected = selectedTypes.includes(type.value);
+                    return (
+                      <label
+                        key={type.value}
+                        className={cn(
+                          "flex items-center justify-between cursor-pointer rounded-lg px-3 py-2.5 transition-colors",
+                          isSelected ? "bg-primary/8" : "hover:bg-muted/60"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(checked) => handleTypeChange(type.value, !!checked)}
+                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                          />
+                          <span className={cn("text-sm font-medium", isSelected ? "text-primary" : "text-foreground")}>
+                            {type.label}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
+                          {count}
                         </span>
-                      </div>
-                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                        {type.count}
-                      </span>
-                    </label>
-                  ))}
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </aside>
 
           {/* Main Content */}
-          <main className="flex-1">
+          <main className="flex-1 min-w-0">
             {/* Mobile Filter Toggle */}
             <div className="lg:hidden mb-4">
               <Button
                 variant="outline"
                 onClick={() => setShowFilters(!showFilters)}
-                className="w-full justify-between"
+                className="w-full justify-between rounded-xl"
               >
                 <span className="flex items-center gap-2">
                   <SlidersHorizontal className="h-4 w-4" />
-                  Filters
+                  Filter Jobs
                 </span>
                 {selectedTypes.length > 0 && (
-                  <Badge variant="secondary">{selectedTypes.length}</Badge>
+                  <Badge variant="secondary" className="rounded-full">{selectedTypes.length}</Badge>
                 )}
               </Button>
             </div>
 
             {/* Results Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-              <p className="text-sm text-foreground">
-                <span className="font-semibold">{filteredJobs.length}</span> jobs found
-                {searchTerm && <span className="text-muted-foreground"> for "{searchTerm}"</span>}
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+              <div>
+                <p className="text-sm text-foreground">
+                  <span className="font-bold text-lg">{filteredJobs.length}</span>
+                  <span className="text-muted-foreground ml-1.5">jobs found</span>
+                  {searchTerm && (
+                    <span className="text-muted-foreground"> for "{searchTerm}"</span>
+                  )}
+                </p>
+              </div>
               {hasActiveFilters && (
-                <div className="hidden sm:flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2 flex-wrap">
                   {selectedTypes.map((type) => (
                     <Badge
                       key={type}
                       variant="secondary"
-                      className="flex items-center gap-1 cursor-pointer hover:bg-destructive/10 text-xs"
+                      className="flex items-center gap-1.5 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors text-xs px-2.5 py-1 rounded-full"
                       onClick={() => handleTypeChange(type, false)}
                     >
                       {type.replace("-", " ")}
@@ -700,34 +313,37 @@ const FindJobs = () => {
 
             {/* Jobs List */}
             {isLoading ? (
-              <div className="text-center py-16">
-                <div className="animate-spin h-7 w-7 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
-                <p className="mt-3 text-sm text-muted-foreground">Loading jobs...</p>
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-full border-2 border-primary/20" />
+                  <div className="absolute inset-0 h-10 w-10 animate-spin rounded-full border-2 border-transparent border-t-primary" />
+                </div>
+                <p className="mt-4 text-sm text-muted-foreground">Loading opportunities...</p>
               </div>
             ) : jobsError ? (
-              <div className="text-center py-16 bg-card border border-destructive/20 rounded-lg">
-                <div className="w-12 h-12 bg-destructive/10 rounded-md flex items-center justify-center mx-auto mb-4">
-                  <AlertTriangle className="h-6 w-6 text-destructive" />
+              <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-10 text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10">
+                  <AlertTriangle className="h-7 w-7 text-destructive" />
                 </div>
                 <h3 className="text-base font-semibold text-foreground mb-2">Couldn't load jobs</h3>
-                <p className="text-sm text-muted-foreground mb-5 max-w-md mx-auto px-4">{jobsErrorMessage}</p>
+                <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">{jobsErrorMessage}</p>
                 <div className="flex items-center justify-center gap-3">
-                  <Button variant="outline" size="sm" onClick={() => refetch()}>
+                  <Button variant="outline" size="sm" onClick={() => refetch()} className="rounded-xl">
                     Try Again
                   </Button>
                   <Link to="/signin">
-                    <Button size="sm" className="btn-primary">Sign In</Button>
+                    <Button size="sm" className="rounded-xl">Sign In</Button>
                   </Link>
                 </div>
               </div>
             ) : paginatedJobs.length === 0 ? (
-              <div className="text-center py-16 bg-card border border-border rounded-lg">
-                <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center mx-auto mb-4">
-                  <Briefcase className="h-6 w-6 text-muted-foreground" />
+              <div className="rounded-2xl border border-border bg-card p-12 text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                  <Briefcase className="h-7 w-7 text-muted-foreground" />
                 </div>
                 <h3 className="text-base font-semibold text-foreground mb-2">No jobs found</h3>
-                <p className="text-sm text-muted-foreground mb-5">Try adjusting your search or filters</p>
-                <Button variant="outline" size="sm" onClick={clearFilters}>
+                <p className="text-sm text-muted-foreground mb-6">Try adjusting your search or clearing filters</p>
+                <Button variant="outline" size="sm" onClick={clearFilters} className="rounded-xl">
                   Clear Filters
                 </Button>
               </div>
@@ -737,53 +353,68 @@ const FindJobs = () => {
                   <Link
                     key={job.id}
                     to={`/job/${job.id}`}
-                    className="block bg-card border border-border rounded-lg p-5 hover:shadow-md hover:border-primary/30 transition-all group"
+                    className="group block"
                   >
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      {/* Company Logo */}
-                      <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center overflow-hidden shrink-0">
-                        {job.companyLogo ? (
-                          <img src={job.companyLogo} alt={job.company} className="w-9 h-9 object-contain" />
-                        ) : (
-                          <Building2 className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
+                    <div className={cn(
+                      "relative bg-card border border-border rounded-2xl p-5 transition-all duration-200",
+                      "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5",
+                      job.featured && "border-amber-200/60 dark:border-amber-800/30"
+                    )}>
+                      {job.featured && (
+                        <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl bg-gradient-to-r from-amber-400/60 via-amber-300/80 to-amber-400/60" />
+                      )}
 
-                      {/* Job Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-                          <div>
-                            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                              {job.title}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">{job.company}</p>
-                          </div>
-                          {job.featured && (
-                            <Badge className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs">
-                              <Sparkles className="h-3 w-3 mr-1" />
-                              Featured
-                            </Badge>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        {/* Company Logo */}
+                        <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center overflow-hidden shrink-0 border border-border/50">
+                          {job.companyLogo ? (
+                            <img src={job.companyLogo} alt={job.company} className="w-9 h-9 object-contain" />
+                          ) : (
+                            <Building2 className="h-5 w-5 text-muted-foreground" />
                           )}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-3.5 w-3.5" />
-                            {job.location}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="h-3.5 w-3.5" />
-                            {formatSalary(job.salary_min, job.salary_max, job.currency)}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3.5 w-3.5" />
-                            {formatDistanceToNow(new Date(job.postedDate), { addSuffix: true })}
+                        {/* Job Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                            <div>
+                              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors leading-snug">
+                                {job.title}
+                              </h3>
+                              <p className="text-sm text-muted-foreground mt-0.5">{job.company}</p>
+                            </div>
+                            {job.featured && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40 text-xs font-medium px-2.5 py-1">
+                                <Sparkles className="h-3 w-3" />
+                                Featured
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3">
+                            <span className="flex items-center gap-1.5">
+                              <MapPin className="h-3.5 w-3.5" />
+                              {job.location}
+                            </span>
+                            <span className="h-1 w-1 rounded-full bg-border" />
+                            <span className="flex items-center gap-1.5">
+                              <DollarSign className="h-3.5 w-3.5" />
+                              {formatSalary(job.salary_min, job.salary_max, job.currency)}
+                            </span>
+                            <span className="h-1 w-1 rounded-full bg-border" />
+                            <span className="flex items-center gap-1.5">
+                              <Clock className="h-3.5 w-3.5" />
+                              {formatDistanceToNow(new Date(job.postedDate), { addSuffix: true })}
+                            </span>
+                          </div>
+
+                          <span className={cn(
+                            "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
+                            jobTypeColors[job.type] || jobTypeColors["full-time"]
+                          )}>
+                            {job.type.replace("-", " ")}
                           </span>
                         </div>
-
-                        <Badge className={cn("font-medium text-xs", jobTypeColors[job.type] || jobTypeColors["full-time"])}>
-                          {job.type.replace("-", " ")}
-                        </Badge>
                       </div>
                     </div>
                   </Link>
@@ -793,11 +424,11 @@ const FindJobs = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-1.5 mt-8">
+              <div className="flex items-center justify-center gap-1.5 mt-10">
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9"
+                  className="h-9 w-9 rounded-xl"
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                 >
@@ -819,7 +450,7 @@ const FindJobs = () => {
                       key={pageNum}
                       variant={currentPage === pageNum ? "default" : "outline"}
                       size="icon"
-                      className="h-9 w-9"
+                      className="h-9 w-9 rounded-xl"
                       onClick={() => setCurrentPage(pageNum)}
                     >
                       {pageNum}
@@ -829,7 +460,7 @@ const FindJobs = () => {
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9"
+                  className="h-9 w-9 rounded-xl"
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                 >
