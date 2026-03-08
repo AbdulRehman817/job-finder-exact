@@ -1,7 +1,8 @@
-import { ReactNode } from "react";
+import { ReactNode, Suspense, lazy } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
-import UserReviewPopup from "@/components/feedback/UserReviewPopup";
+
+const UserReviewPopup = lazy(() => import("@/components/feedback/UserReviewPopup"));
 
 interface LayoutProps {
   children: ReactNode;
@@ -14,7 +15,9 @@ const Layout = ({ children, hideFooter = false }: LayoutProps) => {
       <Header />
       <main className="flex-1">{children}</main>
       {!hideFooter && <Footer />}
-      <UserReviewPopup />
+      <Suspense fallback={null}>
+        <UserReviewPopup />
+      </Suspense>
     </div>
   );
 };

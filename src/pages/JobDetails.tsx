@@ -31,7 +31,7 @@ import Layout from "@/components/layout/Layout";
 import JobCard from "@/components/jobs/JobCard";
 import { useIncrementJobViews, useJob, useJobs } from "@/hooks/useJobs";
 import { useApplyForJob, useHasApplied } from "@/hooks/useApplications";
-import { useSaveJob, useUnsaveJob, useIsJobSaved, useSavedJobs } from "@/hooks/useSavedJobs";
+import { useSaveJob, useUnsaveJob, useIsJobSaved } from "@/hooks/useSavedJobs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCandidateProfileCompletion } from "@/hooks/useProfileCompletion";
 import { useToast } from "@/hooks/use-toast";
@@ -121,10 +121,9 @@ const JobDetails = () => {
   const [viewCount, setViewCount] = useState(0);
 
   const { data: job, isLoading, error: jobError, refetch: refetchJob } = useJob(id || "");
-  const { data: relatedJobs = [] } = useJobs();
+  const { data: relatedJobs = [] } = useJobs(undefined, { enabled: !!job?.$id });
   const { data: hasApplied = false } = useHasApplied(id || "");
   const { data: isSaved = false } = useIsJobSaved(id || "");
-  const { data: savedJobs = [] } = useSavedJobs();
   const profileCompletion = useCandidateProfileCompletion();
   const jobErrorMessage = jobError instanceof Error ? jobError.message : "We could not load this job right now.";
 
@@ -545,15 +544,10 @@ const JobDetails = () => {
                     </Button>
                   ) : hasDirectApplyLink ? (
                     <Button className="rounded-xl h-10 px-6 font-semibold shadow-md shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all" onClick={handleApplyRedirect}>
-                      Apply on Company Site
+                      Apply now
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                  ) : (
-                    <Button className="rounded-xl h-10 px-6 font-semibold shadow-md shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all" onClick={handleOpenInAppApply}>
-                      Apply Now
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

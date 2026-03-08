@@ -9,43 +9,39 @@ import {
 } from "@/lib/appwrite";
 import { useAuth } from "@/contexts/AuthContext";
 import { Permission, Role } from "appwrite";
+import {
+  COMPANIES_QUERY_KEY,
+  COMPANIES_STALE_TIME,
+  Company,
+  fetchCompanies,
+} from "@/hooks/useCompanies";
 import { normalizeJobType, parseJobType } from "../lib/jobType";
 const jobViewsEndpoint = import.meta.env.VITE_JOB_VIEWS_ENDPOINT;
 
-const enrichJobsWithCompanies = async (jobs: any[]) => {
-  try {
-    const { documents: companies } = await databases.listDocuments(
-      DATABASE_ID,
-     COLLECTIONS.COMPANIES,
-    );
-    const companiesById = new Map(
-      companies.map((company) => [company.$id, company]),
-    );
-
-    return jobs.map((job) => {
-      const parsedJob = parseJobData(job);
-     const company = job.company_id
-        ? companiesById.get(job.company_id)
-        : undefined;
-
-
-      return {
-        ...parsedJob,
-        companies: company
-          ? {
-              $id: company.$id,
-              name: company.name,
-              logo_url: company.logo_url,
-              location: company.location,
-              email: company.email ?? null,
-            }
-          : undefined,
-      };
-    });
-  } catch (error) {
-    console.warn("Unable to load company data for jobs. Falling back to job-only data.", error);
+const mergeJobsWithCompanies = (jobs: any[], companies?: Company[] | null) => {
+  if (!companies?.length) {
     return jobs.map((job) => parseJobData(job));
   }
+
+  const companiesById = new Map(companies.map((company) => [company.$id, company]));
+
+  return jobs.map((job) => {
+    const parsedJob = parseJobData(job);
+    const company = job.company_id ? companiesById.get(job.company_id) : undefined;
+
+    return {
+      ...parsedJob,
+      companies: company
+        ? {
+            $id: company.$id,
+            name: company.name,
+            logo_url: company.logo_url,
+            location: company.location,
+            email: company.email ?? null,
+          }
+        : undefined,
+    };
+  });
 };
 
 const parseStringArrayField = (value: unknown): string[] | null => {
@@ -233,6 +229,37 @@ export interface Job {
 }
 
 const JOBS_BATCH_SIZE = 100;
+const JOBS_STALE_TIME = 2 * 60 * 1000;
+const JOBS_GC_TIME = 15 * 60 * 1000;
+const JOB_QUERY_STALE_TIME = 60 * 1000;
+
+const buildJobsQueryKey = (filters?: {
+  type?: string;
+  location?: string;
+  search?: string;
+}) =>
+  [
+    "jobs",
+    filters?.type || "",
+    filters?.location || "",
+    filters?.search || "",
+  ] as const;
+
+const loadCompaniesForJobs = async (queryClient: ReturnType<typeof useQueryClient>) => {
+  try {
+    return await queryClient.ensureQueryData({
+      queryKey: COMPANIES_QUERY_KEY,
+      queryFn: fetchCompanies,
+      staleTime: COMPANIES_STALE_TIME,
+    });
+  } catch (error) {
+    console.warn(
+      "Unable to load company data for jobs. Falling back to job-only data.",
+      error
+    );
+    return null;
+  }
+};
 
 const fetchAllJobDocuments = async () => {
   const allJobs: any[] = [];
@@ -257,11 +284,14 @@ const fetchAllJobDocuments = async () => {
   return allJobs;
 };
 
-const fetchPublicJobs = async (filters?: {
+const fetchPublicJobs = async (
+  filters?: {
   type?: string;
   location?: string;
   search?: string;
-}) => {
+},
+  companies?: Company[] | null
+) => {
   const jobs = await fetchAllJobDocuments();
 
   const normalizedTypeFilter = parseJobType(filters?.type);
@@ -298,51 +328,31 @@ const fetchPublicJobs = async (filters?: {
       return bDate - aDate;
     });
 
-  return enrichJobsWithCompanies(filteredJobs);
+  return mergeJobsWithCompanies(filteredJobs, companies);
 };
 
-const fetchJobById = async (id: string) => {
+const fetchJobById = async (id: string, companies?: Company[] | null) => {
   const job = await databases.getDocument(DATABASE_ID, COLLECTIONS.JOBS, id);
-  const parsedJob = parseJobData(job);
-
-  if (!job.company_id) {
-    return parsedJob;
-  }
-
-  try {
- const { documents: companies } = await databases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.COMPANIES,
-    );    const company = companies.find((item) => item.$id === job.company_id);
-
-    return {
-      ...parsedJob,
-      companies: company
-        ? {
-            $id: company.$id,
-            name: company.name,
-            logo_url: company.logo_url,
-            location: company.location,
-            email: company.email ?? null,
-          }
-        : undefined,
-    };
-  } catch (companyError) {
-    console.warn("Unable to load company data for this job. Showing job details only.", companyError);
-    return parsedJob;
-  }
+  return mergeJobsWithCompanies([job], companies)[0];
 };
 
-export const useJobs = (filters?: { type?: string; location?: string; search?: string }) => {
+export const useJobs = (
+  filters?: { type?: string; location?: string; search?: string },
+  options?: { enabled?: boolean }
+) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   return useQuery({
-    queryKey: ["jobs", filters],
+    queryKey: buildJobsQueryKey(filters),
     queryFn: async () => {
-    
+      const loadJobs = async () => {
+        const companies = await loadCompaniesForJobs(queryClient);
+        return fetchPublicJobs(filters, companies);
+      };
+
       try {
-     
-        const jobsWithCompanies = await fetchPublicJobs(filters);
+        const jobsWithCompanies = await loadJobs();
 
         if (user || jobsWithCompanies.length > 0) {
           return jobsWithCompanies;
@@ -350,7 +360,7 @@ export const useJobs = (filters?: { type?: string; location?: string; search?: s
 
         try {
           await ensureAnonymousSession();
-          const retryJobs = await fetchPublicJobs(filters);
+          const retryJobs = await loadJobs();
           return retryJobs;
         } catch (retryError: any) {
           console.error("useJobs: Empty-result retry failed:", retryError);
@@ -365,7 +375,7 @@ export const useJobs = (filters?: { type?: string; location?: string; search?: s
         console.warn("useJobs: Guest access unauthorized. Trying anonymous session fallback.");
         try {
           await ensureAnonymousSession();
-          const jobsWithCompanies = await fetchPublicJobs(filters);
+          const jobsWithCompanies = await loadJobs();
           return jobsWithCompanies;
         } catch (retryError: any) {
           console.error("useJobs: Guest session fallback failed:", retryError);
@@ -373,15 +383,26 @@ export const useJobs = (filters?: { type?: string; location?: string; search?: s
         }
       }
     },
+    enabled: options?.enabled ?? true,
+    staleTime: JOBS_STALE_TIME,
+    gcTime: JOBS_GC_TIME,
+    refetchOnWindowFocus: false,
   });
 };
 
 export const useJob = (id: string) => {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: ["job", id],
     queryFn: async () => {
+      const loadJob = async () => {
+        const companies = await loadCompaniesForJobs(queryClient);
+        return fetchJobById(id, companies);
+      };
+
       try {
-        const job = await fetchJobById(id);
+        const job = await loadJob();
         return job;
       } catch (error: any) {
         if (!isUnauthorizedError(error)) {
@@ -392,7 +413,7 @@ export const useJob = (id: string) => {
         console.warn("useJob: Guest access unauthorized. Trying anonymous session fallback.");
         try {
           await ensureAnonymousSession();
-          const job = await fetchJobById(id);
+          const job = await loadJob();
           return job;
         } catch (retryError: any) {
           console.error("useJob: Guest session fallback failed:", retryError);
@@ -401,6 +422,9 @@ export const useJob = (id: string) => {
       }
     },
     enabled: !!id,
+    staleTime: JOB_QUERY_STALE_TIME,
+    gcTime: JOBS_GC_TIME,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -447,6 +471,7 @@ export const useIncrementJobViews = () => {
 
 export const useMyJobs = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: ["my-jobs", user?.id],
@@ -458,7 +483,8 @@ export const useMyJobs = () => {
           .filter((job) => job.user_id === user.id)
           .sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime());
 
-        const jobsWithCompanies = await enrichJobsWithCompanies(myJobs);
+        const companies = await loadCompaniesForJobs(queryClient);
+        const jobsWithCompanies = mergeJobsWithCompanies(myJobs, companies);
 
         return jobsWithCompanies;
       } catch (error) {
@@ -467,6 +493,9 @@ export const useMyJobs = () => {
       }
     },
     enabled: !!user,
+    staleTime: JOB_QUERY_STALE_TIME,
+    gcTime: JOBS_GC_TIME,
+    refetchOnWindowFocus: false,
   });
 };
 

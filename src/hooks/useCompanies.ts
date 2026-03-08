@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { databases, ID, COLLECTIONS, DATABASE_ID, Query } from "@/lib/appwrite";
-import { useAuth } from "@/contexts/AuthContext";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Permission, Role } from "appwrite";
+import { useAuth } from "@/contexts/AuthContext";
+import { COLLECTIONS, DATABASE_ID, ID, Query, databases } from "@/lib/appwrite";
 
 export interface Company {
   $id: string;
@@ -23,23 +23,32 @@ export interface Company {
   $updatedAt: string;
 }
 
+export const COMPANIES_QUERY_KEY = ["companies"] as const;
+export const COMPANIES_STALE_TIME = 5 * 60 * 1000;
+const COMPANIES_GC_TIME = 30 * 60 * 1000;
+
+export const fetchCompanies = async (): Promise<Company[]> => {
+  try {
+    const { documents } = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.COMPANIES,
+      [Query.orderDesc("$createdAt")]
+    );
+
+    return documents as unknown as Company[];
+  } catch (error) {
+    console.error("useCompanies: Error fetching companies:", error);
+    throw error;
+  }
+};
+
 export const useCompanies = () => {
   return useQuery({
-    queryKey: ["companies"],
-    queryFn: async () => {
-      try {
-        const { documents } = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.COMPANIES,
-          [Query.orderDesc('$createdAt')]
-        );
-    
-        return documents as unknown as Company[];
-      } catch (error) {
-        console.error('❌ useCompanies: Error fetching companies:', error);
-        throw error;
-      }
-    },
+    queryKey: COMPANIES_QUERY_KEY,
+    queryFn: fetchCompanies,
+    staleTime: COMPANIES_STALE_TIME,
+    gcTime: COMPANIES_GC_TIME,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -50,23 +59,26 @@ export const useMyCompanies = () => {
     queryKey: ["my-companies", user?.id],
     queryFn: async () => {
       if (!user) {
-       
         return [] as Company[];
       }
+
       try {
         const { documents } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.COMPANIES,
-          [Query.equal('user_id', user.id), Query.orderDesc('$createdAt')]
+          [Query.equal("user_id", user.id), Query.orderDesc("$createdAt")]
         );
-    
+
         return documents as unknown as Company[];
       } catch (error) {
-        console.error('❌ useMyCompanies: Error fetching my companies:', error);
+        console.error("useMyCompanies: Error fetching my companies:", error);
         throw error;
       }
     },
     enabled: !!user,
+    staleTime: 60 * 1000,
+    gcTime: COMPANIES_GC_TIME,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -75,8 +87,13 @@ export const useCreateCompany = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (company: Partial<Omit<Company, "$id" | "user_id" | "$createdAt" | "$updatedAt" | "featured">>) => {
+    mutationFn: async (
+      company: Partial<
+        Omit<Company, "$id" | "user_id" | "$createdAt" | "$updatedAt" | "featured">
+      >
+    ) => {
       if (!user) throw new Error("You must be signed in to create a company.");
+
       try {
         const document = await databases.createDocument(
           DATABASE_ID,
@@ -104,15 +121,15 @@ export const useCreateCompany = () => {
             Permission.delete(Role.user(user.id)),
           ]
         );
-     
+
         return document as unknown as Company;
       } catch (error: any) {
-        console.error('❌ Error creating company:', error);
+        console.error("Error creating company:", error);
         throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      queryClient.invalidateQueries({ queryKey: COMPANIES_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["my-companies"] });
     },
   });
@@ -132,12 +149,12 @@ export const useUpdateCompany = () => {
         );
         return document as unknown as Company;
       } catch (error) {
-        console.error('Error updating company:', error);
+        console.error("Error updating company:", error);
         throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      queryClient.invalidateQueries({ queryKey: COMPANIES_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["my-companies"] });
     },
   });
@@ -155,11 +172,14 @@ export const useCompany = (id: string) => {
         );
         return document as unknown as Company;
       } catch (error) {
-        console.error('Error fetching company:', error);
+        console.error("Error fetching company:", error);
         throw error;
       }
     },
     enabled: !!id,
+    staleTime: COMPANIES_STALE_TIME,
+    gcTime: COMPANIES_GC_TIME,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -168,17 +188,18 @@ export const useCompanyJobs = (companyId: string) => {
     queryKey: ["company-jobs", companyId],
     queryFn: async () => {
       if (!companyId) return [];
+
       try {
-       
         const { documents } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.JOBS,
-          [Query.equal('company_id', companyId), Query.equal('status', 'active'), Query.orderDesc('posted_date')]
+          [
+            Query.equal("company_id", companyId),
+            Query.equal("status", "active"),
+            Query.orderDesc("posted_date"),
+          ]
         );
-       
 
-        // Fetch company data for each job
-       
         const jobsWithCompanies = await Promise.all(
           documents.map(async (job) => {
             try {
@@ -187,10 +208,13 @@ export const useCompanyJobs = (companyId: string) => {
                 COLLECTIONS.COMPANIES,
                 job.company_id
               );
-              const result = { ...job, companies: company };
-              return result;
+              return { ...job, companies: company };
             } catch (error) {
-              console.error('❌ useCompanyJobs: Error fetching company for job:', job.$id, error);
+              console.error(
+                "useCompanyJobs: Error fetching company for job:",
+                job.$id,
+                error
+              );
               return job;
             }
           })
@@ -198,10 +222,13 @@ export const useCompanyJobs = (companyId: string) => {
 
         return jobsWithCompanies;
       } catch (error) {
-        console.error('❌ useCompanyJobs: Error fetching company jobs:', error);
+        console.error("useCompanyJobs: Error fetching company jobs:", error);
         throw error;
       }
     },
     enabled: !!companyId,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };

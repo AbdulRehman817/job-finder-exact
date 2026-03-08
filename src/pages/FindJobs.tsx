@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Search,
@@ -35,27 +35,29 @@ const jobTypeColors: Record<string, string> = {
   "contract": "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800/40",
 };
 
-const jobTypeFilterColors: Record<string, string> = {
-  "full-time": "text-emerald-600",
-  "part-time": "text-amber-600",
-  "internship": "text-sky-600",
-  "remote": "text-violet-600",
-  "contract": "text-rose-600",
-};
-
 const FindJobs = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const appliedSearchTerm = searchParams.get("q") || "";
+  const appliedLocationTerm = searchParams.get("location") || "";
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
-  const [locationTerm, setLocationTerm] = useState("");
+  const [locationTerm, setLocationTerm] = useState(appliedLocationTerm);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
-  const { data: dbJobs = [], isLoading, error: jobsError, refetch } = useJobs({ search: searchTerm });
+  const { data: dbJobs = [], isLoading, error: jobsError, refetch } = useJobs({
+    search: appliedSearchTerm,
+    location: appliedLocationTerm,
+  });
   const jobsErrorMessage =
     jobsError instanceof Error
       ? jobsError.message
       : "Unable to load jobs right now. Please try again.";
+
+  useEffect(() => {
+    setSearchTerm(appliedSearchTerm);
+    setLocationTerm(appliedLocationTerm);
+  }, [appliedLocationTerm, appliedSearchTerm]);
 
   const transformedJobs = dbJobs.map((job) => ({
     id: job.$id,
@@ -79,12 +81,6 @@ const FindJobs = () => {
     filteredJobs = filteredJobs.filter((job) => selectedTypes.includes(job.type));
   }
 
-  if (locationTerm) {
-    filteredJobs = filteredJobs.filter((job) =>
-      job.location.toLowerCase().includes(locationTerm.toLowerCase())
-    );
-  }
-
   const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
   const paginatedJobs = filteredJobs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -101,11 +97,14 @@ const FindJobs = () => {
   };
 
   const handleSearch = () => {
-    if (searchTerm) {
-      setSearchParams({ q: searchTerm });
-    } else {
-      setSearchParams({});
-    }
+    const nextParams = new URLSearchParams();
+    const normalizedSearch = searchTerm.trim();
+    const normalizedLocation = locationTerm.trim();
+
+    if (normalizedSearch) nextParams.set("q", normalizedSearch);
+    if (normalizedLocation) nextParams.set("location", normalizedLocation);
+
+    setSearchParams(nextParams);
     setCurrentPage(1);
   };
 
@@ -119,8 +118,8 @@ const FindJobs = () => {
 
   const hasActiveFilters =
     selectedTypes.length > 0 ||
-    locationTerm.trim().length > 0 ||
-    searchTerm.trim().length > 0;
+    appliedLocationTerm.trim().length > 0 ||
+    appliedSearchTerm.trim().length > 0;
 
   useSeo({
     title: "Find Jobs | Hirelypk",
@@ -289,8 +288,8 @@ const FindJobs = () => {
                 <p className="text-sm text-foreground">
                   <span className="font-bold text-lg">{filteredJobs.length}</span>
                   <span className="text-muted-foreground ml-1.5">jobs found</span>
-                  {searchTerm && (
-                    <span className="text-muted-foreground"> for "{searchTerm}"</span>
+                  {appliedSearchTerm && (
+                    <span className="text-muted-foreground"> for "{appliedSearchTerm}"</span>
                   )}
                 </p>
               </div>

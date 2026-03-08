@@ -1,11 +1,10 @@
 import { Link } from "react-router-dom";
-import { Search, ArrowRight, Target, AlertTriangle, Search as SearchIcon, UserCheck, ExternalLink, TrendingUp } from "lucide-react";
+import { Search, ArrowRight, Target, AlertTriangle, UserCheck, ExternalLink, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Layout from "@/components/layout/Layout";
 import JobCard from "@/components/jobs/JobCard";
 import { useJobs } from "@/hooks/useJobs";
-import { useCompanies } from "@/hooks/useCompanies";
 import { useSeo } from "@/hooks/useSeo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
@@ -13,7 +12,6 @@ import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const { data: dbJobs = [], isLoading: jobsLoading, error: jobsError, refetch } = useJobs();
-  const { data: companies = [] } = useCompanies();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
