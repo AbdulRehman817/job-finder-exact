@@ -22,7 +22,7 @@ const ProfileCompletionBanner = ({
   const profileLink = type === "employer" ? "/recruiter-profile" : "/profile";
   const message =
     type === "employer"
-      ? "Complete your company profile to start posting jobs"
+      ? "Complete your recruiter profile and add your company name to start posting jobs"
       : "Complete your profile to apply for jobs";
 
   return (

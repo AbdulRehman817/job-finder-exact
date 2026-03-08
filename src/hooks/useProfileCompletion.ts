@@ -51,9 +51,6 @@ export const useEmployerProfileCompletion = (): ProfileCompletionStatus & { hasC
 
   const requiredCompanyFields = [
     { key: "name", label: "Company Name" },
-    { key: "description", label: "Company Description" },
-    { key: "industry", label: "Industry" },
-    { key: "location", label: "Company Location" },
   ];
 
   const missingFields: string[] = [];

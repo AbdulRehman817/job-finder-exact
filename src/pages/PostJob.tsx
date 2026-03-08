@@ -60,7 +60,7 @@ const PostJob = () => {
               Complete Your Recruiter Profile
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
-              Recruiters must complete their company profile before posting jobs.
+              Recruiters must complete their profile and add a company name before posting jobs.
             </p>
             <Link to="/recruiter-profile">
               <Button className="btn-primary">Complete Profile</Button>

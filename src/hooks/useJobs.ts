@@ -172,6 +172,17 @@ const isUnauthorizedError = (error: any) => {
   );
 };
 
+const hasUnknownAttributeError = (error: any, attribute: string) => {
+  const code = Number(error?.code || 0);
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    code === 400 &&
+    message.includes("unknown") &&
+    message.includes("attribute") &&
+    message.includes(attribute.toLowerCase())
+  );
+};
+
 const guestAccessGuidanceError = (error: any) => {
   const guidance = new Error(
   "Guest access is blocked. In Appwrite, enable Anonymous Sessions and give Jobs read permission to Role.any() or Role.users() (including existing job documents).",
@@ -475,17 +486,52 @@ export const useCreateJob = () => {
       };
 
       try {
-        const document = await databases.createDocument(
-          DATABASE_ID,
-          COLLECTIONS.JOBS,
-          ID.unique(),
-          payload,
-          [
-            Permission.read(Role.any()),
-            Permission.update(Role.user(user.id)),
-            Permission.delete(Role.user(user.id)),
-          ]
-        );
+        const createDocument = (documentPayload: Record<string, unknown>) =>
+          databases.createDocument(
+            DATABASE_ID,
+            COLLECTIONS.JOBS,
+            ID.unique(),
+            documentPayload,
+            [
+              Permission.read(Role.any()),
+              Permission.update(Role.user(user.id)),
+              Permission.delete(Role.user(user.id)),
+            ]
+          );
+
+        let document;
+        try {
+          document = await createDocument(payload as Record<string, unknown>);
+        } catch (error: any) {
+          const directApplyLink = String((payload as any).apply_link || "").trim();
+          if (!directApplyLink || !hasUnknownAttributeError(error, "apply_link")) {
+            throw error;
+          }
+
+          const { apply_link: _ignoredApplyLink, ...withoutApplyLink } = payload as any;
+          const fallbackPayloads = [
+            { ...withoutApplyLink, application_url: directApplyLink },
+            { ...withoutApplyLink, apply_url: directApplyLink },
+          ];
+
+          let fallbackDocument: any = null;
+          let lastFallbackError: any = error;
+
+          for (const fallbackPayload of fallbackPayloads) {
+            try {
+              fallbackDocument = await createDocument(fallbackPayload);
+              break;
+            } catch (fallbackError: any) {
+              lastFallbackError = fallbackError;
+            }
+          }
+
+          if (!fallbackDocument) {
+            throw lastFallbackError;
+          }
+
+          document = fallbackDocument;
+        }
 
         // Fetch company data
         if (!document.company_id) {

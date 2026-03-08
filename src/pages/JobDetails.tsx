@@ -200,6 +200,20 @@ const JobDetails = () => {
     window.open(applyLink, "_blank", "noopener,noreferrer");
   };
 
+  const handleOpenInAppApply = () => {
+    if (!user) {
+      setShowAuthPromptModal(true);
+      return;
+    }
+
+    if (!profileCompletion.isComplete) {
+      setShowProfileModal(true);
+      return;
+    }
+
+    setShowApplyModal(true);
+  };
+
   useEffect(() => {
     if (!job?.$id) return;
     const currentViews = Number(job.view_count) || 0;
@@ -531,10 +545,15 @@ const JobDetails = () => {
                     </Button>
                   ) : hasDirectApplyLink ? (
                     <Button className="rounded-xl h-10 px-6 font-semibold shadow-md shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all" onClick={handleApplyRedirect}>
+                      Apply on Company Site
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button className="rounded-xl h-10 px-6 font-semibold shadow-md shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all" onClick={handleOpenInAppApply}>
                       Apply Now
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                  ) : null}
+                  )}
                 </div>
               </div>
             </div>

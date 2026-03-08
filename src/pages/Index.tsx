@@ -50,8 +50,8 @@ const Index = () => {
   {
     icon: ExternalLink,
     step: "03",
-    title: "Get Redirected",
-    desc: "Complete your application directly on the company's official website.",
+    title: "Direct Apply (Optional)",
+    desc: "If enabled by the recruiter, continue your application on the company's official website.",
     iconColor: "text-emerald-600",
     iconBg: "bg-emerald-50 dark:bg-emerald-900/20",
     iconBorder: "border-emerald-200/70 dark:border-emerald-800/40",
@@ -85,7 +85,7 @@ const Index = () => {
           name: "Hirelypk Home",
           url: homeCanonical || origin,
           description:
-            "Browse thousands of jobs from top companies. Sign in, apply with one click, and get redirected to complete your application.",
+            "Browse thousands of jobs from top companies. Sign in, apply on Hirelypk, or use optional direct apply when enabled by recruiters.",
         },
       ]
     : undefined;
@@ -93,7 +93,7 @@ const Index = () => {
   useSeo({
     title: "Find Your Next Dream Job",
     description:
-      "Browse thousands of jobs from top companies. Apply quickly and get redirected to complete your application.",
+      "Browse thousands of jobs from top companies. Apply directly on Hirelypk, with optional recruiter-enabled direct apply links.",
     keywords: ["job board", "find jobs", "remote jobs", "full-time jobs", "career opportunities", "hirely"],
     canonical: homeCanonical,
     image: homeImage,

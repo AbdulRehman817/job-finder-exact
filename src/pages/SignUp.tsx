@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, ArrowRight, User, Building2, Briefcase } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, User, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,7 +8,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useSeo } from "@/hooks/useSeo";
 import { cn } from "@/lib/utils";
-import { storage, BUCKETS, ID } from "@/lib/appwrite";
 import BrandLogo from "@/components/layout/BrandLogo";
 
 const SignUp = () => {
@@ -104,9 +103,12 @@ avatarPreview: "",
   } else {
     toast({
       title: "Account created!",
-      description: "Welcome to Hirelypk! You are now signed in.",
+      description:
+        accountType === "employer"
+          ? "Welcome! Complete your recruiter profile and add your company to start posting jobs."
+          : "Welcome to Hirelypk! You are now signed in.",
     });
-    navigate(accountType === "employer" ? "/employer-dashboard" : "/profile");
+    navigate(accountType === "employer" ? "/recruiter-profile" : "/profile");
   }
   
   setLoading(false);
@@ -135,7 +137,48 @@ avatarPreview: "",
           </p>
 
           {/* Account Type Toggle */}
-        
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <button
+              type="button"
+              onClick={() => setAccountType("candidate")}
+              className={cn(
+                "rounded-xl border p-4 text-left transition-colors",
+                accountType === "candidate"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/40",
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <User className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Candidate</p>
+                  <p className="text-xs text-muted-foreground">Apply for jobs</p>
+                </div>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setAccountType("employer")}
+              className={cn(
+                "rounded-xl border p-4 text-left transition-colors",
+                accountType === "employer"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/40",
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Recruiter</p>
+                  <p className="text-xs text-muted-foreground">Post jobs and hire</p>
+                </div>
+              </div>
+            </button>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Profile Picture Section */}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, Menu, X, User, LogOut, Home, Search, PlusCircle, Info } from "lucide-react";
+import { ChevronDown, Menu, X, User, LogOut, Home, Search, PlusCircle, Info, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Permission, Role } from "appwrite";
 import { getAvatarUrl } from "@/lib/avatar";
@@ -94,7 +94,12 @@ const Header = () => {
 
   const navLinks = [
     ...mainNavLinks,
-    ...(userRole === "employer" ? [{ label: "Post a Job", path: "/post-job", icon: PlusCircle }] : []),
+    ...(userRole === "employer"
+      ? [
+          { label: "Dashboard", path: "/employer-dashboard", icon: LayoutDashboard },
+          { label: "Post a Job", path: "/post-job", icon: PlusCircle },
+        ]
+      : []),
   ];
 
   const isActive = (path: string) => {
@@ -208,6 +213,14 @@ const Header = () => {
                       <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                     <DropdownMenuSeparator />
+                    {userRole === "employer" && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/employer-dashboard">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link to={userRole === "employer" ? "/recruiter-profile" : "/profile"}>
                         <User className="mr-2 h-4 w-4" />
@@ -294,6 +307,16 @@ const Header = () => {
                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                   </div>
                 </div>
+                {userRole === "employer" && (
+                  <Link
+                    to="/employer-dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    <LayoutDashboard className="h-5 w-5" />
+                    Dashboard
+                  </Link>
+                )}
                 <Link
                   to={userRole === "employer" ? "/recruiter-profile" : "/profile"}
                   onClick={() => setMobileMenuOpen(false)}

@@ -6,6 +6,7 @@ import {
   BrowserRouter,
   Routes,
   Route,
+  Navigate,
   useLocation,
   useNavigate,
 } from "react-router-dom";
@@ -17,7 +18,6 @@ import SignUp from "./pages/SignUp";
 import FindJobs from "./pages/FindJobs";
 import JobDetails from "./pages/JobDetails";
 import Employers from "./pages/Employers";
-import CandidateDashboard from "./pages/CandidateDashboard";
 import SavedJobs from "./pages/SavedJobs";
 import EmployerDashboard from "./pages/EmployerDashboard";
 import CompanyProfile from "./pages/CompanyProfile";
@@ -67,7 +67,7 @@ const App = () => (
               <Route path="/job/:id" element={<JobDetails />} />
               <Route path="/employers" element={<Employers />} />
               <Route path="/company/:id" element={<CompanyProfile />} />
-              <Route path="/dashboard" element={<CandidateDashboard />} />
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
               <Route path="/saved-jobs" element={<SavedJobs />} />
               <Route path="/employer-dashboard" element={<EmployerDashboard />} />
               <Route path="/notifications" element={<Notifications />} />
