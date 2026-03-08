@@ -2,6 +2,7 @@ import { Link, Navigate } from "react-router-dom";
 import { Bell, Check, Trash2, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
+import PageLoader from "@/components/layout/PageLoader";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useNotifications,
@@ -22,10 +23,7 @@ const Notifications = () => {
   if (loading || isLoading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-16 text-center">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
+        <PageLoader fullScreen={false} className="container mx-auto px-4 py-16" />
       </Layout>
     );
   }

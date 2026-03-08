@@ -28,6 +28,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import Layout from "@/components/layout/Layout";
+import PageLoader from "@/components/layout/PageLoader";
 import JobCard from "@/components/jobs/JobCard";
 import { useIncrementJobViews, useJob, useJobs } from "@/hooks/useJobs";
 import { useApplyForJob, useHasApplied } from "@/hooks/useApplications";
@@ -297,13 +298,11 @@ const JobDetails = () => {
   if (isLoading) {
     return (
       <Layout hideFooter>
-        <div className="container mx-auto px-4 py-20 text-center">
-          <div className="relative mx-auto w-10 h-10">
-            <div className="h-10 w-10 rounded-full border-2 border-primary/20" />
-            <div className="absolute inset-0 h-10 w-10 animate-spin rounded-full border-2 border-transparent border-t-primary" />
-          </div>
-          <p className="mt-4 text-muted-foreground">Loading job details...</p>
-        </div>
+        <PageLoader
+          message="Loading job details..."
+          fullScreen={false}
+          className="container mx-auto px-4 py-20"
+        />
       </Layout>
     );
   }

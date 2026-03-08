@@ -3,6 +3,7 @@ import { Search, ArrowRight, Target, AlertTriangle, UserCheck, ExternalLink, Tre
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Layout from "@/components/layout/Layout";
+import PageLoader from "@/components/layout/PageLoader";
 import JobCard from "@/components/jobs/JobCard";
 import { useJobs } from "@/hooks/useJobs";
 import { useSeo } from "@/hooks/useSeo";
@@ -291,13 +292,11 @@ const Index = () => {
             </div>
 
             {jobsLoading ? (
-              <div className="flex flex-col items-center py-16">
-                <div className="relative">
-                  <div className="h-10 w-10 rounded-full border-2 border-primary/20" />
-                  <div className="absolute inset-0 h-10 w-10 animate-spin rounded-full border-2 border-transparent border-t-primary" />
-                </div>
-                <p className="mt-4 text-sm text-muted-foreground">Loading jobs...</p>
-              </div>
+              <PageLoader
+                message="Loading jobs..."
+                fullScreen={false}
+                className="py-16"
+              />
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {transformedJobs.slice(0, 6).map((job) => (

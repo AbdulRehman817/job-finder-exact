@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
+import PageLoader from "@/components/layout/PageLoader";
 import { useCompany, useCompanyJobs } from "@/hooks/useCompanies";
 import { useSeo } from "@/hooks/useSeo";
 import { useAuth } from "@/contexts/AuthContext";
@@ -45,10 +46,11 @@ const CompanyProfile = () => {
   if (companyLoading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-16 text-center">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading company...</p>
-        </div>
+        <PageLoader
+          message="Loading company..."
+          fullScreen={false}
+          className="container mx-auto px-4 py-16"
+        />
       </Layout>
     );
   }
@@ -160,9 +162,11 @@ const CompanyProfile = () => {
                 Open Positions ({jobs.length})
               </h2>
               {jobsLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
-                </div>
+                <PageLoader
+                  message="Loading open positions..."
+                  fullScreen={false}
+                  className="bg-card py-8"
+                />
               ) : jobs.length === 0 ? (
                 <div className="text-center py-8">
                   <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

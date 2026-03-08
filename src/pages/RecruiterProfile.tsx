@@ -14,6 +14,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import PageLoader from "@/components/layout/PageLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -74,10 +75,7 @@ const RecruiterProfile = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-16 text-center">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
+        <PageLoader fullScreen={false} className="container mx-auto px-4 py-16" />
       </Layout>
     );
   }

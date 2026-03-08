@@ -3,6 +3,7 @@ import { Search, MapPin, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Layout from "@/components/layout/Layout";
+import PageLoader from "@/components/layout/PageLoader";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useSeo } from "@/hooks/useSeo";
 import { topCompanies as mockCompanies } from "@/data/mockData";
@@ -93,10 +94,11 @@ const Employers = () => {
 
         {/* Companies Grid */}
         {isLoading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">Loading companies...</p>
-          </div>
+          <PageLoader
+            message="Loading companies..."
+            fullScreen={false}
+            className="rounded-lg border border-border bg-card py-16"
+          />
         ) : companies.length === 0 ? (
           <div className="text-center py-12">
             <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

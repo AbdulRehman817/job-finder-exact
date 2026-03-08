@@ -4,6 +4,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Layout from "@/components/layout/Layout";
+import PageLoader from "@/components/layout/PageLoader";
 import { useAuth } from "@/contexts/AuthContext";
 import { SavedJob, useSavedJobs, useUnsaveJob } from "@/hooks/useSavedJobs";
 
@@ -49,10 +50,11 @@ const SavedJobs = () => {
   if (loading || isLoading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-16 text-center">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="mt-4 text-muted-foreground">Loading saved jobs...</p>
-        </div>
+        <PageLoader
+          message="Loading saved jobs..."
+          fullScreen={false}
+          className="container mx-auto px-4 py-16"
+        />
       </Layout>
     );
   }

@@ -13,8 +13,9 @@ import {
 } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme-provider";
-import Index from "./pages/Index";
+import PageLoader from "@/components/layout/PageLoader";
 
+const Index = lazy(() => import("./pages/Index"));
 const SignIn = lazy(() => import("./pages/SignIn"));
 const SignUp = lazy(() => import("./pages/SignUp"));
 const FindJobs = lazy(() => import("./pages/FindJobs"));
@@ -31,15 +32,6 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const About = lazy(() => import("./pages/About"));
 
 const queryClient = new QueryClient();
-
-const RouteLoader = () => (
-  <div className="flex min-h-screen items-center justify-center bg-background">
-    <div className="relative h-10 w-10">
-      <div className="h-10 w-10 rounded-full border-2 border-primary/20" />
-      <div className="absolute inset-0 h-10 w-10 animate-spin rounded-full border-2 border-transparent border-t-primary" />
-    </div>
-  </div>
-);
 
 const HashJobRouteBridge = () => {
   const location = useLocation();
@@ -68,7 +60,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <HashJobRouteBridge />
-            <Suspense fallback={<RouteLoader />}>
+            <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/signin" element={<SignIn />} />

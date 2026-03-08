@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { useJobs } from "@/hooks/useJobs";
 import { useSeo } from "@/hooks/useSeo";
 import Header from "@/components/layout/Header";
+import PageLoader from "@/components/layout/PageLoader";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { normalizeJobType } from "@/lib/jobType";
@@ -312,13 +313,11 @@ const FindJobs = () => {
 
             {/* Jobs List */}
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <div className="relative">
-                  <div className="h-10 w-10 rounded-full border-2 border-primary/20" />
-                  <div className="absolute inset-0 h-10 w-10 animate-spin rounded-full border-2 border-transparent border-t-primary" />
-                </div>
-                <p className="mt-4 text-sm text-muted-foreground">Loading opportunities...</p>
-              </div>
+              <PageLoader
+                message="Loading opportunities..."
+                fullScreen={false}
+                className="py-20"
+              />
             ) : jobsError ? (
               <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-10 text-center">
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10">
