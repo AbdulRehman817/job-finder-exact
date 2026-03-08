@@ -14,12 +14,12 @@ import {
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import PageLoader from "@/components/layout/PageLoader";
+import JobDetails from "./pages/JobDetails";
 
 const Index = lazy(() => import("./pages/Index"));
 const SignIn = lazy(() => import("./pages/SignIn"));
 const SignUp = lazy(() => import("./pages/SignUp"));
 const FindJobs = lazy(() => import("./pages/FindJobs"));
-const JobDetails = lazy(() => import("./pages/JobDetails"));
 const Employers = lazy(() => import("./pages/Employers"));
 const SavedJobs = lazy(() => import("./pages/SavedJobs"));
 const EmployerDashboard = lazy(() => import("./pages/EmployerDashboard"));
