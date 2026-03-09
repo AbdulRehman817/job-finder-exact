@@ -71,6 +71,7 @@ export interface Profile {
   experience_years: number | null;
   phone: string | null;
   linkedin_url: string | null;
+  facebook_url: string | null;
   github_url: string | null;
   website: string | null;
   resume_url: string | null;
@@ -115,6 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     experience_years: document.experience_years ?? null,
     phone: document.phone || null,
     linkedin_url: document.linkedin_url || null,
+    facebook_url: document.facebook_url || null,
     github_url: document.github_url || null,
     website: document.website || null,
     resume_url: document.resume_url || null,

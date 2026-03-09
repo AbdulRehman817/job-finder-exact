@@ -17,6 +17,7 @@ import {
 } from "@/hooks/useCompanies";
 import { normalizeJobType, parseJobType } from "../lib/jobType";
 const jobViewsEndpoint = import.meta.env.VITE_JOB_VIEWS_ENDPOINT;
+const JOB_OWNER_FIELD_CANDIDATES = ["user_id", "userId", "userid"] as const;
 
 const mergeJobsWithCompanies = (jobs: any[], companies?: Company[] | null) => {
   if (!companies?.length) {
@@ -56,6 +57,17 @@ const parseStringArrayField = (value: unknown): string[] | null => {
     console.warn("Invalid JSON stored for job field:", value, error);
     return null;
   }
+};
+
+
+
+
+const parseFirstArrayLikeField = (sources: unknown[]): string[] | null => {
+  for (const source of sources) {
+    const parsed = parseArrayField(source);
+    if (parsed && parsed.length > 0) return parsed;
+  }
+  return null;
 };
 
 
@@ -100,11 +112,32 @@ const parseArrayField = (value: unknown): string[] | null => {
 
 const parseJobData = (job: any): Job => ({
   ...job,
-    type: normalizeJobType(job.type),
-  requirements: parseArrayField(job.requirements),
-  responsibilities: parseArrayField(job.responsibilities),
-  benefits: parseArrayField(job.benefits),
-  skills_required: parseArrayField(job.skills_required),
+   type: normalizeJobType(job.type),
+  requirements: parseFirstArrayLikeField([
+    job.requirements,
+    job.requirement,
+    job.job_requirements,
+    job.jobRequirements,
+  ]),
+  responsibilities: parseFirstArrayLikeField([
+    job.responsibilities,
+    job.responsibility,
+    job.job_responsibilities,
+    job.jobResponsibilities,
+  ]),
+  benefits: parseFirstArrayLikeField([
+    job.benefits,
+    job.benefit,
+    job.job_benefits,
+    job.jobBenefits,
+  ]),
+  skills_required: parseFirstArrayLikeField([
+    job.skills_required,
+    job.skillsRequired,
+    job.tags,
+    job.tag_list,
+    job.tagList,
+  ]),
 });
 
 
@@ -478,10 +511,54 @@ export const useMyJobs = () => {
     queryFn: async () => {
       if (!user) return [];
       try {
-        const { documents } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.JOBS);
-        const myJobs = documents
-          .filter((job) => job.user_id === user.id)
-          .sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime());
+      const fetchJobsForField = async (field: string) => {
+          const results: any[] = [];
+          let offset = 0;
+
+          while (true) {
+            const { documents } = await databases.listDocuments(DATABASE_ID, COLLECTIONS.JOBS, [
+              Query.equal(field, user.id),
+              Query.limit(JOBS_BATCH_SIZE),
+              Query.offset(offset),
+            ]);
+
+            results.push(...documents);
+            if (documents.length < JOBS_BATCH_SIZE) break;
+            offset += JOBS_BATCH_SIZE;
+          }
+
+          return results;
+        };
+
+        let ownedJobs: any[] = [];
+        for (const ownerField of JOB_OWNER_FIELD_CANDIDATES) {
+          try {
+            const results = await fetchJobsForField(ownerField);
+            if (results.length > 0) {
+              ownedJobs = results;
+              break;
+            }
+          } catch (error: any) {
+            const code = Number(error?.code || 0);
+            if (code >= 400 && code < 500) {
+              // Some environments lack indexes/attributes for legacy field names.
+              // Ignore query-level failures and fall back to full scan below.
+              continue;
+            }
+            throw error;
+          }
+        }
+
+        if (ownedJobs.length === 0) {
+          const allJobs = await fetchAllJobDocuments();
+          ownedJobs = allJobs.filter((job) =>
+            JOB_OWNER_FIELD_CANDIDATES.some((field) => String((job as any)[field] || "").trim() === user.id)
+          );
+        }
+
+        const myJobs = ownedJobs.sort(
+          (a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime()
+        );
 
         const companies = await loadCompaniesForJobs(queryClient);
         const jobsWithCompanies = mergeJobsWithCompanies(myJobs, companies);

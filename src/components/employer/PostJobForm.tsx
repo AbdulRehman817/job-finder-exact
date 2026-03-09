@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { useCreateJob } from "@/hooks/useJobs";
 import { useMyCompanies, useCreateCompany } from "@/hooks/useCompanies";
 import { useToast } from "@/hooks/use-toast";
@@ -42,8 +41,6 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
     requirements: [] as string[],
     responsibilities: [] as string[],
     benefits: [] as string[],
-    direct_apply_enabled: false,
-    apply_link: "",
     status: "active" as "active" | "closed" | "draft",
     expiry_date: "",
   });
@@ -130,26 +127,11 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
       return;
     }
 
-    if (formData.direct_apply_enabled && !formData.apply_link.trim()) {
-      toast({
-        title: "Direct apply URL required",
-        description: "Please add a valid application URL when direct apply is enabled.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       const tagsLine =
         formData.tags.length > 0
           ? `\n\nTags: ${formData.tags.map((tag) => `#${tag}`).join(" ")}`
           : "";
-
-      const normalizedApplyLink = formData.apply_link.trim()
-        ? (/^https?:\/\//i.test(formData.apply_link.trim())
-            ? formData.apply_link.trim()
-            : `https://${formData.apply_link.trim()}`)
-        : "";
 
       const payload: any = {
         title: formData.title,
@@ -168,10 +150,6 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
         status: formData.status,
         posted_date: new Date().toISOString(),
       };
-
-      if (formData.direct_apply_enabled && normalizedApplyLink) {
-        payload.apply_link = normalizedApplyLink;
-      }
 
       // Only include expiry_date when the user provided a value
       if (formData.expiry_date) {
@@ -427,37 +405,6 @@ const PostJobForm = ({ onSuccess }: PostJobFormProps) => {
           </div>
         </div>
 
-        <div className="mt-6 border-t border-border pt-6 space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <Label htmlFor="direct-apply">Direct Apply (Optional)</Label>
-              <p className="text-xs text-muted-foreground mt-1">
-                When enabled, candidates are redirected to your external application form.
-              </p>
-            </div>
-            <Switch
-              id="direct-apply"
-              checked={formData.direct_apply_enabled}
-              onCheckedChange={(checked) =>
-                setFormData((prev) => ({ ...prev, direct_apply_enabled: checked }))
-              }
-            />
-          </div>
-
-          {formData.direct_apply_enabled && (
-            <div>
-              <Label>Application URL *</Label>
-              <Input
-                type="url"
-                value={formData.apply_link}
-                onChange={(e) => setFormData((prev) => ({ ...prev, apply_link: e.target.value }))}
-                placeholder="https://company.com/careers/apply"
-                className="mt-2 h-12"
-                required={formData.direct_apply_enabled}
-              />
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Job Description */}

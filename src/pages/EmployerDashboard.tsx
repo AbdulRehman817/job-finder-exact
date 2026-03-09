@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getAvatarUrl } from "@/lib/avatar";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +49,7 @@ const EmployerDashboard = () => {
   const { user, profile, loading, userRole } = useAuth();
   const { data: jobs = [] } = useMyJobs();
   const { data: companies = [] } = useMyCompanies();
+  
   const deleteJob = useDeleteJob();
   const updateJob = useUpdateJob();
   const updateApplicationStatus = useUpdateApplicationStatus();
@@ -59,6 +61,7 @@ const EmployerDashboard = () => {
   const defaultTab = ["overview", "jobs", "applications"].includes(rawTab) ? rawTab : "overview";
   const [selectedJobForApps, setSelectedJobForApps] = useState<string | null>(null);
   const [applicantDetail, setApplicantDetail] = useState<any>(null);
+    const requestedJobId = searchParams.get("job");
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
@@ -76,11 +79,20 @@ const EmployerDashboard = () => {
 
   // Auto-select first job with applications
   useEffect(() => {
-    if (!selectedJobForApps && jobs.length > 0) {
+     if (jobs.length === 0) return;
+
+    if (requestedJobId) {
+      const targetJob = jobs.find((job) => job.$id === requestedJobId);
+      if (targetJob && selectedJobForApps !== requestedJobId) {
+        setSelectedJobForApps(requestedJobId);
+        return;
+      }
+    }
+
+    if (!selectedJobForApps) {
       setSelectedJobForApps(jobs[0].$id);
     }
-  }, [jobs, selectedJobForApps]);
-
+ }, [jobs, requestedJobId, selectedJobForApps]);
   if (loading) {
     return (
       <Layout>
@@ -332,8 +344,16 @@ const EmployerDashboard = () => {
               <div className="space-y-6 pt-4">
                 {/* Profile Info */}
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-8 w-8 text-primary" />
+                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                    {getAvatarUrl(applicantDetail.profiles?.avatar_url) ? (
+                      <img
+                        src={getAvatarUrl(applicantDetail.profiles?.avatar_url) ?? ""}
+                        alt={applicantDetail.profiles?.full_name || "Applicant"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-8 w-8 text-primary" />
+                    )}
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold">{applicantDetail.profiles?.full_name || "Applicant"}</h3>
@@ -456,8 +476,7 @@ const EmployerDashboard = () => {
 
                 {/* Applied Date */}
                 <div className="text-xs text-muted-foreground">
-                  Applied {formatDistanceToNow(new Date(applicantDetail.applied_at), { addSuffix: true })}
-                </div>
+Applied {formatDistanceToNow(new Date(applicantDetail.applied_at || applicantDetail.$createdAt || Date.now()), { addSuffix: true })}                </div>
 
                 {/* Actions */}
                 {!isActionDisabled(applicantDetail.status) && (

@@ -77,6 +77,14 @@ const extractHashtagTags = (description: string): string[] => {
   return dedupeTags(matches.map((tag) => tag.replace(/^#/, "")));
 };
 
+const isRecruiterPostedJob = (job: any): boolean => {
+  if (!job) return false;
+  const hasPosterId = typeof job.user_id === "string" && job.user_id.trim().length > 0;
+  const hasCompanyId = typeof job.company_id === "string" && job.company_id.trim().length > 0;
+  return hasPosterId && hasCompanyId;
+};
+
+
 const parseTagSource = (value: unknown): string[] => {
   if (!value) return [];
   if (Array.isArray(value)) return dedupeTags(value.map((item) => String(item)));
@@ -193,6 +201,7 @@ const JobDetails = () => {
 
   const applyLink = resolveApplyLink(job);
   const hasDirectApplyLink = Boolean(applyLink);
+    const showApplyButton = isRecruiterPostedJob(job);
 
   const handleApplyRedirect = () => {
     if (!applyLink) return;
@@ -541,9 +550,12 @@ const JobDetails = () => {
                     <Button disabled className="rounded-xl h-10 px-5">
                       Employers can't apply
                     </Button>
-                  ) : hasDirectApplyLink ? (
-                    <Button className="rounded-xl h-10 px-6 font-semibold shadow-md shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all" onClick={handleApplyRedirect}>
-                      Apply now
+                  ) : showApplyButton ? (
+                    <Button
+                      className="rounded-xl h-10 px-6 font-semibold shadow-md shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all"
+                      onClick={hasDirectApplyLink ? handleApplyRedirect : handleOpenInAppApply}
+                    >
+                      Apply Now
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   ) : null}
@@ -647,7 +659,7 @@ const JobDetails = () => {
           {/* Sidebar */}
           <div className="space-y-5">
             {/* Job Overview */}
-            <div className="bg-card border border-border rounded-2xl p-6 hidden lg:block sticky top-6">
+            <div className="bg-card border border-border rounded-2xl p-6 hidden lg:block ">
               <h3 className="text-base font-bold text-foreground mb-5">Job Overview</h3>
               <div className="space-y-4">
                 <OverviewItem icon={DollarSign} label="Salary">{salaryDisplay}</OverviewItem>

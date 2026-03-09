@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link,useNavigate  } from "react-router-dom";
 import {
   Bell,
   BriefcaseBusiness,
@@ -8,6 +8,7 @@ import {
   UserCheck,
   UserX,
 } from "lucide-react";
+
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,16 @@ import {
   useUnreadNotificationsCount,
 } from "@/hooks/useNotifications";
 
+const buildNotificationTarget = (notification: { type: string; job_id?: string | null }) => {
+  if (notification.type === "application_received") {
+    const jobId = String(notification.job_id || "").trim();
+    return jobId
+      ? `/employer-dashboard?tab=applications&job=${encodeURIComponent(jobId)}`
+      : "/employer-dashboard?tab=applications";
+  }
+  return "/notifications";
+};
+
 const getNotificationIcon = (type: string) => {
   switch (type) {
     case "shortlisted":
@@ -41,7 +52,6 @@ const getNotificationIcon = (type: string) => {
       return <Bell className="h-4 w-4 text-muted-foreground" />;
   }
 };
-
 const NotificationDropdown = () => {
   const { userRole } = useAuth();
   const isCandidate = userRole === "candidate";
@@ -50,6 +60,7 @@ const NotificationDropdown = () => {
   const { data: unreadCount = 0 } = useUnreadNotificationsCount();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+  const navigate = useNavigate();
 
   const badgeCount = isCandidate ? savedJobs.length : unreadCount;
 
@@ -149,10 +160,13 @@ const NotificationDropdown = () => {
                     !notification.is_read && "bg-primary/5"
                   )}
                   onClick={() => {
-                    if (!notification.is_read) {
-                      markRead.mutate(notification.$id);
-                    }
-                  }}
+  if (!notification.is_read) {
+    markRead.mutate(notification.$id);
+  }
+  if (typeof window !== "undefined") {
+    window.location.hash = buildNotificationTarget(notification);
+  }
+}}
                 >
                   <div className="mt-0.5">{getNotificationIcon(notification.type)}</div>
                   <div className="min-w-0 flex-1">

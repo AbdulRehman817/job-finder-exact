@@ -67,7 +67,7 @@ const RecruiterProfile = () => {
         website: profile.website || "",
         avatar_url: profile.avatar_url || "",
         linkedin_url: profile.linkedin_url || "",
-        facebook_url: (profile as any).facebook_url || "",
+        facebook_url: ((profile as { facebook_url?: string | null }).facebook_url) || "",
       });
     }
   }, [profile]);

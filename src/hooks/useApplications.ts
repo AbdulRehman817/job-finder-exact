@@ -116,21 +116,52 @@ export const useJobApplications = (jobId?: string) => {
     queryFn: async () => {
       if (!jobId || !user) return [];
       try {
-        const { documents: applications } = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.JOB_APPLICATIONS,
-          [Query.equal('job_id', jobId), Query.orderDesc('applied_at')]
-        );
+      const loadByField = async (field: string) => {
+          const results: any[] = [];
+          let offset = 0;
+
+          while (true) {
+            const { documents } = await databases.listDocuments(
+              DATABASE_ID,
+              COLLECTIONS.JOB_APPLICATIONS,
+              [Query.equal(field, jobId), Query.orderDesc('applied_at'), Query.limit(100), Query.offset(offset)]
+            );
+
+            results.push(...documents);
+            if (documents.length < 100) break;
+            offset += 100;
+          }
+
+          return results;
+        };
+
+        let applications: any[] = [];
+        try {
+          applications = await loadByField('job_id');
+        } catch (error: any) {
+          const message = String(error?.message || '').toLowerCase();
+          if (!message.includes('unknown') || !message.includes('job_id')) {
+            throw error;
+          }
+        }
+
+        if (applications.length === 0) {
+          try {
+            applications = await loadByField('jobId');
+          } catch (_error) {
+            applications = [];
+          }
+        }
 
         // Fetch profile data for each application
         const applicationsWithProfiles = await Promise.all(
           applications.map(async (application) => {
             try {
+                            const applicantUserId = application.user_id || application.userId || application.userid;
               const { documents: profiles } = await databases.listDocuments(
                 DATABASE_ID,
                 COLLECTIONS.PROFILES,
-                [Query.equal('user_id', application.user_id)]
-              );
+ [Query.equal('user_id', applicantUserId)]              );
 
               return {
                 ...application,
